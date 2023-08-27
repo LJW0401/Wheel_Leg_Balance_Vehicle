@@ -1,6 +1,9 @@
 {
     "files.associations": {
         "balance_controler.h": "c",
-        "struct_typedef.h": "c"
+        "struct_typedef.h": "c",
+        "leg_conv.h": "c",
+        "leg_pos.h": "c",
+        "leg_spd.h": "c"
     }
 }

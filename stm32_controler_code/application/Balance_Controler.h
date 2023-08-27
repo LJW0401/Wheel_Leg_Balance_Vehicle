@@ -21,6 +21,12 @@
   */
 
 #include "struct_typedef.h"
+//导入轮腿模型
+#include "leg_model/leg_conv.h"
+#include "leg_model/leg_pos.h"
+#include "leg_model/leg_spd.h"
+#include "leg_model/lqr_k.h"
+
 
 /** @brief      底盘IMU数据结构体
   * @note       
@@ -31,7 +37,7 @@ typedef struct
   float yawSpd, pitchSpd, rollSpd; // rad/s
   float zAccel; // m/s^2
 }Chassis_IMU_t;
-
+Chassis_IMU_t chassis_imu;
 
 /** @brief      电机结构体
   * @note       leftJoint[0]:左前关节电机, leftJoint[1]:左后关节电机, leftWheel:左车轮电机
@@ -46,7 +52,7 @@ typedef struct
 	float dir;				   // 1 or -1
 	float (*calcRevVolt)(float speed); // 指向反电动势计算函数
 }Motor_s;
-Motor_s left_joint[2], right_joint[2], left_wheel, right_wheel; //六个电机对象
+Motor_s leftJoint[2], rightJoint[2], leftWheel, rightWheel; //六个电机对象
 
 
 /** @brief      腿部姿态结构体
@@ -58,7 +64,7 @@ typedef struct
   float dAngle, dLength; // rad/s, m/s
   float ddLength;       // m/s^2
 }Leg_Pos_t;
-Leg_Pos_t left_leg_pos, right_leg_pos; //左右腿部姿态
+Leg_Pos_t leftLegPos, rightLegPos; //左右腿部姿态
 
 
 /** @brief      状态变量结构体
@@ -70,7 +76,7 @@ typedef struct
   float x, dx;
   float phi, dPhi;
 }State_Var_s; 
-State_Var_s state_var;
+State_Var_s stateVar;
 
 
 /** @brief      目标量结构体
@@ -97,7 +103,7 @@ typedef struct
   float leftSupportForce, rightSupportForce;
   uint8_t isTouchingGround, isCuchioning;
 } GroundDetector;
-GroundDetector ground_detector = {10, 10, 1, 0};
+GroundDetector groundDetector = {10, 10, 1, 0};
 
 
 /** @brief      站立过程状态枚举量
@@ -107,7 +113,7 @@ enum StandupState {
   StandupState_None,
   StandupState_Prepare,
   StandupState_Standup,
-} standup_state = StandupState_None;
+} standupState = StandupState_None;
 
 
 
