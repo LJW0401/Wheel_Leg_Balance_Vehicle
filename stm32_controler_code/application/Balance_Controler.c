@@ -205,7 +205,8 @@ void LegPos_UpdateTask(void *arg)
     float legPos[2], legSpd[2];
 
     //计算左腿位置
-    leg_pos(leftJoint[1].angle, leftJoint[0].angle, legPos);
+    leg_pos(leftJoint[1].angle, leftJoint[0].angle, legPos, 
+            leftJointLength.l1, leftJointLength.l2, leftJointLength.l3, leftJointLength.l4, leftJointLength.l5);
     leftLegPos.length = legPos[0];
     leftLegPos.angle = legPos[1];
 
@@ -219,7 +220,8 @@ void LegPos_UpdateTask(void *arg)
     lastLeftDLength = leftLegPos.dLength;
 
     //计算右腿位置
-    leg_pos(rightJoint[1].angle, rightJoint[0].angle, legPos);
+    leg_pos(rightJoint[1].angle, rightJoint[0].angle, legPos,
+            rightJointLength.l1, rightJointLength.l2, rightJointLength.l3, rightJointLength.l4, rightJointLength.l5);
     rightLegPos.length = legPos[0];
     rightLegPos.angle = legPos[1];
 

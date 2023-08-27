@@ -55,6 +55,17 @@ typedef struct
 Motor_s leftJoint[2], rightJoint[2], leftWheel, rightWheel; //六个电机对象
 
 
+/** @brief      关节长度结构体
+  * @note       无
+  */
+typedef struct
+{
+  float l1, l2, l3, l4, l5; // m
+}Joint_Length_t;
+Joint_Length_t leftJointLength = {0.05f, 0.105f, 0.105f, 0.05f, 0.06f}; //关节长度
+Joint_Length_t rightJointLength = {0.05f, 0.105f, 0.105f, 0.05f, 0.06f}; //关节长度
+// l1=0.05;l2=0.105;l3=l2;l4=l1;l5=0.06; % @遥想星空 的腿部杆长
+
 /** @brief      腿部姿态结构体
   * @note       无
   */

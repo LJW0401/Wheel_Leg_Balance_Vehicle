@@ -18,8 +18,10 @@ extern "C" {
 #endif
 
 /* Function Declarations */
-extern void leg_pos(float phi1, float phi4, float pos[2]);
+// extern void leg_pos(float phi1, float phi4, float pos[2]);
 
+extern void leg_pos(float phi1, float phi4, float pos[2], 
+                    float l1, float l2, float l3, float l4, float l5);
 #ifdef __cplusplus
 }
 #endif
