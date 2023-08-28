@@ -4,6 +4,9 @@
         "struct_typedef.h": "c",
         "leg_conv.h": "c",
         "leg_pos.h": "c",
-        "leg_spd.h": "c"
+        "leg_spd.h": "c",
+        "leg_conv_ljw.h": "c",
+        "rtwtypes.h": "c",
+        "leg_pos_ljw.h": "c"
     }
 }

@@ -189,10 +189,9 @@ void Ctrl_TargetUpdateTask(void *arg)
 
 
 /**
-  * @todo           将函数转换为c函数
-  * 
   * @brief          腿部姿态更新任务
   * @note           根据关节电机数据计算腿部姿态
+  * @note           其中MATLAB生成的函数重新将l1-5作为变量加入后导出了新的函数
   * @author         小企鹅
   */
 void LegPos_UpdateTask(void *arg)
@@ -205,13 +204,16 @@ void LegPos_UpdateTask(void *arg)
     float legPos[2], legSpd[2];
 
     //计算左腿位置
-    leg_pos(leftJoint[1].angle, leftJoint[0].angle, legPos, 
-            leftJointLength.l1, leftJointLength.l2, leftJointLength.l3, leftJointLength.l4, leftJointLength.l5);
+    leg_pos(leftJointLength.l1, leftJointLength.l2, leftJointLength.l3, leftJointLength.l4, leftJointLength.l5,
+            leftJoint[1].angle, leftJoint[0].angle, legPos
+            );
     leftLegPos.length = legPos[0];
     leftLegPos.angle = legPos[1];
 
     //计算左腿速度
-    leg_spd(leftJoint[1].speed, leftJoint[0].speed, leftJoint[1].angle, leftJoint[0].angle, legSpd);
+    leg_spd(leftJoint[1].speed, leftJoint[0].speed, 
+            leftJointLength.l1, leftJointLength.l2, leftJointLength.l3, leftJointLength.l4, leftJointLength.l5,
+            leftJoint[1].angle, leftJoint[0].angle, legSpd);
     leftLegPos.dLength = legSpd[0];
     leftLegPos.dAngle = legSpd[1];
 
@@ -220,13 +222,17 @@ void LegPos_UpdateTask(void *arg)
     lastLeftDLength = leftLegPos.dLength;
 
     //计算右腿位置
-    leg_pos(rightJoint[1].angle, rightJoint[0].angle, legPos,
-            rightJointLength.l1, rightJointLength.l2, rightJointLength.l3, rightJointLength.l4, rightJointLength.l5);
+            
+    leg_pos(rightJointLength.l1, rightJointLength.l2, rightJointLength.l3, rightJointLength.l4, rightJointLength.l5,
+            rightJoint[1].angle, rightJoint[0].angle, legPos
+            );
     rightLegPos.length = legPos[0];
     rightLegPos.angle = legPos[1];
 
     //计算右腿速度
-    leg_spd(rightJoint[1].speed, rightJoint[0].speed, rightJoint[1].angle, rightJoint[0].angle, legSpd);
+    leg_spd(rightJoint[1].speed, rightJoint[0].speed, 
+            rightJointLength.l1, rightJointLength.l2, rightJointLength.l3, rightJointLength.l4, rightJointLength.l5,
+            rightJoint[1].angle, rightJoint[0].angle, legSpd);
     rightLegPos.dLength = legSpd[0];
     rightLegPos.dAngle = legSpd[1];
 
@@ -239,6 +245,7 @@ void LegPos_UpdateTask(void *arg)
 }
 
 
+void =现在改到这里了;
 /**
   * @todo           将函数转换为c函数，并将起立状态改为双腿竖直向下
   * 
