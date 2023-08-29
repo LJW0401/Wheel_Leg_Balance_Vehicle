@@ -141,11 +141,11 @@ void Motor_UpdateVoltage(Motor_s *motor)
 
 /**
   * @brief          目标量更新任务
-  * @note           这里作为一个被调用的任务函数，而非FreeRTOS任务
+  * @attention      这里作为一个被调用的任务函数，而非FreeRTOS任务
   * @note           根据目标量(target)计算实际控制算法的给定量
   * @author         小企鹅
   */
-void Ctrl_TargetUpdateTask(void *arg)
+void Ctrl_TargetUpdateTask()
 {
   // TickType_t xLastWakeTime = xTaskGetTickCount();
 
@@ -194,7 +194,7 @@ void Ctrl_TargetUpdateTask(void *arg)
   * @note           其中MATLAB生成的函数重新将l1-5作为变量加入后导出了新的函数
   * @author         小企鹅
   */
-void LegPos_UpdateTask(void *arg)
+void LegPos_UpdateTask()
 {
   const float lpfRatio = 0.5f; //低通滤波系数(新值的权重)
   float lastLeftDLength = 0, lastRightDLength = 0;
@@ -204,6 +204,7 @@ void LegPos_UpdateTask(void *arg)
     float legPos[2], legSpd[2];
 
     //计算左腿位置
+		// leg_pos(leftJoint[1].angle, leftJoint[0].angle, legPos);
     leg_pos(leftJointLength.l1, leftJointLength.l2, leftJointLength.l3, leftJointLength.l4, leftJointLength.l5,
             leftJoint[1].angle, leftJoint[0].angle, legPos
             );
@@ -211,6 +212,7 @@ void LegPos_UpdateTask(void *arg)
     leftLegPos.angle = legPos[1];
 
     //计算左腿速度
+		// leg_spd(leftJoint[1].speed, leftJoint[0].speed, leftJoint[1].angle, leftJoint[0].angle, legSpd);
     leg_spd(leftJoint[1].speed, leftJoint[0].speed, 
             leftJointLength.l1, leftJointLength.l2, leftJointLength.l3, leftJointLength.l4, leftJointLength.l5,
             leftJoint[1].angle, leftJoint[0].angle, legSpd);
@@ -222,7 +224,7 @@ void LegPos_UpdateTask(void *arg)
     lastLeftDLength = leftLegPos.dLength;
 
     //计算右腿位置
-            
+		// leg_pos(rightJoint[1].angle, rightJoint[0].angle, legPos);
     leg_pos(rightJointLength.l1, rightJointLength.l2, rightJointLength.l3, rightJointLength.l4, rightJointLength.l5,
             rightJoint[1].angle, rightJoint[0].angle, legPos
             );
@@ -230,6 +232,7 @@ void LegPos_UpdateTask(void *arg)
     rightLegPos.angle = legPos[1];
 
     //计算右腿速度
+		// leg_spd(rightJoint[1].speed, rightJoint[0].speed, rightJoint[1].angle, rightJoint[0].angle, legSpd);
     leg_spd(rightJoint[1].speed, rightJoint[0].speed, 
             rightJointLength.l1, rightJointLength.l2, rightJointLength.l3, rightJointLength.l4, rightJointLength.l5,
             rightJoint[1].angle, rightJoint[0].angle, legSpd);
@@ -245,11 +248,9 @@ void LegPos_UpdateTask(void *arg)
 }
 
 
-void =现在改到这里了;
 /**
-  * @todo           将函数转换为c函数，并将起立状态改为双腿竖直向下
-  * 
   * @brief          站立准备任务
+  * @attention      目前看来就是一个劈叉任务，没有实际价值
   * @note           将机器人从任意姿态调整到准备站立前的劈叉状态
   * @author         小企鹅
   */
@@ -293,29 +294,29 @@ void Ctrl_StandupPrepareTask(void *arg)
   * @todo           将函数转换为c函数
   * 
   * @brief          主控制任务
-  * @note           
+  * @attention      这一块应该整合到chassis_task中     
   * @author         小企鹅
   */
 void Ctrl_Task(void *arg)
 {
-  const float wheelRadius = 0.026f; //m，车轮半径
-  const float legMass = 0.05f; //kg，腿部质量
+  // const float wheelRadius = 0.026f; //m，车轮半径
+  // const float legMass = 0.05f; //kg，腿部质量
 
-  TickType_t xLastWakeTime = xTaskGetTickCount();
+  // TickType_t xLastWakeTime = xTaskGetTickCount();
 
-  //手动为反馈矩阵和输出叠加一个系数，用于手动优化控制效果
-  float kRatio[2][6] = {{1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f},
-                        {1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f}};
-  float lqrTpRatio = 1.0f, lqrTRatio = 1.0f;
+  // //手动为反馈矩阵和输出叠加一个系数，用于手动优化控制效果
+  // float kRatio[2][6] = {{1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f},
+  //                       {1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f}};
+  // float lqrTpRatio = 1.0f, lqrTRatio = 1.0f;
 
-  //设定初始目标值
-  target.rollAngle = 0.0f;
-  target.legLength = 0.07f;
-  target.speed = 0.0f;
-  target.position = (leftWheel.angle + rightWheel.angle) / 2 * wheelRadius;
+  // //设定初始目标值
+  // target.rollAngle = 0.0f;
+  // target.legLength = 0.07f;
+  // target.speed = 0.0f;
+  // target.position = (leftWheel.angle + rightWheel.angle) / 2 * wheelRadius;
 
-  while (1)
-  {
+  // while (1)
+  // {
     //计算状态变量
     stateVar.phi = chassis_imu.pitch;
     stateVar.dPhi = chassis_imu.pitchSpd;
@@ -393,17 +394,21 @@ void Ctrl_Task(void *arg)
     groundDetector.rightSupportForce = rightForce + legMass * 9.8f - legMass * (rightLegPos.ddLength - chassis_imu.zAccel);
     //更新离地检测器数据
     static uint32_t lastTouchTime = 0;
-    bool isTouchingGround = groundDetector.leftSupportForce > 3 && groundDetector.rightSupportForce > 3; //判断当前瞬间是否接地
+    // bool_t isTouchingGround = groundDetector.leftSupportForce > 3 && groundDetector.rightSupportForce > 3; //判断当前瞬间是否接地
+    uint8_t isTouchingGround = groundDetector.leftSupportForce > 3 && groundDetector.rightSupportForce > 3; //判断当前瞬间是否接地
     if(!isTouchingGround && millis() - lastTouchTime < 1000) //若上次触地时间距离现在不超过1s，则认为当前瞬间接地，避免弹跳导致误判
-      isTouchingGround = true;
+      // isTouchingGround = true;
+      isTouchingGround = 1;
     if(!groundDetector.isTouchingGround && isTouchingGround) //判断转为接地状态，标记进入缓冲状态
     {
       target.position = stateVar.x;
-      groundDetector.isCuchioning = true;
+      // groundDetector.isCuchioning = true;
+      groundDetector.isCuchioning = 1;
       lastTouchTime = millis();
     }
     if(groundDetector.isCuchioning && legLength < target.legLength) //缓冲状态直到腿长压缩到目标腿长结束
-      groundDetector.isCuchioning = false;
+      // groundDetector.isCuchioning = false;
+      groundDetector.isCuchioning = 0;
     groundDetector.isTouchingGround = isTouchingGround;
 
     //计算左右腿角度差PID输出
@@ -465,8 +470,8 @@ void Ctrl_Task(void *arg)
     Motor_SetTorque(&rightJoint[0], -rightJointTorque[0]);
     Motor_SetTorque(&rightJoint[1], -rightJointTorque[1]);
 
-    vTaskDelayUntil(&xLastWakeTime, 4); //4ms控制周期
-  }
+    // vTaskDelayUntil(&xLastWakeTime, 4); //4ms控制周期
+  // }
 }
 
 /**

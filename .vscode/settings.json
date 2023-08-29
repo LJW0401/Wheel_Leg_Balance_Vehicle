@@ -7,6 +7,11 @@
         "leg_spd.h": "c",
         "leg_conv_ljw.h": "c",
         "rtwtypes.h": "c",
-        "leg_pos_ljw.h": "c"
+        "leg_pos_ljw.h": "c",
+        "main.h": "c",
+        "servo_task.h": "c",
+        "cmsis_os.h": "c",
+        "freertos.h": "c",
+        "chassis_task.h": "c"
     }
 }
