@@ -22,6 +22,7 @@
 
 #include "Balance_Controler.h"
 #include <math.h>
+#include "INS_task.h"
 
 #define M_PI    3.14159265358979323846
 
@@ -134,6 +135,28 @@ void Motor_UpdateVoltage(Motor_s *motor)
   else if (voltage < -motor->maxVoltage)
     voltage = -motor->maxVoltage;
   motor->voltage = voltage * motor->dir;
+}
+
+
+/******* 底盘姿态模块 *******/
+
+/**
+  * @brief          底盘姿态更新
+  * @note           通过INS模块获取机体底盘的姿态数据
+  * @author         小企鹅
+  */
+void ChassisPostureUpdate()
+{
+  const fp32* INS_angle_point = get_INS_angle_point();
+  const fp32* INS_gyro_data_point = get_gyro_data_point();
+  const fp32* INS_accel_data_point = get_accel_data_point();
+  chassis_imu.yaw = INS_angle_point[0];
+  chassis_imu.pitch = INS_angle_point[1];
+  chassis_imu.roll = INS_angle_point[2];
+  chassis_imu.yawSpd = INS_gyro_data_point[0];
+  chassis_imu.pitchSpd = INS_gyro_data_point[1];
+  chassis_imu.rollSpd = INS_gyro_data_point[2];
+  chassis_imu.zAccel = INS_accel_data_point[2];
 }
 
 
@@ -299,21 +322,21 @@ void Ctrl_StandupPrepareTask(void *arg)
   */
 void Ctrl_Task(void *arg)
 {
-  // const float wheelRadius = 0.026f; //m，车轮半径
-  // const float legMass = 0.05f; //kg，腿部质量
+  const float wheelRadius = 0.026f; //m，车轮半径
+  const float legMass = 0.05f; //kg，腿部质量
 
-  // TickType_t xLastWakeTime = xTaskGetTickCount();
+  TickType_t xLastWakeTime = xTaskGetTickCount();
 
-  // //手动为反馈矩阵和输出叠加一个系数，用于手动优化控制效果
-  // float kRatio[2][6] = {{1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f},
-  //                       {1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f}};
-  // float lqrTpRatio = 1.0f, lqrTRatio = 1.0f;
+  //手动为反馈矩阵和输出叠加一个系数，用于手动优化控制效果
+  float kRatio[2][6] = {{1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f},
+                        {1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f}};
+  float lqrTpRatio = 1.0f, lqrTRatio = 1.0f;
 
-  // //设定初始目标值
-  // target.rollAngle = 0.0f;
-  // target.legLength = 0.07f;
-  // target.speed = 0.0f;
-  // target.position = (leftWheel.angle + rightWheel.angle) / 2 * wheelRadius;
+  //设定初始目标值
+  target.rollAngle = 0.0f;
+  target.legLength = 0.07f;
+  target.speed = 0.0f;
+  target.position = (leftWheel.angle + rightWheel.angle) / 2 * wheelRadius;
 
   // while (1)
   // {
@@ -475,8 +498,6 @@ void Ctrl_Task(void *arg)
 }
 
 /**
-  * @todo           将函数转换为c函数
-  * 
   * @brief          控制模块初始化
   * @note           
   * @author         小企鹅
@@ -497,10 +518,10 @@ void Ctrl_Init()
   PID_SetErrLpfRatio(&legAnglePID.outer, 0.5f);
 
   //触发各个控制任务
-  xTaskCreate(Ctrl_TargetUpdateTask, "Ctrl_TargetUpdateTask", 4096, NULL, 3, NULL);
-  xTaskCreate(LegPos_UpdateTask, "LegPos_UpdateTask", 4096, NULL, 2, NULL);
-  vTaskDelay(2);
-  xTaskCreate(Ctrl_Task, "Ctrl_Task", 4096, NULL, 1, NULL);
+  // xTaskCreate(Ctrl_TargetUpdateTask, "Ctrl_TargetUpdateTask", 4096, NULL, 3, NULL);
+  // xTaskCreate(LegPos_UpdateTask, "LegPos_UpdateTask", 4096, NULL, 2, NULL);
+  // vTaskDelay(2);
+  // xTaskCreate(Ctrl_Task, "Ctrl_Task", 4096, NULL, 1, NULL);
 }
 
 

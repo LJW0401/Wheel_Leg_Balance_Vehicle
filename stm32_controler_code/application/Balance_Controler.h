@@ -158,7 +158,9 @@ enum StandupState {
 CascadePID legAnglePID, legLengthPID; //腿部角度和长度控制PID
 CascadePID yawPID, rollPID; //机身yaw和roll控制PID
 
+extern void Motor_SetTorque(Motor_s *motor, float torque);
 
+extern void ChassisPostureUpdate();
 extern void Ctrl_TargetUpdateTask();
 extern void LegPos_UpdateTask();
 

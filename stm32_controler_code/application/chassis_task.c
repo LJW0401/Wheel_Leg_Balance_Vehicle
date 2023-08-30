@@ -184,8 +184,9 @@ void chassis_task(void const *pvParameters)
 
 
         /************************* 新增部分 *************************/
-        Ctrl_TargetUpdateTask();
+        ChassisPostureUpdate();
         LegPos_UpdateTask();
+        Ctrl_TargetUpdateTask();
         //计算状态变量
         stateVar.phi = chassis_imu.pitch;
         stateVar.dPhi = chassis_imu.pitchSpd;
@@ -342,6 +343,9 @@ void chassis_task(void const *pvParameters)
         Motor_SetTorque(&leftJoint[1], -leftJointTorque[1]);
         Motor_SetTorque(&rightJoint[0], -rightJointTorque[0]);
         Motor_SetTorque(&rightJoint[1], -rightJointTorque[1]);
+
+        //这里还要加一段，将电机扭矩转换为电流大小
+
         /************************* 新增部分结束 *************************/
 
 

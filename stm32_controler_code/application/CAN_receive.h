@@ -35,11 +35,15 @@ typedef enum
     CAN_3508_M3_ID = 0x203,
     CAN_3508_M4_ID = 0x204,
 
-    CAN_YAW_MOTOR_ID = 0x205,
-    CAN_PIT_MOTOR_ID = 0x206,
-    CAN_TRIGGER_MOTOR_ID = 0x207,
+    // CAN_YAW_MOTOR_ID = 0x205,
+    // CAN_PIT_MOTOR_ID = 0x206,
+    // CAN_TRIGGER_MOTOR_ID = 0x207,
+    // CAN_GIMBAL_ALL_ID = 0x1FF,
+    CAN_LEFT_MOTOR_1_ID = 0x205,
+    CAN_LEFT_MOTOR_2_ID = 0x206,
+    CAN_RIGHT_MOTOR_1_ID = 0x207,
+    CAN_RIGHT_MOTOR_2_ID = 0x208,
     CAN_GIMBAL_ALL_ID = 0x1FF,
-
 } can_msg_id_e;
 
 //rm motor data
