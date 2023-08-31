@@ -134,16 +134,16 @@ void Motor_SetTorque(Motor_s *motor, float torque)
 }
 
 
-/**
-  * @brief          从CAN总线接收到的数据中解析出电机角度和速度
-  * @attention      后续会根据自己的设备条件调整函数内容
-  * @author         小企鹅
-  */
-void Motor_Update(Motor_s *motor, uint8_t *data)
-{
-  motor->angle = (*(int32_t *)&data[0] / 1000.0f - motor->offsetAngle) * motor->dir;
-  motor->speed = (*(int16_t *)&data[4] / 10 * 2 * M_PI / 60) * motor->dir;
-}
+// /**
+//   * @brief          从CAN总线接收到的数据中解析出电机角度和速度
+//   * @attention      后续会根据自己的设备条件调整函数内容
+//   * @author         小企鹅
+//   */
+// void Motor_Update(Motor_s *motor, uint8_t *data)
+// {
+//   motor->angle = (*(int32_t *)&data[0] / 1000.0f - motor->offsetAngle) * motor->dir;
+//   motor->speed = (*(int16_t *)&data[4] / 10 * 2 * M_PI / 60) * motor->dir;
+// }
 
 
 /**
@@ -163,6 +163,19 @@ void Motor_UpdateVoltage(Motor_s *motor)
   else if (voltage < -motor->maxVoltage)
     voltage = -motor->maxVoltage;
   motor->voltage = voltage * motor->dir;
+}
+
+
+/**
+  * @brief          2006电机力矩和电流的映射
+  * @note           
+  * @param          torque 力矩大小
+  * @return         current 电流大小
+  * @author         小企鹅
+  */
+float MotorTorqueToCurrent_2006(float torque)
+{
+  return torque / 0.0005f;
 }
 
 
@@ -189,9 +202,19 @@ void ChassisPostureUpdate()
 
 
 /******* 运动控制模块 *******/
+/**
+  * @brief          目标量更新
+  * @attention      从遥控器获取目标值
+  * @note           根据目标量(target)计算实际控制算法的给定量
+  * @author         小企鹅
+  */
+void TargetUpdate()
+{
+
+};
 
 /**
-  * @brief          目标量更新任务
+  * @brief          控制算法给定量更新任务
   * @attention      这里作为一个被调用的任务函数，而非FreeRTOS任务
   * @note           根据目标量(target)计算实际控制算法的给定量
   * @author         小企鹅

@@ -157,5 +157,6 @@ extern const motor_measure_t *get_chassis_motor_measure_point(uint8_t i);
 
 
 extern void CAN_cmd_joint(int16_t left_joint_1, int16_t left_joint_2, int16_t right_joint_1, int16_t right_joint_2);
+extern void CAN_cmd_drive_wheel(int16_t drive_motor1, int16_t drive_motor2, int16_t motor3, int16_t motor4);
 
 #endif

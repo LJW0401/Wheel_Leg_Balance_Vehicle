@@ -1,9 +1,9 @@
 /**
   ****************************(C) COPYRIGHT 2016 DJI****************************
   * @file       remote_control.c/h
-  * @brief      ң����������ң������ͨ������SBUS��Э�鴫�䣬����DMA���䷽ʽ��ԼCPU
-  *             ��Դ�����ô��ڿ����ж���������������ͬʱ�ṩһЩ��������DMA������
-  *             �ķ�ʽ��֤�Ȳ�ε��ȶ��ԡ�
+  * @brief      遥控器处理，遥控器是通过类似SBUS的协议传输，利用DMA传输方式节约CPU
+  *             资源，利用串口空闲中断来拉起处理函数，同时提供一些掉线重启DMA，串口
+  *             的方式保证热插拔的稳定性。
   * @note       
   * @history
   *  Version    Date            Author          Modification

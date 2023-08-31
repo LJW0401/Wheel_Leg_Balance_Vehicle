@@ -344,20 +344,29 @@ void chassis_task(void const *pvParameters)
         Motor_SetTorque(&rightJoint[1], -rightJointTorque[1]);
 
         //这里还要加一段，将电机扭矩转换为电流大小
+        float driveCurrent[2]={0,0};
         float leftJointCurrent[2]={0,0};
         float rightJointCurrent[2]={0,0};
 
         if (toe_is_error(DBUS_TOE))
         {
-            CAN_cmd_chassis(0, 0, 0, 0);
+            CAN_cmd_drive_wheel(0, 0, 0, 0);
             CAN_cmd_joint(0, 0, 0, 0);
         }
         else
         {
             //send control current
             //发送控制电流
-            CAN_cmd_chassis(0, 0, 0, 0);
-            CAN_cmd_joint(0, 0, 0, 0);
+            CAN_cmd_drive_wheel(
+                                MotorTorqueToCurrent_2006(leftWheel.torque), 
+                                MotorTorqueToCurrent_2006(rightWheel.torque), 
+                                0, 0);
+            CAN_cmd_joint(
+                          MotorTorqueToCurrent_2006(leftJoint[0].torque), 
+                          MotorTorqueToCurrent_2006(leftJoint[1].torque), 
+                          MotorTorqueToCurrent_2006(rightJoint[0].torque), 
+                          MotorTorqueToCurrent_2006(rightJoint[1].torque)
+                          );
         }
         /************************* 新增部分结束 *************************/
 

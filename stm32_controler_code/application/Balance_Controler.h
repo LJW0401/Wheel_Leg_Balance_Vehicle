@@ -167,6 +167,8 @@ extern void ChassisPostureUpdate();
 extern void Ctrl_TargetUpdateTask();
 extern void LegPos_UpdateTask();
 
+extern float MotorTorqueToCurrent_2006(float torque);
+
 #endif
 
 

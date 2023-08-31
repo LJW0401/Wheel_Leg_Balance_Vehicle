@@ -171,6 +171,34 @@ void CAN_cmd_joint(int16_t left_joint_1, int16_t left_joint_2, int16_t right_joi
 
 
 /**
+  * @brief          发送电机控制电流(0x201,0x202,0x203,0x204)
+  * @param[in]      drive_motor1: (0x201) 驱动轮2006电机控制电流, 范围 [-10000,10000]
+  * @param[in]      drive_motor2: (0x202) 驱动轮2006电机控制电流, 范围 [-10000,10000]
+  * @param[in]      motor3: (0x203) 3508电机控制电流, 范围 [-16384,16384]
+  * @param[in]      motor4: (0x204) 3508电机控制电流, 范围 [-16384,16384]
+  * @retval         none
+  */
+void CAN_cmd_drive_wheel(int16_t drive_motor1, int16_t drive_motor2, int16_t motor3, int16_t motor4)
+{
+    uint32_t send_mail_box;
+    chassis_tx_message.StdId = CAN_CHASSIS_ALL_ID;
+    chassis_tx_message.IDE = CAN_ID_STD;
+    chassis_tx_message.RTR = CAN_RTR_DATA;
+    chassis_tx_message.DLC = 0x08;
+    chassis_can_send_data[0] = drive_motor1 >> 8;
+    chassis_can_send_data[1] = drive_motor1;
+    chassis_can_send_data[2] = drive_motor2 >> 8;
+    chassis_can_send_data[3] = drive_motor2;
+    chassis_can_send_data[4] = motor3 >> 8;
+    chassis_can_send_data[5] = motor3;
+    chassis_can_send_data[6] = motor4 >> 8;
+    chassis_can_send_data[7] = motor4;
+
+    HAL_CAN_AddTxMessage(&CHASSIS_CAN, &chassis_tx_message, chassis_can_send_data, &send_mail_box);
+}
+
+
+/**
   * @brief          send CAN packet of ID 0x700, it will set chassis motor 3508 to quick ID setting
   * @param[in]      none
   * @retval         none
