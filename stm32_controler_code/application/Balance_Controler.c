@@ -24,9 +24,21 @@
 #include <math.h>
 #include "INS_task.h"
 
-#define M_PI    3.14159265358979323846
 
 float motorOutRatio = 1.0f; //电机输出电压比例，对所有电机同时有效
+
+Chassis_IMU_t chassis_imu;
+Motor_s leftJoint[2], rightJoint[2], leftWheel, rightWheel; //六个电机对象
+Joint_Length_t leftJointLength =  {0.05f, 0.105f, 0.105f, 0.05f, 0.06f}; //关节长度
+Joint_Length_t rightJointLength = {0.05f, 0.105f, 0.105f, 0.05f, 0.06f}; //关节长度
+Leg_Pos_t leftLegPos, rightLegPos; //左右腿部姿态
+State_Var_s stateVar;
+Target_s target = {0, 0, 0, 0, 0, 0, 0.07f};
+GroundDetector groundDetector = {10, 10, 1, 0};
+CascadePID legAnglePID, legLengthPID; //腿部角度和长度控制PID
+CascadePID yawPID, rollPID; //机身yaw和roll控制PID
+
+StandupState standupState = StandupState_None;
 
 /************** 电机模块 **************/
 /**
@@ -78,6 +90,22 @@ float Motor_CalcRevVolt3508(float speed)
 {
   return 0.000004f * speed * speed * speed - 0.0003f * speed * speed + 0.0266f * speed;
 }
+
+
+/**
+  * @brief          2006电机反电动势计算函数(输入速度，输出反电动势)
+  * @attention      系数需要自行测量并拟合，目前还没测量
+  * @note           测量并拟合出不同电压下对应的电机空载转速，调换自变量和因变量就是本函数。
+  * @note           由于该测量方法忽略阻力对空载转速的影响，最终抵消反电动势时也会抵消大部分电机本身的阻力。
+  * @author         小企鹅
+  * @param          speed 速度
+  */
+float Motor_CalcRevVolt2006(float speed)
+{
+  return 0.000004f * speed * speed * speed - 0.0003f * speed * speed + 0.0266f * speed;
+}
+
+
 
 
 /**
@@ -227,18 +255,18 @@ void LegPos_UpdateTask()
     float legPos[2], legSpd[2];
 
     //计算左腿位置
-		// leg_pos(leftJoint[1].angle, leftJoint[0].angle, legPos);
-    leg_pos(leftJointLength.l1, leftJointLength.l2, leftJointLength.l3, leftJointLength.l4, leftJointLength.l5,
-            leftJoint[1].angle, leftJoint[0].angle, legPos
-            );
+		leg_pos(leftJoint[1].angle, leftJoint[0].angle, legPos);
+    // leg_pos(leftJointLength.l1, leftJointLength.l2, leftJointLength.l3, leftJointLength.l4, leftJointLength.l5,
+            // leftJoint[1].angle, leftJoint[0].angle, legPos
+            // );
     leftLegPos.length = legPos[0];
     leftLegPos.angle = legPos[1];
 
     //计算左腿速度
-		// leg_spd(leftJoint[1].speed, leftJoint[0].speed, leftJoint[1].angle, leftJoint[0].angle, legSpd);
-    leg_spd(leftJoint[1].speed, leftJoint[0].speed, 
-            leftJointLength.l1, leftJointLength.l2, leftJointLength.l3, leftJointLength.l4, leftJointLength.l5,
-            leftJoint[1].angle, leftJoint[0].angle, legSpd);
+		leg_spd(leftJoint[1].speed, leftJoint[0].speed, leftJoint[1].angle, leftJoint[0].angle, legSpd);
+    // leg_spd(leftJoint[1].speed, leftJoint[0].speed, 
+    //         leftJointLength.l1, leftJointLength.l2, leftJointLength.l3, leftJointLength.l4, leftJointLength.l5,
+    //         leftJoint[1].angle, leftJoint[0].angle, legSpd);
     leftLegPos.dLength = legSpd[0];
     leftLegPos.dAngle = legSpd[1];
 
@@ -247,18 +275,18 @@ void LegPos_UpdateTask()
     lastLeftDLength = leftLegPos.dLength;
 
     //计算右腿位置
-		// leg_pos(rightJoint[1].angle, rightJoint[0].angle, legPos);
-    leg_pos(rightJointLength.l1, rightJointLength.l2, rightJointLength.l3, rightJointLength.l4, rightJointLength.l5,
-            rightJoint[1].angle, rightJoint[0].angle, legPos
-            );
+		leg_pos(rightJoint[1].angle, rightJoint[0].angle, legPos);
+    // leg_pos(rightJointLength.l1, rightJointLength.l2, rightJointLength.l3, rightJointLength.l4, rightJointLength.l5,
+    //         rightJoint[1].angle, rightJoint[0].angle, legPos
+    //         );
     rightLegPos.length = legPos[0];
     rightLegPos.angle = legPos[1];
 
     //计算右腿速度
-		// leg_spd(rightJoint[1].speed, rightJoint[0].speed, rightJoint[1].angle, rightJoint[0].angle, legSpd);
-    leg_spd(rightJoint[1].speed, rightJoint[0].speed, 
-            rightJointLength.l1, rightJointLength.l2, rightJointLength.l3, rightJointLength.l4, rightJointLength.l5,
-            rightJoint[1].angle, rightJoint[0].angle, legSpd);
+		leg_spd(rightJoint[1].speed, rightJoint[0].speed, rightJoint[1].angle, rightJoint[0].angle, legSpd);
+    // leg_spd(rightJoint[1].speed, rightJoint[0].speed, 
+    //         rightJointLength.l1, rightJointLength.l2, rightJointLength.l3, rightJointLength.l4, rightJointLength.l5,
+    //         rightJoint[1].angle, rightJoint[0].angle, legSpd);
     rightLegPos.dLength = legSpd[0];
     rightLegPos.dAngle = legSpd[1];
 
@@ -313,189 +341,189 @@ void Ctrl_StandupPrepareTask(void *arg)
 }
 
 
-/**
-  * @todo           将函数转换为c函数
-  * 
-  * @brief          主控制任务
-  * @attention      这一块应该整合到chassis_task中     
-  * @author         小企鹅
-  */
-void Ctrl_Task(void *arg)
-{
-  const float wheelRadius = 0.026f; //m，车轮半径
-  const float legMass = 0.05f; //kg，腿部质量
+// /**
+//   * @todo           将函数转换为c函数
+//   * 
+//   * @brief          主控制任务
+//   * @attention      这一块应该整合到chassis_task中     
+//   * @author         小企鹅
+//   */
+// void Ctrl_Task(void *arg)
+// {
+//   const float wheelRadius = 0.026f; //m，车轮半径
+//   const float legMass = 0.05f; //kg，腿部质量
 
-  TickType_t xLastWakeTime = xTaskGetTickCount();
+//   TickType_t xLastWakeTime = xTaskGetTickCount();
 
-  //手动为反馈矩阵和输出叠加一个系数，用于手动优化控制效果
-  float kRatio[2][6] = {{1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f},
-                        {1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f}};
-  float lqrTpRatio = 1.0f, lqrTRatio = 1.0f;
+//   //手动为反馈矩阵和输出叠加一个系数，用于手动优化控制效果
+//   float kRatio[2][6] = {{1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f},
+//                         {1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f}};
+//   float lqrTpRatio = 1.0f, lqrTRatio = 1.0f;
 
-  //设定初始目标值
-  target.rollAngle = 0.0f;
-  target.legLength = 0.07f;
-  target.speed = 0.0f;
-  target.position = (leftWheel.angle + rightWheel.angle) / 2 * wheelRadius;
+//   //设定初始目标值
+//   target.rollAngle = 0.0f;
+//   target.legLength = 0.07f;
+//   target.speed = 0.0f;
+//   target.position = (leftWheel.angle + rightWheel.angle) / 2 * wheelRadius;
 
-  // while (1)
-  // {
-    //计算状态变量
-    stateVar.phi = chassis_imu.pitch;
-    stateVar.dPhi = chassis_imu.pitchSpd;
-    stateVar.x = (leftWheel.angle + rightWheel.angle) / 2 * wheelRadius;
-    stateVar.dx = (leftWheel.speed + rightWheel.speed) / 2 * wheelRadius;
-    stateVar.theta = (leftLegPos.angle + rightLegPos.angle) / 2 - M_PI_2 - chassis_imu.pitch;
-    stateVar.dTheta = (leftLegPos.dAngle + rightLegPos.dAngle) / 2 - chassis_imu.pitchSpd;
-    float legLength = (leftLegPos.length + rightLegPos.length) / 2;
-    float dLegLength = (leftLegPos.dLength + rightLegPos.dLength) / 2;
+//   // while (1)
+//   // {
+//     //计算状态变量
+//     stateVar.phi = chassis_imu.pitch;
+//     stateVar.dPhi = chassis_imu.pitchSpd;
+//     stateVar.x = (leftWheel.angle + rightWheel.angle) / 2 * wheelRadius;
+//     stateVar.dx = (leftWheel.speed + rightWheel.speed) / 2 * wheelRadius;
+//     stateVar.theta = (leftLegPos.angle + rightLegPos.angle) / 2 - M_PI_2 - chassis_imu.pitch;
+//     stateVar.dTheta = (leftLegPos.dAngle + rightLegPos.dAngle) / 2 - chassis_imu.pitchSpd;
+//     float legLength = (leftLegPos.length + rightLegPos.length) / 2;
+//     float dLegLength = (leftLegPos.dLength + rightLegPos.dLength) / 2;
 
-    //如果正在站立准备状态，则不进行后续控制
-    if(standupState == StandupState_Prepare)
-    {
-      vTaskDelayUntil(&xLastWakeTime, 4);
-      continue;
-    }
+//     //如果正在站立准备状态，则不进行后续控制
+//     if(standupState == StandupState_Prepare)
+//     {
+//       vTaskDelayUntil(&xLastWakeTime, 4);
+//       continue;
+//     }
 
-    //计算LQR反馈矩阵
-    float kRes[12] = {0}, k[2][6] = {0};
-    lqr_k(legLength, kRes);
-    if(groundDetector.isTouchingGround) //正常触地状态
-    {
-      for (int i = 0; i < 6; i++)
-      {
-        for (int j = 0; j < 2; j++)
-          k[j][i] = kRes[i * 2 + j] * kRatio[j][i];
-      }
-    }
-    else //腿部离地状态，手动修改反馈矩阵，仅保持腿部竖直
-    {
-      memset(k, 0, sizeof(k));
-      k[1][0] = kRes[1] * -2;
-      k[1][1] = kRes[3] * -10;
-    }
+//     //计算LQR反馈矩阵
+//     float kRes[12] = {0}, k[2][6] = {0};
+//     lqr_k(legLength, kRes);
+//     if(groundDetector.isTouchingGround) //正常触地状态
+//     {
+//       for (int i = 0; i < 6; i++)
+//       {
+//         for (int j = 0; j < 2; j++)
+//           k[j][i] = kRes[i * 2 + j] * kRatio[j][i];
+//       }
+//     }
+//     else //腿部离地状态，手动修改反馈矩阵，仅保持腿部竖直
+//     {
+//       memset(k, 0, sizeof(k));
+//       k[1][0] = kRes[1] * -2;
+//       k[1][1] = kRes[3] * -10;
+//     }
 
-    //准备状态变量
-    float x[6] = {stateVar.theta, stateVar.dTheta, stateVar.x, stateVar.dx, stateVar.phi, stateVar.dPhi};
-    //与给定量作差
-    x[2] -= target.position;
-    x[3] -= target.speed;
+//     //准备状态变量
+//     float x[6] = {stateVar.theta, stateVar.dTheta, stateVar.x, stateVar.dx, stateVar.phi, stateVar.dPhi};
+//     //与给定量作差
+//     x[2] -= target.position;
+//     x[3] -= target.speed;
 
-    //矩阵相乘，计算LQR输出
-    float lqrOutT = k[0][0] * x[0] + k[0][1] * x[1] + k[0][2] * x[2] + k[0][3] * x[3] + k[0][4] * x[4] + k[0][5] * x[5];
-    float lqrOutTp = k[1][0] * x[0] + k[1][1] * x[1] + k[1][2] * x[2] + k[1][3] * x[3] + k[1][4] * x[4] + k[1][5] * x[5];
+//     //矩阵相乘，计算LQR输出
+//     float lqrOutT = k[0][0] * x[0] + k[0][1] * x[1] + k[0][2] * x[2] + k[0][3] * x[3] + k[0][4] * x[4] + k[0][5] * x[5];
+//     float lqrOutTp = k[1][0] * x[0] + k[1][1] * x[1] + k[1][2] * x[2] + k[1][3] * x[3] + k[1][4] * x[4] + k[1][5] * x[5];
 
-    //计算yaw轴PID输出
-    PID_CascadeCalc(&yawPID, target.yawAngle, chassis_imu.yaw, chassis_imu.yawSpd);
+//     //计算yaw轴PID输出
+//     PID_CascadeCalc(&yawPID, target.yawAngle, chassis_imu.yaw, chassis_imu.yawSpd);
     
-    //设定车轮电机输出扭矩，为LQR和yaw轴PID输出的叠加
-    if(groundDetector.isTouchingGround) //正常接地状态
-    {
-      Motor_SetTorque(&leftWheel, -lqrOutT * lqrTRatio - yawPID.output);
-      Motor_SetTorque(&rightWheel, -lqrOutT * lqrTRatio + yawPID.output);
-    }
-    else //腿部离地状态，关闭车轮电机
-    {
-      Motor_SetTorque(&leftWheel, 0);
-      Motor_SetTorque(&rightWheel, 0);
-    }
+//     //设定车轮电机输出扭矩，为LQR和yaw轴PID输出的叠加
+//     if(groundDetector.isTouchingGround) //正常接地状态
+//     {
+//       Motor_SetTorque(&leftWheel, -lqrOutT * lqrTRatio - yawPID.output);
+//       Motor_SetTorque(&rightWheel, -lqrOutT * lqrTRatio + yawPID.output);
+//     }
+//     else //腿部离地状态，关闭车轮电机
+//     {
+//       Motor_SetTorque(&leftWheel, 0);
+//       Motor_SetTorque(&rightWheel, 0);
+//     }
 
-    //根据离地状态修改目标腿长，并计算腿长PID输出
-    PID_CascadeCalc(&legLengthPID, (groundDetector.isTouchingGround && !groundDetector.isCuchioning) ? target.legLength : 0.12f, legLength, dLegLength);
-    //计算roll轴PID输出
-    PID_CascadeCalc(&rollPID, target.rollAngle, chassis_imu.roll, chassis_imu.rollSpd);
-    //根据离地状态计算左右腿推力，若离地则不考虑roll轴PID输出和前馈量
-    float leftForce = legLengthPID.output + ((groundDetector.isTouchingGround && !groundDetector.isCuchioning) ? 6-rollPID.output : 0);
-    float rightForce = legLengthPID.output + ((groundDetector.isTouchingGround && !groundDetector.isCuchioning) ? 6+rollPID.output : 0);
-    if(leftLegPos.length > 0.12f) //保护腿部不能伸太长
-      leftForce -= (leftLegPos.length - 0.12f) * 100;
-    if(rightLegPos.length > 0.12f)
-      rightForce -= (rightLegPos.length - 0.12f) * 100;
+//     //根据离地状态修改目标腿长，并计算腿长PID输出
+//     PID_CascadeCalc(&legLengthPID, (groundDetector.isTouchingGround && !groundDetector.isCuchioning) ? target.legLength : 0.12f, legLength, dLegLength);
+//     //计算roll轴PID输出
+//     PID_CascadeCalc(&rollPID, target.rollAngle, chassis_imu.roll, chassis_imu.rollSpd);
+//     //根据离地状态计算左右腿推力，若离地则不考虑roll轴PID输出和前馈量
+//     float leftForce = legLengthPID.output + ((groundDetector.isTouchingGround && !groundDetector.isCuchioning) ? 6-rollPID.output : 0);
+//     float rightForce = legLengthPID.output + ((groundDetector.isTouchingGround && !groundDetector.isCuchioning) ? 6+rollPID.output : 0);
+//     if(leftLegPos.length > 0.12f) //保护腿部不能伸太长
+//       leftForce -= (leftLegPos.length - 0.12f) * 100;
+//     if(rightLegPos.length > 0.12f)
+//       rightForce -= (rightLegPos.length - 0.12f) * 100;
     
-    //计算左右腿的地面支持力
-    groundDetector.leftSupportForce = leftForce + legMass * 9.8f - legMass * (leftLegPos.ddLength - chassis_imu.zAccel);
-    groundDetector.rightSupportForce = rightForce + legMass * 9.8f - legMass * (rightLegPos.ddLength - chassis_imu.zAccel);
-    //更新离地检测器数据
-    static uint32_t lastTouchTime = 0;
-    // bool_t isTouchingGround = groundDetector.leftSupportForce > 3 && groundDetector.rightSupportForce > 3; //判断当前瞬间是否接地
-    uint8_t isTouchingGround = groundDetector.leftSupportForce > 3 && groundDetector.rightSupportForce > 3; //判断当前瞬间是否接地
-    if(!isTouchingGround && millis() - lastTouchTime < 1000) //若上次触地时间距离现在不超过1s，则认为当前瞬间接地，避免弹跳导致误判
-      // isTouchingGround = true;
-      isTouchingGround = 1;
-    if(!groundDetector.isTouchingGround && isTouchingGround) //判断转为接地状态，标记进入缓冲状态
-    {
-      target.position = stateVar.x;
-      // groundDetector.isCuchioning = true;
-      groundDetector.isCuchioning = 1;
-      lastTouchTime = millis();
-    }
-    if(groundDetector.isCuchioning && legLength < target.legLength) //缓冲状态直到腿长压缩到目标腿长结束
-      // groundDetector.isCuchioning = false;
-      groundDetector.isCuchioning = 0;
-    groundDetector.isTouchingGround = isTouchingGround;
+//     //计算左右腿的地面支持力
+//     groundDetector.leftSupportForce = leftForce + legMass * 9.8f - legMass * (leftLegPos.ddLength - chassis_imu.zAccel);
+//     groundDetector.rightSupportForce = rightForce + legMass * 9.8f - legMass * (rightLegPos.ddLength - chassis_imu.zAccel);
+//     //更新离地检测器数据
+//     static uint32_t lastTouchTime = 0;
+//     // bool_t isTouchingGround = groundDetector.leftSupportForce > 3 && groundDetector.rightSupportForce > 3; //判断当前瞬间是否接地
+//     uint8_t isTouchingGround = groundDetector.leftSupportForce > 3 && groundDetector.rightSupportForce > 3; //判断当前瞬间是否接地
+//     if(!isTouchingGround && millis() - lastTouchTime < 1000) //若上次触地时间距离现在不超过1s，则认为当前瞬间接地，避免弹跳导致误判
+//       // isTouchingGround = true;
+//       isTouchingGround = 1;
+//     if(!groundDetector.isTouchingGround && isTouchingGround) //判断转为接地状态，标记进入缓冲状态
+//     {
+//       target.position = stateVar.x;
+//       // groundDetector.isCuchioning = true;
+//       groundDetector.isCuchioning = 1;
+//       lastTouchTime = millis();
+//     }
+//     if(groundDetector.isCuchioning && legLength < target.legLength) //缓冲状态直到腿长压缩到目标腿长结束
+//       // groundDetector.isCuchioning = false;
+//       groundDetector.isCuchioning = 0;
+//     groundDetector.isTouchingGround = isTouchingGround;
 
-    //计算左右腿角度差PID输出
-    PID_CascadeCalc(&legAnglePID, 0, leftLegPos.angle - rightLegPos.angle, leftLegPos.dAngle - rightLegPos.dAngle);
+//     //计算左右腿角度差PID输出
+//     PID_CascadeCalc(&legAnglePID, 0, leftLegPos.angle - rightLegPos.angle, leftLegPos.dAngle - rightLegPos.dAngle);
     
-    //计算髋关节扭矩输出，为LQR输出和左右腿角度差PID输出的叠加
-    float leftTp = lqrOutTp * lqrTpRatio - legAnglePID.output * (leftLegPos.length / 0.07f);
-    float rightTp = lqrOutTp * lqrTpRatio + legAnglePID.output * (rightLegPos.length / 0.07f);
+//     //计算髋关节扭矩输出，为LQR输出和左右腿角度差PID输出的叠加
+//     float leftTp = lqrOutTp * lqrTpRatio - legAnglePID.output * (leftLegPos.length / 0.07f);
+//     float rightTp = lqrOutTp * lqrTpRatio + legAnglePID.output * (rightLegPos.length / 0.07f);
     
-    //使用VMC计算各关节电机输出扭矩
-    float leftJointTorque[2]={0};
-    leg_conv(leftForce, leftTp, leftJoint[1].angle, leftJoint[0].angle, leftJointTorque);
-    float rightJointTorque[2]={0};
-    leg_conv(rightForce, rightTp, rightJoint[1].angle, rightJoint[0].angle, rightJointTorque);
+//     //使用VMC计算各关节电机输出扭矩
+//     float leftJointTorque[2]={0};
+//     leg_conv(leftForce, leftTp, leftJoint[1].angle, leftJoint[0].angle, leftJointTorque);
+//     float rightJointTorque[2]={0};
+//     leg_conv(rightForce, rightTp, rightJoint[1].angle, rightJoint[0].angle, rightJointTorque);
     
-    //保护腿部角度不超限
-    float leftTheta = leftLegPos.angle - chassis_imu.pitch - M_PI_2;
-    float rightTheta = rightLegPos.angle - chassis_imu.pitch - M_PI_2;
-    #define PROTECT_CONDITION (leftTheta < -M_PI_4 || leftTheta > M_PI_4 || \
-                   rightTheta < -M_PI_4 || rightTheta > M_PI_4 || \
-                   chassis_imu.pitch > M_PI_4 || chassis_imu.pitch < -M_PI_4) //腿部角度超限保护条件
-    if(PROTECT_CONDITION) //当前达到保护条件
-    {
-      if(standupState == StandupState_None) //未处于起立过程中
-      {
-        //关闭所有电机
-        Motor_SetTorque(&leftWheel, 0);
-        Motor_SetTorque(&rightWheel, 0);
-        Motor_SetTorque(&leftJoint[0], 0);
-        Motor_SetTorque(&leftJoint[1], 0);
-        Motor_SetTorque(&rightJoint[0], 0);
-        Motor_SetTorque(&rightJoint[1], 0);
-        //阻塞等待腿部角度回到安全范围，再等待4s后恢复控制(若中途触发了起立则在起立准备完成后直接跳出)
-        while(PROTECT_CONDITION && standupState == StandupState_None)
-        {
-          leftTheta = leftLegPos.angle - chassis_imu.pitch - M_PI_2;
-          rightTheta = rightLegPos.angle - chassis_imu.pitch - M_PI_2;
-          vTaskDelay(100);
-        }
-        if(standupState == StandupState_None)
-          vTaskDelay(4000);
-        //退出保护后设定目标位置和yaw角度为当前值
-        target.position = (leftWheel.angle + rightWheel.angle) / 2 * wheelRadius;
-        target.yawAngle = chassis_imu.yaw;
-        continue;
-      }
-      if(standupState == StandupState_Standup && (leftTheta < -M_PI_4 || rightTheta > M_PI_4))
-        standupState = StandupState_None;
-    }
-    else
-    {
-      if(standupState == StandupState_Standup) //未达到保护条件且处于起立过程中，说明起立完成，退出起立过程
-        standupState = StandupState_None;
-    }
+//     //保护腿部角度不超限
+//     float leftTheta = leftLegPos.angle - chassis_imu.pitch - M_PI_2;
+//     float rightTheta = rightLegPos.angle - chassis_imu.pitch - M_PI_2;
+//     #define PROTECT_CONDITION (leftTheta < -M_PI_4 || leftTheta > M_PI_4 || \
+//                    rightTheta < -M_PI_4 || rightTheta > M_PI_4 || \
+//                    chassis_imu.pitch > M_PI_4 || chassis_imu.pitch < -M_PI_4) //腿部角度超限保护条件
+//     if(PROTECT_CONDITION) //当前达到保护条件
+//     {
+//       if(standupState == StandupState_None) //未处于起立过程中
+//       {
+//         //关闭所有电机
+//         Motor_SetTorque(&leftWheel, 0);
+//         Motor_SetTorque(&rightWheel, 0);
+//         Motor_SetTorque(&leftJoint[0], 0);
+//         Motor_SetTorque(&leftJoint[1], 0);
+//         Motor_SetTorque(&rightJoint[0], 0);
+//         Motor_SetTorque(&rightJoint[1], 0);
+//         //阻塞等待腿部角度回到安全范围，再等待4s后恢复控制(若中途触发了起立则在起立准备完成后直接跳出)
+//         while(PROTECT_CONDITION && standupState == StandupState_None)
+//         {
+//           leftTheta = leftLegPos.angle - chassis_imu.pitch - M_PI_2;
+//           rightTheta = rightLegPos.angle - chassis_imu.pitch - M_PI_2;
+//           vTaskDelay(100);
+//         }
+//         if(standupState == StandupState_None)
+//           vTaskDelay(4000);
+//         //退出保护后设定目标位置和yaw角度为当前值
+//         target.position = (leftWheel.angle + rightWheel.angle) / 2 * wheelRadius;
+//         target.yawAngle = chassis_imu.yaw;
+//         continue;
+//       }
+//       if(standupState == StandupState_Standup && (leftTheta < -M_PI_4 || rightTheta > M_PI_4))
+//         standupState = StandupState_None;
+//     }
+//     else
+//     {
+//       if(standupState == StandupState_Standup) //未达到保护条件且处于起立过程中，说明起立完成，退出起立过程
+//         standupState = StandupState_None;
+//     }
 
-    //设定关节电机输出扭矩
-    Motor_SetTorque(&leftJoint[0], -leftJointTorque[0]);
-    Motor_SetTorque(&leftJoint[1], -leftJointTorque[1]);
-    Motor_SetTorque(&rightJoint[0], -rightJointTorque[0]);
-    Motor_SetTorque(&rightJoint[1], -rightJointTorque[1]);
+//     //设定关节电机输出扭矩
+//     Motor_SetTorque(&leftJoint[0], -leftJointTorque[0]);
+//     Motor_SetTorque(&leftJoint[1], -leftJointTorque[1]);
+//     Motor_SetTorque(&rightJoint[0], -rightJointTorque[0]);
+//     Motor_SetTorque(&rightJoint[1], -rightJointTorque[1]);
 
-    // vTaskDelayUntil(&xLastWakeTime, 4); //4ms控制周期
-  // }
-}
+//     // vTaskDelayUntil(&xLastWakeTime, 4); //4ms控制周期
+//   // }
+// }
 
 /**
   * @brief          控制模块初始化

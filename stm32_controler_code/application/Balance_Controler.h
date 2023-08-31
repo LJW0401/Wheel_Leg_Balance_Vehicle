@@ -19,6 +19,8 @@
 
   ****************************(C) COPYRIGHT 2023 POLARBEAR****************************
   */
+#ifndef BALANCE_CONTROLER_H
+#define BALANCE_CONTROLER_H
 
 #include "struct_typedef.h"
 //导入轮腿模型
@@ -26,8 +28,7 @@
 #include "leg_model/leg_pos.h"
 #include "leg_model/leg_spd.h"
 #include "leg_model/lqr_k.h"
-
-#include "PID.h"
+#include "leg_model/PID.h"
 
 
 /* Useful constants.  */
@@ -65,7 +66,7 @@ typedef struct
   float yawSpd, pitchSpd, rollSpd; // rad/s
   float zAccel; // m/s^2
 }Chassis_IMU_t;
-Chassis_IMU_t chassis_imu;
+
 
 /** @brief      电机结构体
   * @note       leftJoint[0]:左前关节电机, leftJoint[1]:左后关节电机, leftWheel:左车轮电机
@@ -80,7 +81,6 @@ typedef struct
 	float dir;				   // 1 or -1
 	float (*calcRevVolt)(float speed); // 指向反电动势计算函数
 }Motor_s;
-Motor_s leftJoint[2], rightJoint[2], leftWheel, rightWheel; //六个电机对象
 
 
 /** @brief      关节长度结构体
@@ -90,8 +90,6 @@ typedef struct
 {
   float l1, l2, l3, l4, l5; // m
 }Joint_Length_t;
-Joint_Length_t leftJointLength = {0.05f, 0.105f, 0.105f, 0.05f, 0.06f}; //关节长度
-Joint_Length_t rightJointLength = {0.05f, 0.105f, 0.105f, 0.05f, 0.06f}; //关节长度
 // l1=0.05;l2=0.105;l3=l2;l4=l1;l5=0.06; % @遥想星空 的腿部杆长
 
 /** @brief      腿部姿态结构体
@@ -103,7 +101,6 @@ typedef struct
   float dAngle, dLength; // rad/s, m/s
   float ddLength;       // m/s^2
 }Leg_Pos_t;
-Leg_Pos_t leftLegPos, rightLegPos; //左右腿部姿态
 
 
 /** @brief      状态变量结构体
@@ -115,7 +112,6 @@ typedef struct
   float x, dx;
   float phi, dPhi;
 }State_Var_s; 
-State_Var_s stateVar;
 
 
 /** @brief      目标量结构体
@@ -131,7 +127,6 @@ typedef struct
   float rollAngle; // rad
   float legLength; // m
 } Target_s;
-Target_s target = {0, 0, 0, 0, 0, 0, 0.07f};
 
 
 /** @brief      触地检测数据结构体
@@ -142,21 +137,29 @@ typedef struct
   float leftSupportForce, rightSupportForce;
   uint8_t isTouchingGround, isCuchioning;
 } GroundDetector;
-GroundDetector groundDetector = {10, 10, 1, 0};
 
 
 /** @brief      站立过程状态枚举量
   * @note       无
   */
-enum StandupState {
+typedef enum{
   StandupState_None,
   StandupState_Prepare,
   StandupState_Standup,
-} standupState = StandupState_None;
+}StandupState;
 
+extern Chassis_IMU_t chassis_imu;
+extern Motor_s leftJoint[2], rightJoint[2], leftWheel, rightWheel; //六个电机对象
+extern Joint_Length_t leftJointLength; //关节长度
+extern Joint_Length_t rightJointLength; //关节长度
+extern Leg_Pos_t leftLegPos, rightLegPos; //左右腿部姿态
+extern State_Var_s stateVar;
+extern Target_s target;
+extern GroundDetector groundDetector;
+extern CascadePID legAnglePID, legLengthPID; //腿部角度和长度控制PID
+extern CascadePID yawPID, rollPID; //机身yaw和roll控制PID
 
-CascadePID legAnglePID, legLengthPID; //腿部角度和长度控制PID
-CascadePID yawPID, rollPID; //机身yaw和roll控制PID
+extern StandupState standupState;
 
 extern void Motor_SetTorque(Motor_s *motor, float torque);
 
@@ -164,7 +167,7 @@ extern void ChassisPostureUpdate();
 extern void Ctrl_TargetUpdateTask();
 extern void LegPos_UpdateTask();
 
-
+#endif
 
 
 /**以下先作为一个储备吧，

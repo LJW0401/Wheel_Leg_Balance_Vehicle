@@ -14,6 +14,9 @@
         "freertos.h": "c",
         "chassis_task.h": "c",
         "can_receive.h": "c",
-        "bsp_rng.h": "c"
+        "bsp_rng.h": "c",
+        "lqr_k.h": "c",
+        "pid.h": "c",
+        "chassis_power_control.h": "c"
     }
 }

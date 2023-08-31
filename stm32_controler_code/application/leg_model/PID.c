@@ -1,8 +1,8 @@
-/****************PIDÔËËã****************/
+/****************PIDè¿ç®—****************/
 
 #include "./PID.h"
 
-//³õÊ¼»¯pid²ÎÊı
+//åˆå§‹åŒ–pidå‚æ•°
 void PID_Init(PID *pid,float p,float i,float d,float maxI,float maxOut)
 {
 	pid->kp=p;
@@ -14,38 +14,38 @@ void PID_Init(PID *pid,float p,float i,float d,float maxI,float maxOut)
 	pid->errLpfRatio=1;
 }
 
-//µ¥¼¶pid¼ÆËã
+//å•çº§pidè®¡ç®—
 void PID_SingleCalc(PID *pid,float reference,float feedback)
 {
-	//¸üĞÂÊı¾İ
+	//æ›´æ–°æ•°æ®
 	pid->lastError=pid->error;
-	if(ABS(reference-feedback) < pid->deadzone)//ÈôÎó²îÔÚËÀÇøÄÚÔòerrorÖ±½ÓÖÃ0
+	if(ABS(reference-feedback) < pid->deadzone)//è‹¥è¯¯å·®åœ¨æ­»åŒºå†…åˆ™errorç›´æ¥ç½®0
 		pid->error=0;
 	else
 		pid->error=reference-feedback;
-	//µÍÍ¨ÂË²¨
+	//ä½é€šæ»¤æ³¢
 	pid->error=pid->error*pid->errLpfRatio+pid->lastError*(1-pid->errLpfRatio);
-	//¼ÆËãÎ¢·Ö
+	//è®¡ç®—å¾®åˆ†
 	pid->output=(pid->error-pid->lastError)*pid->kd;
-	//¼ÆËã±ÈÀı
+	//è®¡ç®—æ¯”ä¾‹
 	pid->output+=pid->error*pid->kp;
-	//¼ÆËã»ı·Ö
+	//è®¡ç®—ç§¯åˆ†
 	pid->integral+=pid->error*pid->ki;
-	LIMIT(pid->integral,-pid->maxIntegral,pid->maxIntegral);//»ı·ÖÏŞ·ù
+	LIMIT(pid->integral,-pid->maxIntegral,pid->maxIntegral);//ç§¯åˆ†é™å¹…
 	pid->output+=pid->integral;
-	//Êä³öÏŞ·ù
+	//è¾“å‡ºé™å¹…
 	LIMIT(pid->output,-pid->maxOutput,pid->maxOutput);
 }
 
-//´®¼¶pid¼ÆËã
+//ä¸²çº§pidè®¡ç®—
 void PID_CascadeCalc(CascadePID *pid,float angleRef,float angleFdb,float speedFdb)
 {
-	PID_SingleCalc(&pid->outer,angleRef,angleFdb);//¼ÆËãÍâ»·(½Ç¶È»·)
-	PID_SingleCalc(&pid->inner,pid->outer.output,speedFdb);//¼ÆËãÄÚ»·(ËÙ¶È»·)
+	PID_SingleCalc(&pid->outer,angleRef,angleFdb);//è®¡ç®—å¤–ç¯(è§’åº¦ç¯)
+	PID_SingleCalc(&pid->inner,pid->outer.output,speedFdb);//è®¡ç®—å†…ç¯(é€Ÿåº¦ç¯)
 	pid->output=pid->inner.output;
 }
 
-//Çå¿ÕÒ»¸öpidµÄÀúÊ·Êı¾İ
+//æ¸…ç©ºä¸€ä¸ªpidçš„å†å²æ•°æ®
 void PID_Clear(PID *pid)
 {
 	pid->error=0;
@@ -54,19 +54,19 @@ void PID_Clear(PID *pid)
 	pid->output=0;
 }
 
-//ÖØĞÂÉè¶¨pidÊä³öÏŞ·ù
+//é‡æ–°è®¾å®špidè¾“å‡ºé™å¹…
 void PID_SetMaxOutput(PID *pid,float maxOut)
 {
 	pid->maxOutput=maxOut;
 }
 
-//ÉèÖÃPIDËÀÇø
+//è®¾ç½®PIDæ­»åŒº
 void PID_SetDeadzone(PID *pid,float deadzone)
 {
 	pid->deadzone=deadzone;
 }
 
-//ÉèÖÃLPF±ÈÀı
+//è®¾ç½®LPFæ¯”ä¾‹
 void PID_SetErrLpfRatio(PID *pid,float ratio)
 {
 	pid->errLpfRatio=ratio;
