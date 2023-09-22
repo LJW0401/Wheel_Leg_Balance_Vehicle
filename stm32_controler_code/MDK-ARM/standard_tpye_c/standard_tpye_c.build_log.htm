@@ -27,28 +27,18 @@ Project File Date:  08/31/2023
 <h2>Output:</h2>
 *** Using Compiler 'V5.06 update 4 (build 422)', folder: 'D:\#LjwApp\Keil5\ARM\ARMCC\Bin'
 Build target 'standard_robot'
-compiling Balance_Controler.c...
-..\application\Balance_Controler.h(166): warning:  #1295-D: Deprecated declaration ChassisPostureUpdate - give arg types
-  extern void ChassisPostureUpdate();
-..\application\Balance_Controler.h(167): warning:  #1295-D: Deprecated declaration Ctrl_TargetUpdateTask - give arg types
-  extern void Ctrl_TargetUpdateTask();
-..\application\Balance_Controler.h(168): warning:  #1295-D: Deprecated declaration LegPos_UpdateTask - give arg types
-  extern void LegPos_UpdateTask();
-..\application\Balance_Controler.c(315): warning:  #1035-D: single-precision operand implicitly converted to double-precision
-    while(leftLegPos.angle < 
-_3PI_4)
-..\application\Balance_Controler.c(316): warning:  #223-D: function "vTaskDelay" declared implicitly
-      vTaskDelay(5);
-..\application\Balance_Controler.c(319): warning:  #223-D: function "vTaskDelay" declared implicitly
-    vTaskDelay(1000);
-..\application\Balance_Controler.c(324): warning:  #1035-D: single-precision operand implicitly converted to double-precision
-    while(rightLegPos.angle > 
-_PI_4)
-..\application\Balance_Controler.c(340): warning:  #223-D: function "vTaskDelete" declared implicitly
-    vTaskDelete(NULL);
-..\application\Balance_Controler.c(684): warning:  #1-D: last line of file ends without a newline
-  // }
-..\application\Balance_Controler.c: 9 warnings, 0 errors
+compiling calibrate_task.c...
+compiling chassis_behaviour.c...
+compiling gimbal_behaviour.c...
+compiling remote_control.c...
+compiling chassis_power_control.c...
+compiling gimbal_task.c...
+compiling main.c...
+compiling freertos.c...
+compiling CAN_receive.c...
+..\application\CAN_receive.c(380): warning:  #1-D: last line of file ends without a newline
+  }
+..\application\CAN_receive.c: 1 warning, 0 errors
 compiling chassis_task.c...
 ..\application\Balance_Controler.h(166): warning:  #1295-D: Deprecated declaration ChassisPostureUpdate - give arg types
   extern void ChassisPostureUpdate();
@@ -95,15 +85,41 @@ _PI_4 || rightTheta >
 _PI_4))
 ..\application\chassis_task.c(266): warning:  #177-D: variable "lastTouchTime"  was declared but never referenced
           static uint32_t lastTouchTime = 0;
-..\application\chassis_task.c(347): warning:  #177-D: variable "leftJointCurrent"  was declared but never referenced
+..\application\chassis_task.c(347): warning:  #177-D: variable "driveCurrent"  was declared but never referenced
+          float driveCurrent[2]={0,0};
+..\application\chassis_task.c(348): warning:  #177-D: variable "leftJointCurrent"  was declared but never referenced
           float leftJointCurrent[2]={0,0};
-..\application\chassis_task.c(348): warning:  #177-D: variable "rightJointCurrent"  was declared but never referenced
+..\application\chassis_task.c(349): warning:  #177-D: variable "rightJointCurrent"  was declared but never referenced
           float rightJointCurrent[2]={0,0};
-..\application\chassis_task.c: 18 warnings, 0 errors
+..\application\chassis_task.c: 19 warnings, 0 errors
+compiling Balance_Controler.c...
+..\application\Balance_Controler.h(166): warning:  #1295-D: Deprecated declaration ChassisPostureUpdate - give arg types
+  extern void ChassisPostureUpdate();
+..\application\Balance_Controler.h(167): warning:  #1295-D: Deprecated declaration Ctrl_TargetUpdateTask - give arg types
+  extern void Ctrl_TargetUpdateTask();
+..\application\Balance_Controler.h(168): warning:  #1295-D: Deprecated declaration LegPos_UpdateTask - give arg types
+  extern void LegPos_UpdateTask();
+..\application\Balance_Controler.c(338): warning:  #1035-D: single-precision operand implicitly converted to double-precision
+    while(leftLegPos.angle < 
+_3PI_4)
+..\application\Balance_Controler.c(339): warning:  #223-D: function "vTaskDelay" declared implicitly
+      vTaskDelay(5);
+..\application\Balance_Controler.c(342): warning:  #223-D: function "vTaskDelay" declared implicitly
+    vTaskDelay(1000);
+..\application\Balance_Controler.c(347): warning:  #1035-D: single-precision operand implicitly converted to double-precision
+    while(rightLegPos.angle > 
+_PI_4)
+..\application\Balance_Controler.c(363): warning:  #223-D: function "vTaskDelete" declared implicitly
+    vTaskDelete(NULL);
+..\application\Balance_Controler.c(707): warning:  #1-D: last line of file ends without a newline
+  // }
+..\application\Balance_Controler.c: 9 warnings, 0 errors
+compiling servo_task.c...
+compiling shoot.c...
 linking...
-Program Size: Code=114476 RO-data=13816 RW-data=1276 ZI-data=58532  
+Program Size: Code=114652 RO-data=13816 RW-data=1276 ZI-data=58532  
 FromELF: creating hex file...
-"standard_tpye_c\standard_tpye_c.axf" - 0 Error(s), 27 Warning(s).
+"standard_tpye_c\standard_tpye_c.axf" - 0 Error(s), 29 Warning(s).
 
 <h2>Software Packages used:</h2>
 
@@ -121,7 +137,7 @@ Package Vendor: ARM
 <h2>Collection of Component Files used:</h2>
 
    * Component: ARM::CMSIS:CORE:5.0.1
-Build Time Elapsed:  00:00:05
+Build Time Elapsed:  00:00:24
 </pre>
 </body>
 </html>

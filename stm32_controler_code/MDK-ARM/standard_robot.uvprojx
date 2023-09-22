@@ -909,6 +909,36 @@
               <FileType>1</FileType>
               <FilePath>..\application\servo_task.c</FilePath>
             </File>
+            <File>
+              <FileName>Balance_Controler.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\application\Balance_Controler.c</FilePath>
+            </File>
+            <File>
+              <FileName>leg_conv.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\application\leg_model\leg_conv.c</FilePath>
+            </File>
+            <File>
+              <FileName>leg_pos.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\application\leg_model\leg_pos.c</FilePath>
+            </File>
+            <File>
+              <FileName>leg_spd.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\application\leg_model\leg_spd.c</FilePath>
+            </File>
+            <File>
+              <FileName>lqr_k.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\application\leg_model\lqr_k.c</FilePath>
+            </File>
+            <File>
+              <FileName>PID.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\application\leg_model\PID.c</FilePath>
+            </File>
           </Files>
         </Group>
         <Group>
