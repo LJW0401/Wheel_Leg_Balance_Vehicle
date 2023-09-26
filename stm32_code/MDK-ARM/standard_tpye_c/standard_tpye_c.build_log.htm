@@ -27,19 +27,32 @@ Project File Date:  09/26/2023
 <h2>Output:</h2>
 *** Using Compiler 'V5.06 update 4 (build 422)', folder: 'C:\Applications\Keil_v5\ARM\ARMCC\Bin'
 Build target 'standard_robot'
-compiling calibrate_task.c...
-..\application\calibrate_task.c(269): warning:  #223-D: function "osDelay" declared implicitly
-          osDelay(CALIBRATE_CONTROL_TIME);
-..\application\calibrate_task.c(472): warning:  #177-D: variable "i"  was declared but never referenced
-      uint8_t i = 0;
-..\application\calibrate_task.c: 2 warnings, 0 errors
-compiling main.c...
-compiling INS_task.c...
-compiling freertos.c...
+compiling Balance_Controler.c...
+..\application\Balance_Controler\Balance_Controler.h(167): warning:  #1295-D: Deprecated declaration ChassisPostureUpdate - give arg types
+  extern void ChassisPostureUpdate();
+..\application\Balance_Controler\Balance_Controler.h(168): warning:  #1295-D: Deprecated declaration Ctrl_TargetUpdateTask - give arg types
+  extern void Ctrl_TargetUpdateTask();
+..\application\Balance_Controler\Balance_Controler.h(169): warning:  #1295-D: Deprecated declaration LegPos_UpdateTask - give arg types
+  extern void LegPos_UpdateTask();
+..\application\Balance_Controler\Balance_Controler.c(337): warning:  #1035-D: single-precision operand implicitly converted to double-precision
+    while(leftLegPos.angle < 
+_3PI_4)
+..\application\Balance_Controler\Balance_Controler.c(338): warning:  #223-D: function "vTaskDelay" declared implicitly
+      vTaskDelay(5);
+..\application\Balance_Controler\Balance_Controler.c(341): warning:  #223-D: function "vTaskDelay" declared implicitly
+    vTaskDelay(1000);
+..\application\Balance_Controler\Balance_Controler.c(346): warning:  #1035-D: single-precision operand implicitly converted to double-precision
+    while(rightLegPos.angle > 
+_PI_4)
+..\application\Balance_Controler\Balance_Controler.c(362): warning:  #223-D: function "vTaskDelete" declared implicitly
+    vTaskDelete(NULL);
+..\application\Balance_Controler\Balance_Controler.c(706): warning:  #1-D: last line of file ends without a newline
+  // }
+..\application\Balance_Controler\Balance_Controler.c: 9 warnings, 0 errors
 linking...
-Program Size: Code=83320 RO-data=13636 RW-data=972 ZI-data=56172  
+Program Size: Code=83748 RO-data=13636 RW-data=972 ZI-data=56252  
 FromELF: creating hex file...
-"standard_tpye_c\standard_tpye_c.axf" - 0 Error(s), 2 Warning(s).
+"standard_tpye_c\standard_tpye_c.axf" - 0 Error(s), 9 Warning(s).
 
 <h2>Software Packages used:</h2>
 
@@ -57,7 +70,7 @@ Package Vendor: ARM
 <h2>Collection of Component Files used:</h2>
 
    * Component: ARM::CMSIS:CORE:5.0.1
-Build Time Elapsed:  00:00:03
+Build Time Elapsed:  00:00:00
 </pre>
 </body>
 </html>
