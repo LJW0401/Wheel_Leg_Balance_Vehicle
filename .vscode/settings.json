@@ -18,6 +18,7 @@
         "lqr_k.h": "c",
         "pid.h": "c",
         "chassis_power_control.h": "c",
-        "remote_control.h": "c"
+        "remote_control.h": "c",
+        "detect_task.h": "c"
     }
 }
