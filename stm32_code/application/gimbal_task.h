@@ -27,7 +27,7 @@
 
 #ifndef GIMBAL_TASK_H
 #define GIMBAL_TASK_H
-// #include "struct_typedef.h"
+#include "struct_typedef.h"
 // #include "CAN_receive.h"
 // #include "pid.h"
 // #include "remote_control.h"
@@ -83,7 +83,7 @@
 
 
 // //任务初始化 空闲一段时间
-// #define GIMBAL_TASK_INIT_TIME 201
+#define GIMBAL_TASK_INIT_TIME 201
 // //yaw,pitch控制通道以及状态开关通道
 // #define YAW_CHANNEL   2
 // #define PITCH_CHANNEL 3
@@ -111,7 +111,7 @@
 // #define YAW_ENCODE_SEN    0.01f
 // #define PITCH_ENCODE_SEN  0.01f
 
-// #define GIMBAL_CONTROL_TIME 1
+#define GIMBAL_CONTROL_TIME 1
 
 // //test mode, 0 close, 1 open
 // //云台测试模式 宏定义 0 为不使用测试模式
@@ -267,7 +267,7 @@
 //   * @retval         none
 //   */
 
-// extern void gimbal_task(void const *pvParameters);
+extern void gimbal_task(void const *pvParameters);
 
 // /**
 //   * @brief          gimbal cali calculate, return motor offset encode, max and min relative angle

@@ -2,11 +2,11 @@
   ****************************(C) COPYRIGHT 2019 DJI****************************
   * @file       chassis.c/h
   * @brief      chassis control task,
-  *             µ×ÅÌ¿ØÖÆÈÎÎñ
+  *             åº•ç›˜æ§åˆ¶ä»»åŠ¡
   * @note       
   * @history
   *  Version    Date            Author          Modification
-  *  V1.0.0     Dec-26-2018     RM              1. Íê³É
+  *  V1.0.0     Dec-26-2018     RM              1. å®Œæˆ
   *  V1.1.0     Nov-11-2019     RM              1. add chassis power control
   *
   @verbatim
@@ -19,200 +19,200 @@
 #ifndef CHASSIS_TASK_H
 #define CHASSIS_TASK_H
 #include "struct_typedef.h"
-#include "CAN_receive.h"
-#include "gimbal_task.h"
-#include "pid.h"
-#include "remote_control.h"
-#include "user_lib.h"
+// #include "CAN_receive.h"
+// #include "gimbal_task.h"
+// #include "pid.h"
+// #include "remote_control.h"
+// #include "user_lib.h"
 
-//in the beginning of task ,wait a time
-//ÈÎÎñ¿ªÊ¼¿ÕÏĞÒ»¶ÎÊ±¼ä
+// //in the beginning of task ,wait a time
+// //ä»»åŠ¡å¼€å§‹ç©ºé—²ä¸€æ®µæ—¶é—´
 #define CHASSIS_TASK_INIT_TIME 357
 
-//the channel num of controlling vertial speed 
-//Ç°ºóµÄÒ£¿ØÆ÷Í¨µÀºÅÂë
-#define CHASSIS_X_CHANNEL 1
-//the channel num of controlling horizontal speed
-//×óÓÒµÄÒ£¿ØÆ÷Í¨µÀºÅÂë
-#define CHASSIS_Y_CHANNEL 0
+// //the channel num of controlling vertial speed 
+// //å‰åçš„é¥æ§å™¨é€šé“å·ç 
+// #define CHASSIS_X_CHANNEL 1
+// //the channel num of controlling horizontal speed
+// //å·¦å³çš„é¥æ§å™¨é€šé“å·ç 
+// #define CHASSIS_Y_CHANNEL 0
 
-//in some mode, can use remote control to control rotation speed
-//ÔÚÌØÊâÄ£Ê½ÏÂ£¬¿ÉÒÔÍ¨¹ıÒ£¿ØÆ÷¿ØÖÆĞı×ª
-#define CHASSIS_WZ_CHANNEL 2
+// //in some mode, can use remote control to control rotation speed
+// //åœ¨ç‰¹æ®Šæ¨¡å¼ä¸‹ï¼Œå¯ä»¥é€šè¿‡é¥æ§å™¨æ§åˆ¶æ—‹è½¬
+// #define CHASSIS_WZ_CHANNEL 2
 
-//the channel of choosing chassis mode,
-//Ñ¡Ôñµ×ÅÌ×´Ì¬ ¿ª¹ØÍ¨µÀºÅ
-#define CHASSIS_MODE_CHANNEL 0
-//rocker value (max 660) change to vertial speed (m/s) 
-//Ò£¿ØÆ÷Ç°½øÒ¡¸Ë£¨max 660£©×ª»¯³É³µÌåÇ°½øËÙ¶È£¨m/s£©µÄ±ÈÀı
-#define CHASSIS_VX_RC_SEN 0.006f
-//rocker value (max 660) change to horizontal speed (m/s)
-//Ò£¿ØÆ÷×óÓÒÒ¡¸Ë£¨max 660£©×ª»¯³É³µÌå×óÓÒËÙ¶È£¨m/s£©µÄ±ÈÀı
-#define CHASSIS_VY_RC_SEN 0.005f
-//in following yaw angle mode, rocker value add to angle 
-//¸úËæµ×ÅÌyawÄ£Ê½ÏÂ£¬Ò£¿ØÆ÷µÄyawÒ£¸Ë£¨max 660£©Ôö¼Óµ½³µÌå½Ç¶ÈµÄ±ÈÀı
-#define CHASSIS_ANGLE_Z_RC_SEN 0.000002f
-//in not following yaw angle mode, rocker value change to rotation speed
-//²»¸úËæÔÆÌ¨µÄÊ±ºò Ò£¿ØÆ÷µÄyawÒ£¸Ë£¨max 660£©×ª»¯³É³µÌåĞı×ªËÙ¶ÈµÄ±ÈÀı
-#define CHASSIS_WZ_RC_SEN 0.01f
+// //the channel of choosing chassis mode,
+// //é€‰æ‹©åº•ç›˜çŠ¶æ€ å¼€å…³é€šé“å·
+// #define CHASSIS_MODE_CHANNEL 0
+// //rocker value (max 660) change to vertial speed (m/s) 
+// //é¥æ§å™¨å‰è¿›æ‘‡æ†ï¼ˆmax 660ï¼‰è½¬åŒ–æˆè½¦ä½“å‰è¿›é€Ÿåº¦ï¼ˆm/sï¼‰çš„æ¯”ä¾‹
+// #define CHASSIS_VX_RC_SEN 0.006f
+// //rocker value (max 660) change to horizontal speed (m/s)
+// //é¥æ§å™¨å·¦å³æ‘‡æ†ï¼ˆmax 660ï¼‰è½¬åŒ–æˆè½¦ä½“å·¦å³é€Ÿåº¦ï¼ˆm/sï¼‰çš„æ¯”ä¾‹
+// #define CHASSIS_VY_RC_SEN 0.005f
+// //in following yaw angle mode, rocker value add to angle 
+// //è·Ÿéšåº•ç›˜yawæ¨¡å¼ä¸‹ï¼Œé¥æ§å™¨çš„yawé¥æ†ï¼ˆmax 660ï¼‰å¢åŠ åˆ°è½¦ä½“è§’åº¦çš„æ¯”ä¾‹
+// #define CHASSIS_ANGLE_Z_RC_SEN 0.000002f
+// //in not following yaw angle mode, rocker value change to rotation speed
+// //ä¸è·Ÿéšäº‘å°çš„æ—¶å€™ é¥æ§å™¨çš„yawé¥æ†ï¼ˆmax 660ï¼‰è½¬åŒ–æˆè½¦ä½“æ—‹è½¬é€Ÿåº¦çš„æ¯”ä¾‹
+// #define CHASSIS_WZ_RC_SEN 0.01f
 
-#define CHASSIS_ACCEL_X_NUM 0.1666666667f
-#define CHASSIS_ACCEL_Y_NUM 0.3333333333f
+// #define CHASSIS_ACCEL_X_NUM 0.1666666667f
+// #define CHASSIS_ACCEL_Y_NUM 0.3333333333f
 
-//rocker value deadline
-//Ò¡¸ËËÀÇø
-#define CHASSIS_RC_DEADLINE 10
+// //rocker value deadline
+// //æ‘‡æ†æ­»åŒº
+// #define CHASSIS_RC_DEADLINE 10
 
-#define MOTOR_SPEED_TO_CHASSIS_SPEED_VX 0.25f
-#define MOTOR_SPEED_TO_CHASSIS_SPEED_VY 0.25f
-#define MOTOR_SPEED_TO_CHASSIS_SPEED_WZ 0.25f
+// #define MOTOR_SPEED_TO_CHASSIS_SPEED_VX 0.25f
+// #define MOTOR_SPEED_TO_CHASSIS_SPEED_VY 0.25f
+// #define MOTOR_SPEED_TO_CHASSIS_SPEED_WZ 0.25f
 
 
-#define MOTOR_DISTANCE_TO_CENTER 0.2f
+// #define MOTOR_DISTANCE_TO_CENTER 0.2f
 
-//chassis task control time  2ms
-//µ×ÅÌÈÎÎñ¿ØÖÆ¼ä¸ô 2ms
+// //chassis task control time  2ms
+// //åº•ç›˜ä»»åŠ¡æ§åˆ¶é—´éš” 2ms
 #define CHASSIS_CONTROL_TIME_MS 2
-//chassis task control time 0.002s
-//µ×ÅÌÈÎÎñ¿ØÖÆ¼ä¸ô 0.002s
-#define CHASSIS_CONTROL_TIME 0.002f
-//chassis control frequence, no use now.
-//µ×ÅÌÈÎÎñ¿ØÖÆÆµÂÊ£¬ÉĞÎ´Ê¹ÓÃÕâ¸öºê
-#define CHASSIS_CONTROL_FREQUENCE 500.0f
-//chassis 3508 max motor control current
-//µ×ÅÌ3508×î´ócan·¢ËÍµçÁ÷Öµ
-#define MAX_MOTOR_CAN_CURRENT 16000.0f
-//press the key, chassis will swing
-//µ×ÅÌÒ¡°Ú°´¼ü
-#define SWING_KEY KEY_PRESSED_OFFSET_CTRL
-//chassi forward, back, left, right key
-//µ×ÅÌÇ°ºó×óÓÒ¿ØÖÆ°´¼ü
-#define CHASSIS_FRONT_KEY KEY_PRESSED_OFFSET_W
-#define CHASSIS_BACK_KEY KEY_PRESSED_OFFSET_S
-#define CHASSIS_LEFT_KEY KEY_PRESSED_OFFSET_A
-#define CHASSIS_RIGHT_KEY KEY_PRESSED_OFFSET_D
+// //chassis task control time 0.002s
+// //åº•ç›˜ä»»åŠ¡æ§åˆ¶é—´éš” 0.002s
+// #define CHASSIS_CONTROL_TIME 0.002f
+// //chassis control frequence, no use now.
+// //åº•ç›˜ä»»åŠ¡æ§åˆ¶é¢‘ç‡ï¼Œå°šæœªä½¿ç”¨è¿™ä¸ªå®
+// #define CHASSIS_CONTROL_FREQUENCE 500.0f
+// //chassis 3508 max motor control current
+// //åº•ç›˜3508æœ€å¤§canå‘é€ç”µæµå€¼
+// #define MAX_MOTOR_CAN_CURRENT 16000.0f
+// //press the key, chassis will swing
+// //åº•ç›˜æ‘‡æ‘†æŒ‰é”®
+// #define SWING_KEY KEY_PRESSED_OFFSET_CTRL
+// //chassi forward, back, left, right key
+// //åº•ç›˜å‰åå·¦å³æ§åˆ¶æŒ‰é”®
+// #define CHASSIS_FRONT_KEY KEY_PRESSED_OFFSET_W
+// #define CHASSIS_BACK_KEY KEY_PRESSED_OFFSET_S
+// #define CHASSIS_LEFT_KEY KEY_PRESSED_OFFSET_A
+// #define CHASSIS_RIGHT_KEY KEY_PRESSED_OFFSET_D
 
-//m3508 rmp change to chassis speed,
-//m3508×ª»¯³Éµ×ÅÌËÙ¶È(m/s)µÄ±ÈÀı£¬
-#define M3508_MOTOR_RPM_TO_VECTOR 0.000415809748903494517209f
-#define CHASSIS_MOTOR_RPM_TO_VECTOR_SEN M3508_MOTOR_RPM_TO_VECTOR
+// //m3508 rmp change to chassis speed,
+// //m3508è½¬åŒ–æˆåº•ç›˜é€Ÿåº¦(m/s)çš„æ¯”ä¾‹ï¼Œ
+// #define M3508_MOTOR_RPM_TO_VECTOR 0.000415809748903494517209f
+// #define CHASSIS_MOTOR_RPM_TO_VECTOR_SEN M3508_MOTOR_RPM_TO_VECTOR
 
-//single chassis motor max speed
-//µ¥¸öµ×ÅÌµç»ú×î´óËÙ¶È
-#define MAX_WHEEL_SPEED 4.0f
-//chassis forward or back max speed
-//µ×ÅÌÔË¶¯¹ı³Ì×î´óÇ°½øËÙ¶È
-#define NORMAL_MAX_CHASSIS_SPEED_X 2.0f
-//chassis left or right max speed
-//µ×ÅÌÔË¶¯¹ı³Ì×î´óÆ½ÒÆËÙ¶È
-#define NORMAL_MAX_CHASSIS_SPEED_Y 1.5f
+// //single chassis motor max speed
+// //å•ä¸ªåº•ç›˜ç”µæœºæœ€å¤§é€Ÿåº¦
+// #define MAX_WHEEL_SPEED 4.0f
+// //chassis forward or back max speed
+// //åº•ç›˜è¿åŠ¨è¿‡ç¨‹æœ€å¤§å‰è¿›é€Ÿåº¦
+// #define NORMAL_MAX_CHASSIS_SPEED_X 2.0f
+// //chassis left or right max speed
+// //åº•ç›˜è¿åŠ¨è¿‡ç¨‹æœ€å¤§å¹³ç§»é€Ÿåº¦
+// #define NORMAL_MAX_CHASSIS_SPEED_Y 1.5f
 
-#define CHASSIS_WZ_SET_SCALE 0.1f
+// #define CHASSIS_WZ_SET_SCALE 0.1f
 
-//when chassis is not set to move, swing max angle
-//Ò¡°ÚÔ­µØ²»¶¯Ò¡°Ú×î´ó½Ç¶È(rad)
-#define SWING_NO_MOVE_ANGLE 0.7f
-//when chassis is set to move, swing max angle
-//Ò¡°Ú¹ı³Ìµ×ÅÌÔË¶¯×î´ó½Ç¶È(rad)
-#define SWING_MOVE_ANGLE 0.31415926535897932384626433832795f
+// //when chassis is not set to move, swing max angle
+// //æ‘‡æ‘†åŸåœ°ä¸åŠ¨æ‘‡æ‘†æœ€å¤§è§’åº¦(rad)
+// #define SWING_NO_MOVE_ANGLE 0.7f
+// //when chassis is set to move, swing max angle
+// //æ‘‡æ‘†è¿‡ç¨‹åº•ç›˜è¿åŠ¨æœ€å¤§è§’åº¦(rad)
+// #define SWING_MOVE_ANGLE 0.31415926535897932384626433832795f
 
-//chassis motor speed PID
-//µ×ÅÌµç»úËÙ¶È»·PID
-#define M3505_MOTOR_SPEED_PID_KP 15000.0f
-#define M3505_MOTOR_SPEED_PID_KI 10.0f
-#define M3505_MOTOR_SPEED_PID_KD 0.0f
-#define M3505_MOTOR_SPEED_PID_MAX_OUT MAX_MOTOR_CAN_CURRENT
-#define M3505_MOTOR_SPEED_PID_MAX_IOUT 2000.0f
+// //chassis motor speed PID
+// //åº•ç›˜ç”µæœºé€Ÿåº¦ç¯PID
+// #define M3505_MOTOR_SPEED_PID_KP 15000.0f
+// #define M3505_MOTOR_SPEED_PID_KI 10.0f
+// #define M3505_MOTOR_SPEED_PID_KD 0.0f
+// #define M3505_MOTOR_SPEED_PID_MAX_OUT MAX_MOTOR_CAN_CURRENT
+// #define M3505_MOTOR_SPEED_PID_MAX_IOUT 2000.0f
 
-//chassis follow angle PID
-//µ×ÅÌĞı×ª¸úËæPID
-#define CHASSIS_FOLLOW_GIMBAL_PID_KP 40.0f
-#define CHASSIS_FOLLOW_GIMBAL_PID_KI 0.0f
-#define CHASSIS_FOLLOW_GIMBAL_PID_KD 0.0f
-#define CHASSIS_FOLLOW_GIMBAL_PID_MAX_OUT 6.0f
-#define CHASSIS_FOLLOW_GIMBAL_PID_MAX_IOUT 0.2f
+// //chassis follow angle PID
+// //åº•ç›˜æ—‹è½¬è·ŸéšPID
+// #define CHASSIS_FOLLOW_GIMBAL_PID_KP 40.0f
+// #define CHASSIS_FOLLOW_GIMBAL_PID_KI 0.0f
+// #define CHASSIS_FOLLOW_GIMBAL_PID_KD 0.0f
+// #define CHASSIS_FOLLOW_GIMBAL_PID_MAX_OUT 6.0f
+// #define CHASSIS_FOLLOW_GIMBAL_PID_MAX_IOUT 0.2f
 
-typedef enum
-{
-  CHASSIS_VECTOR_FOLLOW_GIMBAL_YAW,   //chassis will follow yaw gimbal motor relative angle.µ×ÅÌ»á¸úËæÔÆÌ¨Ïà¶Ô½Ç¶È
-  CHASSIS_VECTOR_FOLLOW_CHASSIS_YAW,  //chassis will have yaw angle(chassis_yaw) close-looped control.µ×ÅÌÓĞµ×ÅÌ½Ç¶È¿ØÖÆ±Õ»·
-  CHASSIS_VECTOR_NO_FOLLOW_YAW,       //chassis will have rotation speed control. µ×ÅÌÓĞĞı×ªËÙ¶È¿ØÖÆ
-  CHASSIS_VECTOR_RAW,                 //control-current will be sent to CAN bus derectly.
+// typedef enum
+// {
+//   CHASSIS_VECTOR_FOLLOW_GIMBAL_YAW,   //chassis will follow yaw gimbal motor relative angle.åº•ç›˜ä¼šè·Ÿéšäº‘å°ç›¸å¯¹è§’åº¦
+//   CHASSIS_VECTOR_FOLLOW_CHASSIS_YAW,  //chassis will have yaw angle(chassis_yaw) close-looped control.åº•ç›˜æœ‰åº•ç›˜è§’åº¦æ§åˆ¶é—­ç¯
+//   CHASSIS_VECTOR_NO_FOLLOW_YAW,       //chassis will have rotation speed control. åº•ç›˜æœ‰æ—‹è½¬é€Ÿåº¦æ§åˆ¶
+//   CHASSIS_VECTOR_RAW,                 //control-current will be sent to CAN bus derectly.
 
-} chassis_mode_e;
+// } chassis_mode_e;
 
-typedef struct
-{
-  const motor_measure_t *chassis_motor_measure;
-  fp32 accel;
-  fp32 speed;
-  fp32 speed_set;
-  int16_t give_current;
-} chassis_motor_t;
+// typedef struct
+// {
+//   const motor_measure_t *chassis_motor_measure;
+//   fp32 accel;
+//   fp32 speed;
+//   fp32 speed_set;
+//   int16_t give_current;
+// } chassis_motor_t;
 
-typedef struct
-{
-  const RC_ctrl_t *chassis_RC;               //µ×ÅÌÊ¹ÓÃµÄÒ£¿ØÆ÷Ö¸Õë, the point to remote control
-  const gimbal_motor_t *chassis_yaw_motor;   //will use the relative angle of yaw gimbal motor to calculate the euler angle.µ×ÅÌÊ¹ÓÃµ½yawÔÆÌ¨µç»úµÄÏà¶Ô½Ç¶ÈÀ´¼ÆËãµ×ÅÌµÄÅ·À­½Ç.
-  const gimbal_motor_t *chassis_pitch_motor; //will use the relative angle of pitch gimbal motor to calculate the euler angle.µ×ÅÌÊ¹ÓÃµ½pitchÔÆÌ¨µç»úµÄÏà¶Ô½Ç¶ÈÀ´¼ÆËãµ×ÅÌµÄÅ·À­½Ç
-  const fp32 *chassis_INS_angle;             //the point to the euler angle of gyro sensor.»ñÈ¡ÍÓÂİÒÇ½âËã³öµÄÅ·À­½ÇÖ¸Õë
-  chassis_mode_e chassis_mode;               //state machine. µ×ÅÌ¿ØÖÆ×´Ì¬»ú
-  chassis_mode_e last_chassis_mode;          //last state machine.µ×ÅÌÉÏ´Î¿ØÖÆ×´Ì¬»ú
-  chassis_motor_t motor_chassis[4];          //chassis motor data.µ×ÅÌµç»úÊı¾İ
-  pid_type_def motor_speed_pid[4];             //motor speed PID.µ×ÅÌµç»úËÙ¶Èpid
-  pid_type_def chassis_angle_pid;              //follow angle PID.µ×ÅÌ¸úËæ½Ç¶Èpid
+// typedef struct
+// {
+//   const RC_ctrl_t *chassis_RC;               //åº•ç›˜ä½¿ç”¨çš„é¥æ§å™¨æŒ‡é’ˆ, the point to remote control
+//   //const gimbal_motor_t *chassis_yaw_motor;   //will use the relative angle of yaw gimbal motor to calculate the euler angle.åº•ç›˜ä½¿ç”¨åˆ°yawäº‘å°ç”µæœºçš„ç›¸å¯¹è§’åº¦æ¥è®¡ç®—åº•ç›˜çš„æ¬§æ‹‰è§’.
+//   //const gimbal_motor_t *chassis_pitch_motor; //will use the relative angle of pitch gimbal motor to calculate the euler angle.åº•ç›˜ä½¿ç”¨åˆ°pitchäº‘å°ç”µæœºçš„ç›¸å¯¹è§’åº¦æ¥è®¡ç®—åº•ç›˜çš„æ¬§æ‹‰è§’
+//   const fp32 *chassis_INS_angle;             //the point to the euler angle of gyro sensor.è·å–é™€èºä»ªè§£ç®—å‡ºçš„æ¬§æ‹‰è§’æŒ‡é’ˆ
+//   chassis_mode_e chassis_mode;               //state machine. åº•ç›˜æ§åˆ¶çŠ¶æ€æœº
+//   chassis_mode_e last_chassis_mode;          //last state machine.åº•ç›˜ä¸Šæ¬¡æ§åˆ¶çŠ¶æ€æœº
+//   chassis_motor_t motor_chassis[4];          //chassis motor data.åº•ç›˜ç”µæœºæ•°æ®
+//   pid_type_def motor_speed_pid[4];             //motor speed PID.åº•ç›˜ç”µæœºé€Ÿåº¦pid
+//   pid_type_def chassis_angle_pid;              //follow angle PID.åº•ç›˜è·Ÿéšè§’åº¦pid
 
-  first_order_filter_type_t chassis_cmd_slow_set_vx;  //use first order filter to slow set-point.Ê¹ÓÃÒ»½×µÍÍ¨ÂË²¨¼õ»ºÉè¶¨Öµ
-  first_order_filter_type_t chassis_cmd_slow_set_vy;  //use first order filter to slow set-point.Ê¹ÓÃÒ»½×µÍÍ¨ÂË²¨¼õ»ºÉè¶¨Öµ
+//   first_order_filter_type_t chassis_cmd_slow_set_vx;  //use first order filter to slow set-point.ä½¿ç”¨ä¸€é˜¶ä½é€šæ»¤æ³¢å‡ç¼“è®¾å®šå€¼
+//   first_order_filter_type_t chassis_cmd_slow_set_vy;  //use first order filter to slow set-point.ä½¿ç”¨ä¸€é˜¶ä½é€šæ»¤æ³¢å‡ç¼“è®¾å®šå€¼
 
-  fp32 vx;                          //chassis vertical speed, positive means forward,unit m/s. µ×ÅÌËÙ¶È Ç°½ø·½Ïò Ç°ÎªÕı£¬µ¥Î» m/s
-  fp32 vy;                          //chassis horizontal speed, positive means letf,unit m/s.µ×ÅÌËÙ¶È ×óÓÒ·½Ïò ×óÎªÕı  µ¥Î» m/s
-  fp32 wz;                          //chassis rotation speed, positive means counterclockwise,unit rad/s.µ×ÅÌĞı×ª½ÇËÙ¶È£¬ÄæÊ±ÕëÎªÕı µ¥Î» rad/s
-  fp32 vx_set;                      //chassis set vertical speed,positive means forward,unit m/s.µ×ÅÌÉè¶¨ËÙ¶È Ç°½ø·½Ïò Ç°ÎªÕı£¬µ¥Î» m/s
-  fp32 vy_set;                      //chassis set horizontal speed,positive means left,unit m/s.µ×ÅÌÉè¶¨ËÙ¶È ×óÓÒ·½Ïò ×óÎªÕı£¬µ¥Î» m/s
-  fp32 wz_set;                      //chassis set rotation speed,positive means counterclockwise,unit rad/s.µ×ÅÌÉè¶¨Ğı×ª½ÇËÙ¶È£¬ÄæÊ±ÕëÎªÕı µ¥Î» rad/s
-  fp32 chassis_relative_angle;      //the relative angle between chassis and gimbal.µ×ÅÌÓëÔÆÌ¨µÄÏà¶Ô½Ç¶È£¬µ¥Î» rad
-  fp32 chassis_relative_angle_set;  //the set relative angle.ÉèÖÃÏà¶ÔÔÆÌ¨¿ØÖÆ½Ç¶È
-  fp32 chassis_yaw_set;             
+//   fp32 vx;                          //chassis vertical speed, positive means forward,unit m/s. åº•ç›˜é€Ÿåº¦ å‰è¿›æ–¹å‘ å‰ä¸ºæ­£ï¼Œå•ä½ m/s
+//   fp32 vy;                          //chassis horizontal speed, positive means letf,unit m/s.åº•ç›˜é€Ÿåº¦ å·¦å³æ–¹å‘ å·¦ä¸ºæ­£  å•ä½ m/s
+//   fp32 wz;                          //chassis rotation speed, positive means counterclockwise,unit rad/s.åº•ç›˜æ—‹è½¬è§’é€Ÿåº¦ï¼Œé€†æ—¶é’ˆä¸ºæ­£ å•ä½ rad/s
+//   fp32 vx_set;                      //chassis set vertical speed,positive means forward,unit m/s.åº•ç›˜è®¾å®šé€Ÿåº¦ å‰è¿›æ–¹å‘ å‰ä¸ºæ­£ï¼Œå•ä½ m/s
+//   fp32 vy_set;                      //chassis set horizontal speed,positive means left,unit m/s.åº•ç›˜è®¾å®šé€Ÿåº¦ å·¦å³æ–¹å‘ å·¦ä¸ºæ­£ï¼Œå•ä½ m/s
+//   fp32 wz_set;                      //chassis set rotation speed,positive means counterclockwise,unit rad/s.åº•ç›˜è®¾å®šæ—‹è½¬è§’é€Ÿåº¦ï¼Œé€†æ—¶é’ˆä¸ºæ­£ å•ä½ rad/s
+//   fp32 chassis_relative_angle;      //the relative angle between chassis and gimbal.åº•ç›˜ä¸äº‘å°çš„ç›¸å¯¹è§’åº¦ï¼Œå•ä½ rad
+//   fp32 chassis_relative_angle_set;  //the set relative angle.è®¾ç½®ç›¸å¯¹äº‘å°æ§åˆ¶è§’åº¦
+//   fp32 chassis_yaw_set;             
 
-  fp32 vx_max_speed;  //max forward speed, unit m/s.Ç°½ø·½Ïò×î´óËÙ¶È µ¥Î»m/s
-  fp32 vx_min_speed;  //max backward speed, unit m/s.ºóÍË·½Ïò×î´óËÙ¶È µ¥Î»m/s
-  fp32 vy_max_speed;  //max letf speed, unit m/s.×ó·½Ïò×î´óËÙ¶È µ¥Î»m/s
-  fp32 vy_min_speed;  //max right speed, unit m/s.ÓÒ·½Ïò×î´óËÙ¶È µ¥Î»m/s
-  fp32 chassis_yaw;   //the yaw angle calculated by gyro sensor and gimbal motor.ÍÓÂİÒÇºÍÔÆÌ¨µç»úµş¼ÓµÄyaw½Ç¶È
-  fp32 chassis_pitch; //the pitch angle calculated by gyro sensor and gimbal motor.ÍÓÂİÒÇºÍÔÆÌ¨µç»úµş¼ÓµÄpitch½Ç¶È
-  fp32 chassis_roll;  //the roll angle calculated by gyro sensor and gimbal motor.ÍÓÂİÒÇºÍÔÆÌ¨µç»úµş¼ÓµÄroll½Ç¶È
+//   fp32 vx_max_speed;  //max forward speed, unit m/s.å‰è¿›æ–¹å‘æœ€å¤§é€Ÿåº¦ å•ä½m/s
+//   fp32 vx_min_speed;  //max backward speed, unit m/s.åé€€æ–¹å‘æœ€å¤§é€Ÿåº¦ å•ä½m/s
+//   fp32 vy_max_speed;  //max letf speed, unit m/s.å·¦æ–¹å‘æœ€å¤§é€Ÿåº¦ å•ä½m/s
+//   fp32 vy_min_speed;  //max right speed, unit m/s.å³æ–¹å‘æœ€å¤§é€Ÿåº¦ å•ä½m/s
+//   fp32 chassis_yaw;   //the yaw angle calculated by gyro sensor and gimbal motor.é™€èºä»ªå’Œäº‘å°ç”µæœºå åŠ çš„yawè§’åº¦
+//   fp32 chassis_pitch; //the pitch angle calculated by gyro sensor and gimbal motor.é™€èºä»ªå’Œäº‘å°ç”µæœºå åŠ çš„pitchè§’åº¦
+//   fp32 chassis_roll;  //the roll angle calculated by gyro sensor and gimbal motor.é™€èºä»ªå’Œäº‘å°ç”µæœºå åŠ çš„rollè§’åº¦
 
-} chassis_move_t;
+// } chassis_move_t;
 
-/**
-  * @brief          chassis task, osDelay CHASSIS_CONTROL_TIME_MS (2ms) 
-  * @param[in]      pvParameters: null
-  * @retval         none
-  */
-/**
-  * @brief          µ×ÅÌÈÎÎñ£¬¼ä¸ô CHASSIS_CONTROL_TIME_MS 2ms
-  * @param[in]      pvParameters: ¿Õ
-  * @retval         none
-  */
+// /**
+//   * @brief          chassis task, osDelay CHASSIS_CONTROL_TIME_MS (2ms) 
+//   * @param[in]      pvParameters: null
+//   * @retval         none
+//   */
+// /**
+//   * @brief          åº•ç›˜ä»»åŠ¡ï¼Œé—´éš” CHASSIS_CONTROL_TIME_MS 2ms
+//   * @param[in]      pvParameters: ç©º
+//   * @retval         none
+//   */
 extern void chassis_task(void const *pvParameters);
 
-/**
-  * @brief          accroding to the channel value of remote control, calculate chassis vertical and horizontal speed set-point
-  *                 
-  * @param[out]     vx_set: vertical speed set-point
-  * @param[out]     vy_set: horizontal speed set-point
-  * @param[out]     chassis_move_rc_to_vector: "chassis_move" valiable point
-  * @retval         none
-  */
-/**
-  * @brief          ¸ù¾İÒ£¿ØÆ÷Í¨µÀÖµ£¬¼ÆËã×İÏòºÍºáÒÆËÙ¶È
-  *                 
-  * @param[out]     vx_set: ×İÏòËÙ¶ÈÖ¸Õë
-  * @param[out]     vy_set: ºáÏòËÙ¶ÈÖ¸Õë
-  * @param[out]     chassis_move_rc_to_vector: "chassis_move" ±äÁ¿Ö¸Õë
-  * @retval         none
-  */
-extern void chassis_rc_to_control_vector(fp32 *vx_set, fp32 *vy_set, chassis_move_t *chassis_move_rc_to_vector);
+// /**
+//   * @brief          accroding to the channel value of remote control, calculate chassis vertical and horizontal speed set-point
+//   *                 
+//   * @param[out]     vx_set: vertical speed set-point
+//   * @param[out]     vy_set: horizontal speed set-point
+//   * @param[out]     chassis_move_rc_to_vector: "chassis_move" valiable point
+//   * @retval         none
+//   */
+// /**
+//   * @brief          æ ¹æ®é¥æ§å™¨é€šé“å€¼ï¼Œè®¡ç®—çºµå‘å’Œæ¨ªç§»é€Ÿåº¦
+//   *                 
+//   * @param[out]     vx_set: çºµå‘é€Ÿåº¦æŒ‡é’ˆ
+//   * @param[out]     vy_set: æ¨ªå‘é€Ÿåº¦æŒ‡é’ˆ
+//   * @param[out]     chassis_move_rc_to_vector: "chassis_move" å˜é‡æŒ‡é’ˆ
+//   * @retval         none
+//   */
+// extern void chassis_rc_to_control_vector(fp32 *vx_set, fp32 *vy_set, chassis_move_t *chassis_move_rc_to_vector);
 
 #endif

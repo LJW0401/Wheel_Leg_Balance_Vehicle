@@ -99,7 +99,7 @@
 #ifndef CALIBRATE_TASK_H
 #define CALIBRATE_TASK_H
 
-// #include "struct_typedef.h"
+#include "struct_typedef.h"
 
 // //when imu is calibrating ,buzzer set frequency and strength. 当imu在校准,蜂鸣器的设置频率和强度
 // #define imu_start_buzzer()          buzzer_on(95, 10000)    
@@ -136,7 +136,7 @@
 // #define CALI_FUNC_CMD_ON        1                   //need calibrate,设置校准
 // #define CALI_FUNC_CMD_INIT      0                   //has been calibrated, set value to init.已经校准过，设置校准值
 
-// #define CALIBRATE_CONTROL_TIME  1                   //osDelay time,  means 1ms.1ms 系统延时
+#define CALIBRATE_CONTROL_TIME  1                   //osDelay time,  means 1ms.1ms 系统延时
 
 // #define CALI_SENSOR_HEAD_LEGHT  1
 
@@ -185,16 +185,16 @@
 //     bool_t (*cali_hook)(uint32_t *point, bool_t cmd);   //cali function
 // } cali_sensor_t;
 
-// //header device
-// typedef __packed struct
-// {
-//     uint8_t self_id;            // the "SELF_ID"
-//     uint16_t firmware_version;  // set to the "FIRMWARE_VERSION"
-//     //'temperature' and 'latitude' should not be in the head_cali, because don't want to create a new sensor
-//     //'temperature' and 'latitude'不应该在head_cali,因为不想创建一个新的设备就放这了
-//     int8_t temperature;         // imu control temperature
-//     fp32 latitude;              // latitude
-// } head_cali_t;
+//header device
+typedef __packed struct
+{
+    uint8_t self_id;            // the "SELF_ID"
+    uint16_t firmware_version;  // set to the "FIRMWARE_VERSION"
+    //'temperature' and 'latitude' should not be in the head_cali, because don't want to create a new sensor
+    //'temperature' and 'latitude'不应该在head_cali,因为不想创建一个新的设备就放这了
+    int8_t temperature;         // imu control temperature
+    fp32 latitude;              // latitude
+} head_cali_t;
 // //gimbal device
 // typedef struct
 // {
@@ -223,7 +223,7 @@
 //   * @param[in]      none
 //   * @retval         none
 //   */
-// extern void cali_param_init(void);
+extern void cali_param_init(void);
 // /**
 //   * @brief          get imu control temperature, unit ℃
 //   * @param[in]      none
@@ -234,7 +234,7 @@
 //   * @param[in]      none
 //   * @retval         imu控制温度
 //   */
-// extern int8_t get_control_temperature(void);
+extern int8_t get_control_temperature(void);
 
 // /**
 //   * @brief          get latitude, default 22.0f
@@ -258,7 +258,7 @@
 //   * @param[in]      pvParameters: 空
 //   * @retval         none
 //   */
-// extern void calibrate_task(void const *pvParameters);
+extern void calibrate_task(void const *pvParameters);
 
 
 #endif

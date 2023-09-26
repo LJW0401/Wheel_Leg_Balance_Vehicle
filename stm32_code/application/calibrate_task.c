@@ -95,7 +95,7 @@
   ****************************(C) COPYRIGHT 2019 DJI****************************
   */
 
-// #include "calibrate_task.h"
+#include "calibrate_task.h"
 // #include "string.h"
 // #include "cmsis_os.h"
 
@@ -220,7 +220,7 @@
 
 
 // static const RC_ctrl_t *calibrate_RC;   //remote control point
-// static head_cali_t     head_cali;       //head cali data
+static head_cali_t     head_cali;       //head cali data
 // static gimbal_cali_t   gimbal_cali;     //gimbal cali data
 // static imu_cali_t      accel_cali;      //accel cali data
 // static imu_cali_t      gyro_cali;       //gyro cali data
@@ -260,46 +260,16 @@
 //   * @param[in]      pvParameters: 空
 //   * @retval         none
 //   */
-// void calibrate_task(void const *pvParameters)
-// {
-//     static uint8_t i = 0;
-    
-//     calibrate_RC = get_remote_ctrl_point_cali();
+void calibrate_task(void const *pvParameters)
+{
 
-//     while (1)
-//     {
+    while (1)
+    {
 
-//         RC_cmd_to_calibrate();
+        osDelay(CALIBRATE_CONTROL_TIME);
 
-//         for (i = 0; i < CALI_LIST_LENGHT; i++)
-//         {
-//             if (cali_sensor[i].cali_cmd)
-//             {
-//                 if (cali_sensor[i].cali_hook != NULL)
-//                 {
-
-//                     if (cali_sensor[i].cali_hook(cali_sensor_buf[i], CALI_FUNC_CMD_ON))
-//                     {
-//                         //done
-//                         cali_sensor[i].name[0] = cali_name[i][0];
-//                         cali_sensor[i].name[1] = cali_name[i][1];
-//                         cali_sensor[i].name[2] = cali_name[i][2];
-//                         //set 0x55
-//                         cali_sensor[i].cali_done = CALIED_FLAG;
-
-//                         cali_sensor[i].cali_cmd = 0;
-//                         //write
-//                         cali_data_write();
-//                     }
-//                 }
-//             }
-//         }
-//         osDelay(CALIBRATE_CONTROL_TIME);
-// #if INCLUDE_uxTaskGetStackHighWaterMark
-//         calibrate_task_stack = uxTaskGetStackHighWaterMark(NULL);
-// #endif
-//     }
-// }
+    }
+}
 
 // /**
 //   * @brief          get imu control temperature, unit ℃
@@ -311,11 +281,11 @@
 //   * @param[in]      none
 //   * @retval         imu控制温度
 //   */
-// int8_t get_control_temperature(void)
-// {
+int8_t get_control_temperature(void)
+{
 
-//     return head_cali.temperature;
-// }
+    return head_cali.temperature;
+}
 
 // /**
 //   * @brief          get latitude, default 22.0f
@@ -497,31 +467,31 @@
 //   * @param[in]      none
 //   * @retval         none
 //   */
-// void cali_param_init(void)
-// {
-//     uint8_t i = 0;
+void cali_param_init(void)
+{
+    uint8_t i = 0;
 
-//     for (i = 0; i < CALI_LIST_LENGHT; i++)
-//     {
-//         cali_sensor[i].flash_len = cali_sensor_size[i];
-//         cali_sensor[i].flash_buf = cali_sensor_buf[i];
-//         cali_sensor[i].cali_hook = (bool_t(*)(uint32_t *, bool_t))cali_hook_fun[i];
-//     }
+    // for (i = 0; i < CALI_LIST_LENGHT; i++)
+    // {
+    //     cali_sensor[i].flash_len = cali_sensor_size[i];
+    //     cali_sensor[i].flash_buf = cali_sensor_buf[i];
+    //     cali_sensor[i].cali_hook = (bool_t(*)(uint32_t *, bool_t))cali_hook_fun[i];
+    // }
 
-//     cali_data_read();
+    // cali_data_read();
 
-//     for (i = 0; i < CALI_LIST_LENGHT; i++)
-//     {
-//         if (cali_sensor[i].cali_done == CALIED_FLAG)
-//         {
-//             if (cali_sensor[i].cali_hook != NULL)
-//             {
-//                 //if has been calibrated, set to init 
-//                 cali_sensor[i].cali_hook(cali_sensor_buf[i], CALI_FUNC_CMD_INIT);
-//             }
-//         }
-//     }
-// }
+    // for (i = 0; i < CALI_LIST_LENGHT; i++)
+    // {
+    //     if (cali_sensor[i].cali_done == CALIED_FLAG)
+    //     {
+    //         if (cali_sensor[i].cali_hook != NULL)
+    //         {
+    //             //if has been calibrated, set to init 
+    //             cali_sensor[i].cali_hook(cali_sensor_buf[i], CALI_FUNC_CMD_INIT);
+    //         }
+    //     }
+    // }
+}
 
 // /**
 //   * @brief          read cali data from flash
