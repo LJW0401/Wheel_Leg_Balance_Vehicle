@@ -5,6 +5,9 @@ doc文件夹中均为说明文档，请阅读
 
 更多功能正在开发中，稍安勿躁。
 
+## 电机标号
+![motor_id](./doc/.pic/motor_id.svg)<br>
+
 ## 参考
 [RoboMaster平衡步兵机器人控制系统设计](https://zhuanlan.zhihu.com/p/563048952)
 
