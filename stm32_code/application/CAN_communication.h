@@ -21,12 +21,35 @@
 #ifndef CAN_RECEIVE_H
 #define CAN_RECEIVE_H
 
-// #include "struct_typedef.h"
+#include "struct_typedef.h"
 
 // #define CHASSIS_CAN hcan1
-// #define GIMBAL_CAN hcan2
+#define WHEEL_CAN hcan2
 
+/* CAN send and receive ID */
+typedef enum
+{
+    CAN_CHASSIS_ALL_ID = 0x200,
+    CAN_3508_M1_ID = 0x201,
 
+    CAN_LEFT_WHEEL_MOTOR_ID = 0x205,
+    CAN_RIGHT_WHEEL_MOTOR_ID = 0x206,
+    CAN_WHEEL_ALL_ID = 0x1FF,
 
+} can_msg_id_e;
+
+//rm motor data
+typedef struct
+{
+    uint16_t ecd;
+    int16_t speed_rpm;
+    int16_t given_current;
+    uint8_t temperate;
+    int16_t last_ecd;
+} motor_measure_t;
+
+extern void CANCmdWheel(int16_t left_wheel, int16_t right_wheel);
+
+extern void SendChassisCmd();
 
 #endif

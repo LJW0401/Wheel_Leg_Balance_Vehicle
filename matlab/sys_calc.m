@@ -4,7 +4,7 @@
 
 clear;
 
-L0s=0.04:0.01:0.14; % L0变化范围
+L0s=0.12:0.01:0.17; % L0变化范围
 Ks=zeros(2,6,length(L0s)); % 存放不同L0对应的K
 
 for step=1:length(L0s)
@@ -16,7 +16,10 @@ for step=1:length(L0s)
     syms T Tp N P Nm Pm Nf t;
     
     % 机器人结构参数(国际单位制)
-    R=0.02; L=L0s(step)/2; Lm=L0s(step)/2; l=0; mw=0.251327; mp=0.0248; M=0.325; Iw=5.02655e-05; Ip=(9.66667e-07+7.9975e-06)*2; Im=0.000338542;
+    R=0.0425; L=L0s(step)/2; Lm=L0s(step)/2; l=0; mw=0.158*2; mp=0.130*2; M=2.250;
+    Iw=(6.8575e-05)*2; 
+    Ip=(0.00495)*2; 
+    Im=1.296;
     g=9.8;
     
     % 进行物理计算
@@ -59,7 +62,9 @@ for x=1:2
 end
 
 % 输出到m函数
-matlabFunction(K,'File','lqr_k');
+matlabFunction(K,'File','LQR_K');
 
 % 代入L0=0.07打印矩阵K
 vpa(subs(K,L0,0.07))
+
+disp("LQR模型函数生成完毕");

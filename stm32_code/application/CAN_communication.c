@@ -18,81 +18,163 @@
   ****************************(C) COPYRIGHT 2019 DJI****************************
   */
 
-// #include "CAN_receive.h"
+#include "CAN_communication.h"
+#include "./Drives/MI_motor_drive.h"
+#include "Balance_Controler.h"
+#include "usb_task.h"
+#include "cmsis_os.h"
 
-// #include "cmsis_os.h"
-
-// #include "main.h"
-// #include "bsp_rng.h"
+#include "main.h"
+#include "bsp_rng.h"
 
 
 // #include "detect_task.h"
 
-// extern CAN_HandleTypeDef hcan1;
-// extern CAN_HandleTypeDef hcan2;
-// //motor data read
-// #define get_motor_measure(ptr, data)                                    \
-//     {                                                                   \
-//         (ptr)->last_ecd = (ptr)->ecd;                                   \
-//         (ptr)->ecd = (uint16_t)((data)[0] << 8 | (data)[1]);            \
-//         (ptr)->speed_rpm = (uint16_t)((data)[2] << 8 | (data)[3]);      \
-//         (ptr)->given_current = (uint16_t)((data)[4] << 8 | (data)[5]);  \
-//         (ptr)->temperate = (data)[6];                                   \
-//     }
-// /*
-// motor data,  0:chassis motor1 3508;1:chassis motor3 3508;2:chassis motor3 3508;3:chassis motor4 3508;
-// 4:yaw gimbal motor 6020;5:pitch gimbal motor 6020;6:trigger motor 2006;
-// 电机数据, 0:底盘电机1 3508电机,  1:底盘电机2 3508电机,2:底盘电机3 3508电机,3:底盘电机4 3508电机;
-// 4:yaw云台电机 6020电机; 5:pitch云台电机 6020电机; 6:拨弹电机 2006电机*/
-// static motor_measure_t motor_chassis[7];
+extern CAN_HandleTypeDef hcan1;
+extern CAN_HandleTypeDef hcan2;
+//motor data read
+#define get_motor_measure(ptr, data)                                    \
+    {                                                                   \
+        (ptr)->last_ecd = (ptr)->ecd;                                   \
+        (ptr)->ecd = (uint16_t)((data)[0] << 8 | (data)[1]);            \
+        (ptr)->speed_rpm = (uint16_t)((data)[2] << 8 | (data)[3]);      \
+        (ptr)->given_current = (uint16_t)((data)[4] << 8 | (data)[5]);  \
+        (ptr)->temperate = (data)[6];                                   \
+    }
+/*
+motor data;
+电机数据;
+*/
+static motor_measure_t motor_chassis[7];
 
-// static CAN_TxHeaderTypeDef  gimbal_tx_message;
-// static uint8_t              gimbal_can_send_data[8];
-// static CAN_TxHeaderTypeDef  chassis_tx_message;
-// static uint8_t              chassis_can_send_data[8];
+// static CAN_TxHeaderTypeDef  wheel_tx_message;
+// static uint8_t              wheel_can_send_data[8];
+static CAN_TxHeaderTypeDef  wheel_tx_message;
+static uint8_t              wheel_can_send_data[8];
 
-// /**
-//   * @brief          hal CAN fifo call back, receive motor data
-//   * @param[in]      hcan, the point to CAN handle
-//   * @retval         none
-//   */
-// /**
-//   * @brief          hal库CAN回调函数,接收电机数据
-//   * @param[in]      hcan:CAN句柄指针
-//   * @retval         none
-//   */
-// void HAL_CAN_RxFifo0MsgPendingCallback(CAN_HandleTypeDef *hcan)
-// {
-//     CAN_RxHeaderTypeDef rx_header;
-//     uint8_t rx_data[8];
+/**
+  * @brief          hal CAN fifo call back, receive motor data
+  * @param[in]      hcan, the point to CAN handle
+  * @retval         none
+  */
+/**
+  * @brief          hal库CAN回调函数,接收电机数据
+  * @param[in]      hcan:CAN句柄指针
+  * @retval         none
+  */
+void HAL_CAN_RxFifo0MsgPendingCallback(CAN_HandleTypeDef *hcan)
+{
+    CAN_RxHeaderTypeDef rx_header;
+    RxCAN_info_s RxCAN_info;//用于存储小米电机反馈的数据
+    uint8_t rx_data[8];
 
-//     HAL_CAN_GetRxMessage(hcan, CAN_RX_FIFO0, &rx_header, rx_data);
+    HAL_CAN_GetRxMessage(hcan, CAN_RX_FIFO0, &rx_header, rx_data);//获取CAN数据
 
-//     switch (rx_header.StdId)
-//     {
-//         case CAN_3508_M1_ID:
-//         case CAN_3508_M2_ID:
-//         case CAN_3508_M3_ID:
-//         case CAN_3508_M4_ID:
-//         case CAN_YAW_MOTOR_ID:
-//         case CAN_PIT_MOTOR_ID:
-//         case CAN_TRIGGER_MOTOR_ID:
-//         {
-//             static uint8_t i = 0;
-//             //get motor id
-//             i = rx_header.StdId - CAN_3508_M1_ID;
-//             get_motor_measure(&motor_chassis[i], rx_data);
-//             detect_hook(CHASSIS_MOTOR1_TOE + i);
-//             break;
-//         }
 
-//         default:
-//         {
-//             break;
-//         }
-//     }
-// }
+    if (rx_header.IDE == CAN_ID_STD) {//大疆2006电机解码
+        switch (rx_header.StdId)
+        {
+            case CAN_3508_M1_ID:
+            case CAN_LEFT_WHEEL_MOTOR_ID:
+            case CAN_RIGHT_WHEEL_MOTOR_ID:
+            {
+                static uint8_t i = 0;
+                //get motor id
+                i = rx_header.StdId - CAN_3508_M1_ID;
+                get_motor_measure(&motor_chassis[i], rx_data);
+                // detect_hook(CHASSIS_MOTOR1_TOE + i);
 
+                //这里还要改改，将2006电机数据获取后改为驱动轮电机的数据
+                left_wheel.angle = motor_chassis[0].ecd/8191.0f*M_PI*2;
+                left_wheel.speed = motor_chassis[0].speed_rpm*M_PI*2;
+                right_wheel.angle = motor_chassis[1].ecd/8191.0f*M_PI*2;
+                right_wheel.speed = motor_chassis[1].speed_rpm*M_PI*2;
+                break;
+            }
+
+            default:
+            {
+                break;
+            }
+        }
+
+    }else if (rx_header.IDE == CAN_ID_EXT) {//小米电机解码
+        memcpy(&RxCAN_info,&rx_header.ExtId,29);//将扩展标识符的内容解码成对应内容
+
+        uint16_t decode_temp_mi;//小米电机反馈数据解码缓冲
+        if (RxCAN_info.communication_type == 2){//若为通信类型2的反馈帧就对应解码
+          MI_motor_RxDecode(&RxCAN_info,rx_data);
+        }
+
+        if (RxCAN_info.motor_id == 1){
+            MI_Motor_1.RxCAN_info = RxCAN_info;
+        }else if (RxCAN_info.motor_id == 2){
+            MI_Motor_2.RxCAN_info = RxCAN_info;
+        }else if (RxCAN_info.motor_id == 3){
+            MI_Motor_3.RxCAN_info = RxCAN_info;
+        }else if (RxCAN_info.motor_id == 4){
+            MI_Motor_4.RxCAN_info = RxCAN_info;
+        }
+        char_to_uint(OutputData.name_1,"M1_temp"); 
+        OutputData.type_1 = 1;
+        OutputData.data_1 = MI_Motor_1.RxCAN_info.angle;
+
+        char_to_uint(OutputData.name_2,"M2_temp"); 
+        OutputData.type_2 = 1;
+        OutputData.data_2 = MI_Motor_2.RxCAN_info.angle;
+
+        char_to_uint(OutputData.name_3,"M3_temp"); 
+        OutputData.type_3 = 1;
+        OutputData.data_3 = MI_Motor_3.RxCAN_info.angle;
+
+        char_to_uint(OutputData.name_4,"M4_temp"); 
+        OutputData.type_4 = 1;
+        OutputData.data_4 = MI_Motor_4.RxCAN_info.angle;
+    }
+
+}
+
+/**
+  * @brief          发送驱动轮电机控制电流(0x205,0x206,0x207,0x208)
+  * @param[in]      left_wheel: (0x205) 2006电机控制电流, 范围 [-10000,10000]
+  * @param[in]      right_wheel: (0x206) 2006电机控制电流, 范围 [-10000,10000]
+  * @retval         none
+  */
+void CANCmdWheel(int16_t left_wheel, int16_t right_wheel)
+{
+    uint32_t send_mail_box;
+    wheel_tx_message.StdId = CAN_WHEEL_ALL_ID;
+    wheel_tx_message.IDE = CAN_ID_STD;
+    wheel_tx_message.RTR = CAN_RTR_DATA;
+    wheel_tx_message.DLC = 0x08;
+    wheel_can_send_data[0] = (left_wheel >> 8);
+    wheel_can_send_data[1] = left_wheel;
+    wheel_can_send_data[2] = (right_wheel >> 8);
+    wheel_can_send_data[3] = right_wheel;
+    wheel_can_send_data[4] = 0;
+    wheel_can_send_data[5] = 0;
+    wheel_can_send_data[6] = 0;
+    wheel_can_send_data[7] = 0;
+    HAL_CAN_AddTxMessage(&WHEEL_CAN, &wheel_tx_message, wheel_can_send_data, &send_mail_box);
+}
+
+/**
+  * @brief          发送控制信号
+  * @retval         none
+  */
+void SendChassisCmd(void)
+{
+    //发送关节控制力矩
+    MI_motor_controlmode(left_joint[0].MI_Motor,left_joint[0].torque,0,0,0,0);
+    MI_motor_controlmode(left_joint[1].MI_Motor,left_joint[1].torque,0,0,0,0);
+    MI_motor_controlmode(right_joint[0].MI_Motor,right_joint[0].torque,0,0,0,0);
+    MI_motor_controlmode(right_joint[1].MI_Motor,right_joint[1].torque,0,0,0,0);
+    //发送车轮控制力矩
+    CANCmdWheel(
+        (int16_t)(MotorTorqueToCurrent_2006(left_wheel.torque)*1000),
+        (int16_t)(MotorTorqueToCurrent_2006(right_wheel.torque)*1000)
+                );
+}
 
 
 // /**
@@ -114,19 +196,19 @@
 // void CAN_cmd_gimbal(int16_t yaw, int16_t pitch, int16_t shoot, int16_t rev)
 // {
 //     uint32_t send_mail_box;
-//     gimbal_tx_message.StdId = CAN_GIMBAL_ALL_ID;
-//     gimbal_tx_message.IDE = CAN_ID_STD;
-//     gimbal_tx_message.RTR = CAN_RTR_DATA;
-//     gimbal_tx_message.DLC = 0x08;
-//     gimbal_can_send_data[0] = (yaw >> 8);
-//     gimbal_can_send_data[1] = yaw;
-//     gimbal_can_send_data[2] = (pitch >> 8);
-//     gimbal_can_send_data[3] = pitch;
-//     gimbal_can_send_data[4] = (shoot >> 8);
-//     gimbal_can_send_data[5] = shoot;
-//     gimbal_can_send_data[6] = (rev >> 8);
-//     gimbal_can_send_data[7] = rev;
-//     HAL_CAN_AddTxMessage(&GIMBAL_CAN, &gimbal_tx_message, gimbal_can_send_data, &send_mail_box);
+//     wheel_tx_message.StdId = CAN_GIMBAL_ALL_ID;
+//     wheel_tx_message.IDE = CAN_ID_STD;
+//     wheel_tx_message.RTR = CAN_RTR_DATA;
+//     wheel_tx_message.DLC = 0x08;
+//     wheel_can_send_data[0] = (yaw >> 8);
+//     wheel_can_send_data[1] = yaw;
+//     wheel_can_send_data[2] = (pitch >> 8);
+//     wheel_can_send_data[3] = pitch;
+//     wheel_can_send_data[4] = (shoot >> 8);
+//     wheel_can_send_data[5] = shoot;
+//     wheel_can_send_data[6] = (rev >> 8);
+//     wheel_can_send_data[7] = rev;
+//     HAL_CAN_AddTxMessage(&GIMBAL_CAN, &wheel_tx_message, wheel_can_send_data, &send_mail_box);
 // }
 
 // /**

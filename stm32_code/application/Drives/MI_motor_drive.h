@@ -1,3 +1,9 @@
+/**
+ *
+ * @File:        MI_motor_driver.h
+ * @Author:      小企鹅
+ *
+ */
 #ifndef MI_DEV_H
 #define MI_DEV_H
 #ifdef __cplusplus
@@ -8,7 +14,7 @@ extern "C"
 #include "struct_typedef.h"
 #include "main.h"
 
-#define MI_CAN hcan1
+#define MI_CAN_1 hcan1
 #define MI_CAN_2 hcan2
 
 #define P_MIN -12.5f
@@ -62,12 +68,30 @@ extern "C"
     } Motor_fdb_t;                 // 电机编码器反馈结构体
     typedef struct
     {
+        uint32_t master_can_id : 8;
+        uint32_t motor_id : 8;
+        uint32_t under_voltage_fault : 1;
+        uint32_t over_current_fault : 1;
+        uint32_t over_temperature_fault : 1;
+        uint32_t magnetic_encoding_fault : 1;
+        uint32_t HALL_encoding_failure : 1;
+        uint32_t unmarked : 1;
+        uint32_t mode_status : 2;
+        uint32_t communication_type : 5;
+        uint32_t res : 3;
+        float angle;//(rad)
+        float speed;//(rad/s)
+        float torque;//(N*m)
+        float temperature;//(℃)
+    } __attribute__((packed)) RxCAN_info_s; // 通信类型2解码内容
+    typedef struct
+    {
         CAN_HandleTypeDef *phcan;
         motor_state_e motor_state;
         motor_mode_e  motor_mode;
         EXT_ID_t EXT_ID;
         uint8_t txdata[8];
-        Motor_fdb_t motor_fdb;
+        RxCAN_info_s RxCAN_info;
     } MI_Motor_t;
     /**********************Functions*************************8*/
 
@@ -83,27 +107,14 @@ extern "C"
     void MIMotor_MotorDataDecode(uint32_t rx_EXT_id, uint8_t rxdata[]);
     void MI_motor_Write_One_Para(MI_Motor_t* hmotor, uint16_t index ,uint8_t data[4]);
  
-    extern MI_Motor_t MI_Motor;
     extern uint8_t MI_MASTERID;
     extern uint8_t MI_fdbid;
     extern uint8_t MI_MCU_identifier[8];
 
-    extern MI_Motor_t MI_Motor_1;
-    extern MI_Motor_t MI_Motor_2;
-    extern MI_Motor_t MI_Motor_3;
-    extern MI_Motor_t MI_Motor_4;
 
-    //小企鹅部分
-    typedef struct{
-        uint8_t motor_id;
-        uint8_t data[8];
-    }CAN_receive_t;
-    extern CAN_receive_t CAN_receive;
-    extern void MI_motor_all_init();
-    extern void MI_motor_motion_control();
-    extern void MI_motor_speed_control();
 
-    extern void init_speed_model();
+
+
 
 #endif
  

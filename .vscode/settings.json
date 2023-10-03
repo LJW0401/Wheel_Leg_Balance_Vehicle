@@ -20,6 +20,13 @@
         "chassis_power_control.h": "c",
         "remote_control.h": "c",
         "detect_task.h": "c",
-        "ins_task.h": "c"
+        "ins_task.h": "c",
+        "mi_motor_drive.h": "c",
+        "can_communication.h": "c",
+        "legconv.h": "c",
+        "stdint.h": "c",
+        "stddef.h": "c",
+        "legpos.h": "c",
+        "stdlib.h": "c"
     }
 }

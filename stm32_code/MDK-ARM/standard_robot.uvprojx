@@ -133,11 +133,11 @@
             <RunIndependent>0</RunIndependent>
             <UpdateFlashBeforeDebugging>1</UpdateFlashBeforeDebugging>
             <Capability>1</Capability>
-            <DriverSelection>4107</DriverSelection>
+            <DriverSelection>4096</DriverSelection>
           </Flash1>
           <bUseTDR>1</bUseTDR>
           <Flash2>BIN\UL2CM3.DLL</Flash2>
-          <Flash3></Flash3>
+          <Flash3>"" ()</Flash3>
           <Flash4></Flash4>
           <pFcarmOut></pFcarmOut>
           <pFcarmGrp></pFcarmGrp>
@@ -909,50 +909,40 @@
               <FileType>1</FileType>
               <FilePath>..\application\servo_task.c</FilePath>
             </File>
-          </Files>
-        </Group>
-        <Group>
-          <GroupName>applications/Balance_Controler</GroupName>
-          <Files>
             <File>
               <FileName>Balance_Controler.c</FileName>
               <FileType>1</FileType>
-              <FilePath>..\application\Balance_Controler\Balance_Controler.c</FilePath>
-            </File>
-            <File>
-              <FileName>leg_conv.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>..\application\Balance_Controler\leg_conv.c</FilePath>
-            </File>
-            <File>
-              <FileName>leg_pos.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>..\application\Balance_Controler\leg_pos.c</FilePath>
-            </File>
-            <File>
-              <FileName>leg_spd.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>..\application\Balance_Controler\leg_spd.c</FilePath>
-            </File>
-            <File>
-              <FileName>lqr_k.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>..\application\Balance_Controler\lqr_k.c</FilePath>
+              <FilePath>..\application\Balance_Controler.c</FilePath>
             </File>
             <File>
               <FileName>PID.c</FileName>
               <FileType>1</FileType>
-              <FilePath>..\application\Balance_Controler\PID.c</FilePath>
+              <FilePath>..\application\leg_model\PID.c</FilePath>
             </File>
-          </Files>
-        </Group>
-        <Group>
-          <GroupName>applications/Drives</GroupName>
-          <Files>
             <File>
               <FileName>MI_motor_drive.c</FileName>
               <FileType>1</FileType>
               <FilePath>..\application\Drives\MI_motor_drive.c</FilePath>
+            </File>
+            <File>
+              <FileName>LegConv.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\application\leg_model\LegConv.c</FilePath>
+            </File>
+            <File>
+              <FileName>LegPos.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\application\leg_model\LegPos.c</FilePath>
+            </File>
+            <File>
+              <FileName>LegSpd.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\application\leg_model\LegSpd.c</FilePath>
+            </File>
+            <File>
+              <FileName>LQR_K.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\application\leg_model\LQR_K.c</FilePath>
             </File>
           </Files>
         </Group>

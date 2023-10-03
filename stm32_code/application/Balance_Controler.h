@@ -24,12 +24,12 @@
 
 #include "struct_typedef.h"
 //导入轮腿模型
-#include "leg_conv.h"
-#include "leg_pos.h"
-#include "leg_spd.h"
-#include "lqr_k.h"
-#include "PID.h"
-
+#include "./leg_model/LegConv.h"
+#include "./leg_model/LegPos.h"
+#include "./leg_model/LegSpd.h"
+#include "./leg_model/LQR_K.h"
+#include "./leg_model/PID.h"
+#include "./Drives/MI_motor_drive.h"
 
 
 /* Useful constants.  */
@@ -75,10 +75,11 @@ typedef struct
   */
 typedef struct 
 {
+  MI_Motor_t* MI_Motor; // 小米电机对象
 	float speed;			   // rad/s
-	float angle, offsetAngle;  // rad
-	float voltage, maxVoltage; // V
-	float torque, torqueRatio; // Nm, voltage = torque / torqueRatio
+	float angle, offset_angle, initial_angle, vertical_angle, horizontal_angle;  // rad
+	float voltage, max_voltage; // V
+	float torque, torque_ratio; // Nm, voltage = torque / torque_ratio
 	float dir;				   // 1 or -1
 	float (*calcRevVolt)(float speed); // 指向反电动势计算函数
 }Motor_s;
@@ -121,12 +122,12 @@ typedef struct
 typedef struct 
 {
   float position;	 // m
-  float speedCmd;	 // m/s
+  float speed_cmd;	 // m/s
   float speed;    // m/s
-  float yawSpeedCmd; // rad/s
-  float yawAngle;	 // rad
-  float rollAngle; // rad
-  float legLength; // m
+  float yaw_speed_cmd; // rad/s
+  float yaw_angle;	 // rad
+  float roll_angle; // rad
+  float leg_length; // m
 } Target_s;
 
 
@@ -135,8 +136,8 @@ typedef struct
   */
 typedef struct 
 {
-  float leftSupportForce, rightSupportForce;
-  uint8_t isTouchingGround, isCuchioning;
+  float left_support_force, right_support_force;
+  uint8_t is_touching_ground, is_cuchioning;
 } GroundDetector;
 
 
@@ -149,24 +150,31 @@ typedef enum{
   StandupState_Standup,
 }StandupState;
 
+
+extern MI_Motor_t MI_Motor_1;
+extern MI_Motor_t MI_Motor_2;
+extern MI_Motor_t MI_Motor_3;
+extern MI_Motor_t MI_Motor_4;
+extern MI_Motor_t MI_Motor_None;
+
 extern Chassis_IMU_t chassis_imu;
-extern Motor_s leftJoint[2], rightJoint[2], leftWheel, rightWheel; //六个电机对象
-extern Joint_Length_t leftJointLength; //关节长度
-extern Joint_Length_t rightJointLength; //关节长度
-extern Leg_Pos_t leftLegPos, rightLegPos; //左右腿部姿态
-extern State_Var_s stateVar;
+extern Motor_s left_joint[2], right_joint[2], left_wheel, right_wheel;
+extern Leg_Pos_t left_leg_pos, right_leg_pos;
+extern State_Var_s state_var;
 extern Target_s target;
-extern GroundDetector groundDetector;
-extern CascadePID legAnglePID, legLengthPID; //腿部角度和长度控制PID
-extern CascadePID yawPID, rollPID; //机身yaw和roll控制PID
+extern GroundDetector ground_detector;
+extern CascadePID leg_angle_PID, leg_length_PID;
+extern CascadePID yaw_PID, roll_PID;
 
-extern StandupState standupState;
+extern StandupState standup_state;
 
-extern void Motor_SetTorque(Motor_s *motor, float torque);
+
+extern void MotorInitAll();
+extern void MotorSetTorque(Motor_s *motor, float torque);
 
 extern void ChassisPostureUpdate();
-extern void Ctrl_TargetUpdateTask();
-extern void LegPos_UpdateTask();
+extern void CtrlTargetUpdateTask();
+extern void LegPosUpdateTask();
 
 extern float MotorTorqueToCurrent_2006(float torque);
 

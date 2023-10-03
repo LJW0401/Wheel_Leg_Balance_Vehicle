@@ -1,7 +1,7 @@
 /**
  *
  * @File:        MI_motor_driver.c
- * @Author:      北极熊
+ * @Author:      小企鹅
  *
  */
 /* Includes -------------------------------------------------------------------*/
@@ -11,11 +11,11 @@
 extern CAN_HandleTypeDef hcan1;
 extern CAN_HandleTypeDef hcan2;
 
+CAN_TxHeaderTypeDef CAN_TxHeader_MI;
+
 uint8_t MI_MASTERID = 1; //master id 发送指令时EXTID的bit8:15,反馈的bit0:7
 uint8_t MI_fdbid = 0;//反馈ID，获取电机ID和识别码用
 uint8_t MI_MCU_identifier[8];
-MI_Motor_t MI_Motor;
-
 
 /*-------------------- 按照小米电机通信类型写的对应函数--------------------*/
 /**
@@ -38,21 +38,15 @@ uint32_t float_to_uint(float x, float x_min, float x_max, int bits) {
   * @param  hmotor 电机结构体
   * @retval null
   */
-CAN_TxHeaderTypeDef CAN_TxHeader_MI;
 void MI_Motor_CanTx(MI_Motor_t* hmotor) {
  
     CAN_TxHeader_MI.DLC = 8;
     CAN_TxHeader_MI.IDE = CAN_ID_EXT;
     CAN_TxHeader_MI.RTR = CAN_RTR_DATA;
     CAN_TxHeader_MI.ExtId = *((uint32_t*)&(hmotor->EXT_ID));
-	/*CAN_TxHeader_MI.ExtId = hmotor->EXT_ID.motor_id<<24 | hmotor->EXT_ID.data << 8 |          hmotor->EXT_ID.mode << 5;*/
     uint32_t mailbox;
     /* Start the Transmission process */
     uint32_t ret = HAL_CAN_AddTxMessage(hmotor->phcan, &CAN_TxHeader_MI, hmotor->txdata, &mailbox);
-    // if (ret != HAL_OK) {
-    //     /* Transmission request Error */
-    //     while(1);
-    // }
     while (ret != HAL_OK) {
         /* Transmission request Error */
 			  HAL_Delay(1);
@@ -68,24 +62,6 @@ void MI_Motor_CanTx(MI_Motor_t* hmotor) {
 void MI_motor_init(MI_Motor_t* hmotor,CAN_HandleTypeDef *phcan)
 {
     hmotor->phcan = phcan;
-}
-/**
-  * @brief  小米电机使能
-  * @param  hmotor 电机结构体
-  * @param  id 电机id
-  * @retval null
-  */
-void MI_motor_enable(MI_Motor_t* hmotor,uint8_t id)
-{
-    hmotor->EXT_ID.mode = 3;
-    hmotor->EXT_ID.motor_id = id;
-    hmotor->EXT_ID.data = MI_MASTERID;
-    hmotor->EXT_ID.res = 0;
-    for(uint8_t i=0; i<8; i++)
-    {
-        hmotor->txdata[i]=0;
-    }
-    MI_Motor_CanTx(hmotor);
 }
 /**
   * @brief  获取设备ID （通信类型0），需在电机使能前使用
@@ -108,8 +84,11 @@ void MI_motor_get_ID(MI_Motor_t* hmotor)
 /**
   * @brief  运控模式电机控制指令（通信类型1）
   * @param  hmotor 电机结构体
-  * @param  motor_id 电机id
-  * @param  master_id 主机id
+  * @param  torque 目标力矩
+  * @param  MechPosition 不知道啥玩意
+  * @param  speed 不知道啥玩意
+  * @param  kp 不知道啥玩意
+  * @param  kd 不知道啥玩意
   * @retval null
   */
 void MI_motor_controlmode(MI_Motor_t* hmotor, float torque, float MechPosition , float speed , float kp , float kd)
@@ -126,6 +105,24 @@ void MI_motor_controlmode(MI_Motor_t* hmotor, float torque, float MechPosition ,
     hmotor->txdata[5]=float_to_uint(kp,KP_MIN,KP_MAX,16);
     hmotor->txdata[6]=float_to_uint(kd,KD_MIN,KD_MAX,16)>>8;
     hmotor->txdata[7]=float_to_uint(kd,KD_MIN,KD_MAX,16);
+    MI_Motor_CanTx(hmotor);
+}
+/**
+  * @brief  小米电机使能（通信类型 3）
+  * @param  hmotor 电机结构体
+  * @param  id 电机id
+  * @retval null
+  */
+void MI_motor_enable(MI_Motor_t* hmotor,uint8_t id)
+{
+    hmotor->EXT_ID.mode = 3;
+    hmotor->EXT_ID.motor_id = id;
+    hmotor->EXT_ID.data = MI_MASTERID;
+    hmotor->EXT_ID.res = 0;
+    for(uint8_t i=0; i<8; i++)
+    {
+        hmotor->txdata[i]=0;
+    }
     MI_Motor_CanTx(hmotor);
 }
 /**
@@ -213,7 +210,7 @@ void MI_motor_Read_One_Para(MI_Motor_t* hmotor,uint16_t index)
   */
 void MI_motor_Write_One_Para(MI_Motor_t* hmotor, uint16_t index ,uint8_t data[4])
 {
-    hmotor->EXT_ID.mode = 0x12;
+    hmotor->EXT_ID.mode = 18;
     hmotor->EXT_ID.data = MI_MASTERID;
     hmotor->EXT_ID.res = 0;
  
@@ -222,155 +219,43 @@ void MI_motor_Write_One_Para(MI_Motor_t* hmotor, uint16_t index ,uint8_t data[4]
     MI_Motor_CanTx(hmotor);
 }
 /**
-  * @brief  单电机解码
-  * @param  hmotor 电机结构体
-  * @param  state_byte状态字节，扩展ID的bit8:23
-  * @param  rxdata 数据缓冲区
-  * @retval null
-  */
-uint16_t decode_temp_mi = 0;
-uint8_t nsvd = 0;
-void MI_motor_decode(MI_Motor_t* hmotor,uint8_t state_byte,uint8_t rxdata[]) {
-    nsvd = state_byte;
-    if((state_byte&0xC0) == 0) {
-        hmotor->motor_state = OK;
-    } else {
-        for(int i = 1; i < 7; i++) {
-            if(state_byte&0x01) {
-                hmotor->motor_state = i;
-            }
-            state_byte = state_byte>> 1;
-        }
-    }
-    hmotor->motor_mode = state_byte;
- 
-    decode_temp_mi = (rxdata[0] << 8 | rxdata[1])^0x8000;
-    hmotor->motor_fdb.angle_temp   = decode_temp_mi;
- 
-    decode_temp_mi = (rxdata[2] << 8 | rxdata[3])^0x8000;
-    hmotor->motor_fdb.speed_temp   = decode_temp_mi;
- 
-    decode_temp_mi = (rxdata[4] << 8 | rxdata[5])^0x8000;
-    hmotor->motor_fdb.torque_temp   = decode_temp_mi;
- 
-    decode_temp_mi = (rxdata[6] << 8 | rxdata[7]);
-    hmotor->motor_fdb.temprature_temp  = decode_temp_mi;
- 
-    hmotor->motor_fdb.angle = (float)hmotor->motor_fdb.angle_temp/32768*4*3.1415926f;
-    hmotor->motor_fdb.speed = (float)hmotor->motor_fdb.speed_temp/32768*30;
-    hmotor->motor_fdb.torque = (float)hmotor->motor_fdb.torque_temp/32768*12.0f;
-    hmotor->motor_fdb.temprature = (float)hmotor->motor_fdb.temprature_temp/10.0f;
- 
-    hmotor->motor_fdb.last_update_time = HAL_GetTick();
-}
-/**
-  * @brief  小米电机解码
-  * @param  rx_EXT_id 接收到的扩展ID
-  * @param  rxdata 数据缓冲区
-  * @retval null
-  */
-EXT_ID_t EXT_ID_tmp;//扩展ID数据结构体
-void MIMotor_MotorDataDecode(uint32_t rx_EXT_id,uint8_t rxdata[])
-{   EXT_ID_tmp = *((EXT_ID_t*)(&rx_EXT_id));
-    if(EXT_ID_tmp.mode == 0&&EXT_ID_tmp.motor_id == 0xFE) {
-        MI_fdbid = EXT_ID_tmp.data;
-        memcpy(MI_MCU_identifier,rxdata, 8);
-    }
-    if(EXT_ID_tmp.mode == 2) {
-        uint8_t id = EXT_ID_tmp.data&0xFF;
-        if(id == MI_Motor.EXT_ID.motor_id) {
-            MI_motor_decode(&MI_Motor,(uint8_t)(EXT_ID_tmp.data>>8),rxdata);
-        }
-    }
-}
-
-//小企鹅新增部分，以方便人们使用
-
-CAN_receive_t CAN_receive;
-
-/**
-  * @brief          hal库CAN回调函数,接收电机数据
-  * @param[in]      hcan:CAN句柄指针
+  * @brief          小米电机反馈帧解码（通信类型2）
+  * @param[in]      Rx_can_info 接受到的电机数据结构体
+  * @param[in]      rx_data[8] CAN线接收到的数据
+  * @note           将接收到的CAN线数据解码到电机数据结构体中
   * @retval         none
   */
-void HAL_CAN_RxFifo0MsgPendingCallback(CAN_HandleTypeDef *hcan)
-{
-    CAN_RxHeaderTypeDef rx_header;
-    uint8_t rx_data[8];
+ void MI_motor_RxDecode(RxCAN_info_s* RxCAN_info,uint8_t rx_data[8]){
+      uint16_t decode_temp_mi;//小米电机反馈数据解码缓冲
+      decode_temp_mi = (rx_data[0] << 8 | rx_data[1]);
+      RxCAN_info->angle = ((float)decode_temp_mi-32767.5)/32767.5*4*3.1415926f;;
+  
+      decode_temp_mi = (rx_data[2] << 8 | rx_data[3]);
+      RxCAN_info->speed = ((float)decode_temp_mi-32767.5)/32767.5*30.0f;
+  
+      decode_temp_mi = (rx_data[4] << 8 | rx_data[5]);
+      RxCAN_info->torque = ((float)decode_temp_mi-32767.5)/32767.5*12.0f;
+  
+      decode_temp_mi = (rx_data[6] << 8 | rx_data[7]);
+      RxCAN_info->temperature = (float)decode_temp_mi/10.0f;
+ }
+// /**
+//   * @brief          hal库CAN回调函数,接收电机数据
+//   * @param[in]      hcan:CAN句柄指针
+//   * @retval         none
+//   */
+// void HAL_CAN_RxFifo0MsgPendingCallback(CAN_HandleTypeDef *hcan)
+// {
+//     CAN_RxHeaderTypeDef rx_header;
+//     RxCAN_info_s Rx_can_info;//用于存储小米电机反馈的数据
+//     uint8_t rx_data[8];
 
-    HAL_CAN_GetRxMessage(hcan, CAN_RX_FIFO0, &rx_header, rx_data);
+//     HAL_CAN_GetRxMessage(hcan, CAN_RX_FIFO0, &rx_header, rx_data);
 
-    uint32_t ExtId = rx_header.ExtId;
-    CAN_receive.motor_id = ExtId>>21;
-    memcpy(CAN_receive.data,rx_data,8);
-    // static uint8_t i = 0;
-    // //get motor id
-    // i = rx_header.StdId - CAN_3508_M1_ID;
-    // get_motor_measure(&motor_chassis[i], rx_data);
-    // detect_hook(CHASSIS_MOTOR1_TOE + i);
+//     memcpy(&Rx_can_info,&rx_header.ExtId,29);//将扩展标识符的内容解码成对应内容
 
-
-}
-
-
-
-/**
-  * @brief  所有小米电机初始化
-  * @param  
-  * @param  
-  * @retval 
-  */
-void MI_motor_all_init()
-{
-
-}
-
-
-/**
-  * @brief  小米电机运控模式运行
-  * @param  
-  * @param  
-  * @retval 
-  */
-void MI_motor_motion_control(double torque)
-{
-    MI_motor_init(&MI_Motor,&MI_CAN);
-    MI_motor_enable(&MI_Motor,1);
-    MI_motor_controlmode(&MI_Motor, 0.2, 6 , 5 , 0 , 0);
-}
-
-
-/**
-  * @brief  小米电机速度模式运行
-  * @param  
-  * @param  
-  * @retval 
-  */
-void MI_motor_speed_control()
-{
-    uint8_t data_temp[4];
-    uint32_t data = float_to_uint(5,V_MIN,V_MAX,32);
-    data = 0x00000000;
-    data_temp[0] = data>>24;
-    data_temp[1] = data>>16;
-    data_temp[2] = data>>8;
-    data_temp[3] = data;
-    MI_motor_Write_One_Para(&MI_Motor, 0X700A ,data_temp);
-    MI_motor_Read_One_Para(&MI_Motor, 0X7005);
-    MI_motor_stop(&MI_Motor);
-}
-
-
-
-void init_speed_model()
-{
-    MI_motor_init(&MI_Motor,&MI_CAN);
-    uint32_t run_mode = 0x00000002;
-    uint8_t data_temp[4];
-    data_temp[0] = run_mode>>24;
-    data_temp[1] = run_mode>>16;
-    data_temp[2] = run_mode>>8;
-    data_temp[3] = run_mode;
-    MI_motor_Write_One_Para(&MI_Motor, 0X7005 ,data_temp);
-    MI_motor_enable(&MI_Motor,1);
-}
+//     uint16_t decode_temp_mi;//小米电机反馈数据解码缓冲
+//     if (Rx_can_info.communication_type == 2){//若为通信类型2的反馈帧就对应解码
+//       MI_motor_RxDecode(&Rx_can_info,rx_data);
+//     }
+// }
