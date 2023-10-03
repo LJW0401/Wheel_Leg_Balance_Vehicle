@@ -239,47 +239,61 @@ void chassis_task(void const *pvParameters)
             LegConv(rightForce, rightTp, right_joint[1].angle, right_joint[0].angle, right_joint_torque);
             
             //保护腿部角度不超限
-            这个角度保护得对应改改
-            float leftTheta = left_leg_pos.angle - chassis_imu.pitch - M_PI_2;
-            float rightTheta = right_leg_pos.angle - chassis_imu.pitch - M_PI_2;
-            #define PROTECT_CONDITION (leftTheta < -M_PI_4 || leftTheta > M_PI_4 || \
-                        rightTheta < -M_PI_4 || rightTheta > M_PI_4 || \
-                        chassis_imu.pitch > M_PI_4 || chassis_imu.pitch < -M_PI_4) //腿部角度超限保护条件
-            if(PROTECT_CONDITION) //当前达到保护条件
-            {
-            if(standup_state == StandupState_None) //未处于起立过程中
-            {
-                //关闭所有电机
-                MotorSetTorque(&left_wheel, 0);
-                MotorSetTorque(&right_wheel, 0);
-                MotorSetTorque(&left_joint[0], 0);
-                MotorSetTorque(&left_joint[1], 0);
-                MotorSetTorque(&right_joint[0], 0);
-                MotorSetTorque(&right_joint[1], 0);
+            // 这个角度保护得对应改改
+            // float leftTheta = left_leg_pos.angle - chassis_imu.pitch - M_PI_2;
+            // float rightTheta = right_leg_pos.angle - chassis_imu.pitch - M_PI_2;
+            // #define PROTECT_CONDITION (leftTheta < -M_PI_4 || leftTheta > M_PI_4 || \
+            //             rightTheta < -M_PI_4 || rightTheta > M_PI_4 || \
+            //             chassis_imu.pitch > M_PI_4 || chassis_imu.pitch < -M_PI_4) //腿部角度超限保护条件
+            // if(PROTECT_CONDITION) //当前达到保护条件
+            // {
+            // if(standup_state == StandupState_None) //未处于起立过程中
+            // {
+            //     //关闭所有电机
+            //     MotorSetTorque(&left_wheel, 0);
+            //     MotorSetTorque(&right_wheel, 0);
+            //     MotorSetTorque(&left_joint[0], 0);
+            //     MotorSetTorque(&left_joint[1], 0);
+            //     MotorSetTorque(&right_joint[0], 0);
+            //     MotorSetTorque(&right_joint[1], 0);
 
-                SendChassisCmd();
+            //     SendChassisCmd();
                 
-                //阻塞等待腿部角度回到安全范围，再等待4s后恢复控制(若中途触发了起立则在起立准备完成后直接跳出)
-                while(PROTECT_CONDITION && standup_state == StandupState_None)
-                {
-                leftTheta = left_leg_pos.angle - chassis_imu.pitch - M_PI_2;
-                rightTheta = right_leg_pos.angle - chassis_imu.pitch - M_PI_2;
-                vTaskDelay(100);
-                }
-                if(standup_state == StandupState_None)
-                vTaskDelay(4000);
-                //退出保护后设定目标位置和yaw角度为当前值
-                target.position = (left_wheel.angle + right_wheel.angle) / 2 * wheelRadius;
-                target.yaw_angle = chassis_imu.yaw;
-                continue;
+            //     //阻塞等待腿部角度回到安全范围，再等待4s后恢复控制(若中途触发了起立则在起立准备完成后直接跳出)
+            //     while(PROTECT_CONDITION && standup_state == StandupState_None)
+            //     {
+            //     leftTheta = left_leg_pos.angle - chassis_imu.pitch - M_PI_2;
+            //     rightTheta = right_leg_pos.angle - chassis_imu.pitch - M_PI_2;
+            //     vTaskDelay(100);
+            //     }
+            //     if(standup_state == StandupState_None)
+            //     vTaskDelay(4000);
+            //     //退出保护后设定目标位置和yaw角度为当前值
+            //     target.position = (left_wheel.angle + right_wheel.angle) / 2 * wheelRadius;
+            //     target.yaw_angle = chassis_imu.yaw;
+            //     continue;
+            // }
+            // if(standup_state == StandupState_Standup && (leftTheta < -M_PI_4 || rightTheta > M_PI_4))
+            //     standup_state = StandupState_None;
+            // }
+            // else
+            // {
+            // if(standup_state == StandupState_Standup) //未达到保护条件且处于起立过程中，说明起立完成，退出起立过程
+            //     standup_state = StandupState_None;
+            // }
+/*安全保护部分*/
+            //保护腿部角度不超限
+            if(left_joint[0].angle > left_joint[0].upper_limit_angle){
+                left_joint_torque[0] = 0;
             }
-            if(standup_state == StandupState_Standup && (leftTheta < -M_PI_4 || rightTheta > M_PI_4))
-                standup_state = StandupState_None;
+            if(left_joint[1].angle > left_joint[1].upper_limit_angle){
+                left_joint_torque[1] = 0;
             }
-            else
-            {
-            if(standup_state == StandupState_Standup) //未达到保护条件且处于起立过程中，说明起立完成，退出起立过程
-                standup_state = StandupState_None;
+            if(right_joint[0].angle > right_joint[0].upper_limit_angle){
+                right_joint_torque[0] = 0;
+            }
+            if(right_joint[0].angle > right_joint[0].upper_limit_angle){
+                right_joint_torque[0] = 0;
             }
 
             //设定关节电机输出扭矩

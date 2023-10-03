@@ -78,7 +78,8 @@ typedef struct
   MI_Motor_t* MI_Motor; // 小米电机对象
 	float speed;			   // rad/s
 	float angle, offset_angle, initial_angle, vertical_angle, horizontal_angle;  // rad
-	float voltage, max_voltage; // V
+	float upper_limit_angle,lower_limit_angle;// rad
+  float voltage, max_voltage; // V
 	float torque, torque_ratio; // Nm, voltage = torque / torque_ratio
 	float dir;				   // 1 or -1
 	float (*calcRevVolt)(float speed); // 指向反电动势计算函数

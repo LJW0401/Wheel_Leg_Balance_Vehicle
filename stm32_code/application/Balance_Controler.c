@@ -73,7 +73,7 @@ uint32_t GetMillis()
   * @param          torque_ratio 
   * @param          dir 
   */
-void MotorInit(Motor_s *motor, MI_Motor_t* MI_Motor, float initial_angle, float vertical_angle,float horizontal_angle , float max_voltage, float torque_ratio, float dir)//, float (*calcRevVolt)(float speed))
+void MotorInit(Motor_s *motor, MI_Motor_t* MI_Motor, float initial_angle, float vertical_angle,float horizontal_angle ,float upper_limit_angle,float lower_limit_angle, float max_voltage, float torque_ratio, float dir)//, float (*calcRevVolt)(float speed))
 {
   motor->MI_Motor = MI_Motor;
   MI_motor_init(MI_Motor,&MI_CAN_1);
@@ -82,6 +82,8 @@ void MotorInit(Motor_s *motor, MI_Motor_t* MI_Motor, float initial_angle, float 
   motor->initial_angle = initial_angle;
   motor->vertical_angle = vertical_angle;
   motor->horizontal_angle = horizontal_angle;
+  motor->upper_limit_angle = upper_limit_angle;
+  motor->lower_limit_angle = lower_limit_angle;
   motor->max_voltage = max_voltage;
   motor->torque_ratio = torque_ratio;
   motor->dir = dir;
@@ -113,16 +115,20 @@ float Motor_CalcRevVolt2006(float speed)
 void MotorInitAll()
 {
   MotorInit(&left_joint[0],&MI_Motor_1, 
-             -0.8339229822158813f, 
-             0.2632734477519989f,
-             0.2632734477519989f + M_PI_2,
+             -0.40862035751342773f, 
+             0.6387209892272949f,
+             0.6387209892272949f + M_PI_2,
+             2.184230089187622,
+             -0.14477163553237915,
              7, 0.0316f, -1);
   MI_motor_enable(&MI_Motor_1,1);
   
   MotorInit(&left_joint[1],&MI_Motor_2, 
-             -0.4001833200454712f, 
-             2.6359944343566895f, 
-             2.6359944343566895f + M_PI_2, 
+             -0.8761081099510193f, 
+             2.1109814643859863f, 
+             2.1109814643859863f + M_PI_2, 
+             2.7893948554992676,
+             0.5413116812705994,
              7, 0.0317f, 1);
   MI_motor_enable(&MI_Motor_2,2);
 
@@ -132,26 +138,34 @@ void MotorInitAll()
              0, 
              0, 
              0, 
+             0,
+             0,
              4.0f, 0.0096f, 1);
   
   MotorInit(&right_joint[0],&MI_Motor_3, 
-             -0.8596175312995911f, 
-             -2.004751682281494f, 
-             -2.004751682281494f - M_PI_2, 
+             -0.68819260597229f, 
+             -3.753516435623169f, 
+             -3.753516435623169f - M_PI_2, 
+             -2.181162118911743,
+             -4.348710060119629,
              7, 0.0299f, -1);
   MI_motor_enable(&MI_Motor_3,3);
 
   MotorInit(&right_joint[1],&MI_Motor_4, 
-             -0.4960585832595825f, 
-             -3.5840089321136475f, 
-             -3.5840089321136475f - M_PI_2, 
+             -0.564321756362915f, 
+             -1.5729295015335083f, 
+             -1.5729295015335083f - M_PI_2, 
+             -0.9044871926307678,
+             -3.201658248901367,
              7, 0.0321f, -1);
   MI_motor_enable(&MI_Motor_4,4);
 
   MotorInit(&right_wheel,&MI_Motor_None, 
              0, 
              0, 
-             0, 
+             0,
+             0,
+             0,
              4.0f, 0.0101f, 1);
 }
 
