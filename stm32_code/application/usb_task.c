@@ -34,6 +34,7 @@
 
 #include "referee.h"
 
+#include "Balance_Controler.h"
 
 #include <math.h>
 //Function Declaration
@@ -143,24 +144,31 @@ void usb_task(void const * argument)
           char_to_uint(OutputData.name_2,"M2_temp"); 
           char_to_uint(OutputData.name_3,"M3_temp"); 
           char_to_uint(OutputData.name_4,"M4_temp"); 
-          char_to_uint(OutputData.name_5,"s0"); 
-          char_to_uint(OutputData.name_6,"s1");
-          char_to_uint(OutputData.name_7,"ch0"); 
-        //   char_to_uint(OutputData.name_1,"roll"); 
-        //   OutputData.type_1 = 1;
-        //   OutputData.data_1 = gimbal_INT_gyro_angle_point[2];//云台roll
-        //   char_to_uint(OutputData.name_2,"pitch"); 
-        //   OutputData.type_2 = 1;
-        //   OutputData.data_2 = gimbal_INT_gyro_angle_point[1];//云台pitch
-        //   char_to_uint(OutputData.name_3,"yaw"); 
-        //   OutputData.type_3 = 1;
-        //   OutputData.data_3 = gimbal_INT_gyro_angle_point[0];//云台yaw
-        //   char_to_uint(OutputData.name_5,"const1"); 
-        //   OutputData.type_5 = 0;
-        //   OutputData.data_5 = 90;
-        //   char_to_uint(OutputData.name_6,"const2"); 
-        //   OutputData.type_6 = 1;
-        //   OutputData.data_6 = 50.0;
+
+          // char_to_uint(OutputData.name_5,"roll"); 
+          // OutputData.type_5 = 1;
+          // OutputData.data_5 = gimbal_INT_gyro_angle_point[2];//云台roll
+          // char_to_uint(OutputData.name_6,"pitch"); 
+          // OutputData.type_6 = 1;
+          // OutputData.data_6 = gimbal_INT_gyro_angle_point[1];//云台pitch
+          // char_to_uint(OutputData.name_7,"yaw"); 
+          // OutputData.type_7 = 1;
+          // OutputData.data_7 = gimbal_INT_gyro_angle_point[0];//云台yaw
+
+          char_to_uint(OutputData.name_5,"lwheels"); 
+          OutputData.type_5 = 1;
+          OutputData.data_5 = left_wheel.speed;//云台roll
+          char_to_uint(OutputData.name_6,"rwheels"); 
+          OutputData.type_6 = 1;
+          OutputData.data_6 = right_wheel.speed;//云台pitch
+
+
+          char_to_uint(OutputData.name_8,"LegAngle1"); 
+          OutputData.type_8 = 1;
+          OutputData.data_8 = left_leg_pos.angle;
+          char_to_uint(OutputData.name_9,"LegAngle2"); 
+          OutputData.type_9 = 1;
+          OutputData.data_9 = right_leg_pos.angle;
 
           usb_send_outputPC();
 

@@ -1,8 +1,12 @@
 /*
- * File: LegConv.h
+ * Academic License - for use in teaching, academic research, and meeting
+ * course requirements at degree granting institutions only.  Not for
+ * government, commercial, or other organizational use.
  *
- * MATLAB Coder version            : 23.2
- * C/C++ source code generated on  : 02-Oct-2023 13:14:02
+ * LegConv.h
+ *
+ * Code generation for function 'LegConv'
+ *
  */
 
 #ifndef LEGCONV_H
@@ -25,8 +29,4 @@ extern void LegConv(float F, float Tp, float phi1, float phi4, float T[2]);
 #endif
 
 #endif
-/*
- * File trailer for LegConv.h
- *
- * [EOF]
- */
+/* End of code generation (LegConv.h) */

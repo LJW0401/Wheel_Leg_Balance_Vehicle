@@ -18,6 +18,8 @@
   ****************************(C) COPYRIGHT 2019 DJI****************************
   */
 
+#include <math.h>
+
 #include "CAN_communication.h"
 #include "./Drives/MI_motor_drive.h"
 #include "Balance_Controler.h"
@@ -27,6 +29,7 @@
 #include "main.h"
 #include "bsp_rng.h"
 
+#include "remote_control.h"
 
 // #include "detect_task.h"
 
@@ -75,6 +78,11 @@ void HAL_CAN_RxFifo0MsgPendingCallback(CAN_HandleTypeDef *hcan)
         switch (rx_header.StdId)
         {
             case CAN_3508_M1_ID:
+            case CAN_3508_M2_ID:
+            case CAN_3508_M3_ID:
+            case CAN_3508_M4_ID:
+            case CAN_YAW_MOTOR_ID:
+            case CAN_PIT_MOTOR_ID:
             case CAN_LEFT_WHEEL_MOTOR_ID:
             case CAN_RIGHT_WHEEL_MOTOR_ID:
             {
@@ -85,10 +93,10 @@ void HAL_CAN_RxFifo0MsgPendingCallback(CAN_HandleTypeDef *hcan)
                 // detect_hook(CHASSIS_MOTOR1_TOE + i);
 
                 //这里还要改改，将2006电机数据获取后改为驱动轮电机的数据
-                left_wheel.angle = motor_chassis[0].ecd/8191.0f*M_PI*2;
-                left_wheel.speed = motor_chassis[0].speed_rpm*M_PI*2;
-                right_wheel.angle = motor_chassis[1].ecd/8191.0f*M_PI*2;
-                right_wheel.speed = motor_chassis[1].speed_rpm*M_PI*2;
+                left_wheel.angle = motor_chassis[6].ecd/8191.0f*M_PI*2;
+                left_wheel.speed = motor_chassis[6].speed_rpm*M_PI*2;
+                right_wheel.angle = motor_chassis[7].ecd/8191.0f*M_PI*2;
+                right_wheel.speed = motor_chassis[7].speed_rpm*M_PI*2;
                 break;
             }
 
@@ -136,25 +144,30 @@ void HAL_CAN_RxFifo0MsgPendingCallback(CAN_HandleTypeDef *hcan)
 
 /**
   * @brief          发送驱动轮电机控制电流(0x205,0x206,0x207,0x208)
-  * @param[in]      left_wheel: (0x205) 2006电机控制电流, 范围 [-10000,10000]
-  * @param[in]      right_wheel: (0x206) 2006电机控制电流, 范围 [-10000,10000]
+  * @param[in]      left_wheel: (0x207) 2006电机控制电流, 范围 [-10000,10000]
+  * @param[in]      right_wheel: (0x208) 2006电机控制电流, 范围 [-10000,10000]
   * @retval         none
   */
 void CANCmdWheel(int16_t left_wheel, int16_t right_wheel)
 {
     uint32_t send_mail_box;
-    wheel_tx_message.StdId = CAN_WHEEL_ALL_ID;
+    wheel_tx_message.StdId = CAN_GIMBAL_ALL_ID;
     wheel_tx_message.IDE = CAN_ID_STD;
     wheel_tx_message.RTR = CAN_RTR_DATA;
     wheel_tx_message.DLC = 0x08;
-    wheel_can_send_data[0] = (left_wheel >> 8);
-    wheel_can_send_data[1] = left_wheel;
-    wheel_can_send_data[2] = (right_wheel >> 8);
-    wheel_can_send_data[3] = right_wheel;
-    wheel_can_send_data[4] = 0;
-    wheel_can_send_data[5] = 0;
-    wheel_can_send_data[6] = 0;
-    wheel_can_send_data[7] = 0;
+    wheel_can_send_data[0] = 0;
+    wheel_can_send_data[1] = 0;
+    wheel_can_send_data[2] = 0;
+    wheel_can_send_data[3] = 0;
+    wheel_can_send_data[4] = (left_wheel >> 8);
+    wheel_can_send_data[5] = left_wheel;
+    wheel_can_send_data[6] = (right_wheel >> 8);
+    wheel_can_send_data[7] = right_wheel;
+
+    uint32_t free_TxMailbox = HAL_CAN_GetTxMailboxesFreeLevel(&WHEEL_CAN);//检测是否有空闲邮箱
+    while (free_TxMailbox<3){//等待空闲邮箱数达到3
+        free_TxMailbox = HAL_CAN_GetTxMailboxesFreeLevel(&WHEEL_CAN);
+    }
     HAL_CAN_AddTxMessage(&WHEEL_CAN, &wheel_tx_message, wheel_can_send_data, &send_mail_box);
 }
 
@@ -164,176 +177,110 @@ void CANCmdWheel(int16_t left_wheel, int16_t right_wheel)
   */
 void SendChassisCmd(void)
 {
-    //发送关节控制力矩
+/*安全保护措施*/
+    /*进行关节力矩限制,输出力矩不得超过限制范围*/
+    float upper_limit_torque = 1.5;//N*m
+    float lower_limit_torque = -1.5;//N*m
+
+    if(left_joint[0].torque > upper_limit_torque){
+        left_joint[0].torque = upper_limit_torque;
+    }else if(left_joint[0].torque < lower_limit_torque){
+        left_joint[0].torque = lower_limit_torque;
+    }
+    
+    if(left_joint[1].torque > upper_limit_torque){
+        left_joint[1].torque = upper_limit_torque;
+    }else if(left_joint[1].torque < lower_limit_torque){
+        left_joint[1].torque = lower_limit_torque;
+    }
+
+    if(right_joint[0].torque > upper_limit_torque){
+        right_joint[0].torque = upper_limit_torque;
+    }else if(right_joint[0].torque < lower_limit_torque){
+        right_joint[0].torque = lower_limit_torque;
+    }
+
+    if(right_joint[1].torque > upper_limit_torque){
+        right_joint[1].torque = upper_limit_torque;
+    }else if(right_joint[1].torque < lower_limit_torque){
+        right_joint[1].torque = lower_limit_torque;
+    }
+    /*对关节角度范围加以限制，不得超过各电机的角度范围*/
+    if(left_leg_pos.angle > M_PI || left_leg_pos.angle < 0){
+        left_joint[0].torque = 0;
+        left_joint[1].torque = 0;
+    }
+    if(-right_leg_pos.angle > M_PI || -right_leg_pos.angle < 0){
+        right_joint[0].torque = 0;
+        right_joint[1].torque = 0;
+    }
+/*控制信号发送部分*/
+    const RC_ctrl_t* rc_ctrl = get_remote_control_point();
+
+    left_joint[0].torque = rc_ctrl->rc.ch[0]/660.0f;
+    left_joint[1].torque = rc_ctrl->rc.ch[1]/660.0f;
+    right_joint[0].torque = rc_ctrl->rc.ch[2]/660.0f;
+    right_joint[1].torque = rc_ctrl->rc.ch[3]/660.0f;
+
+    // left_joint[0].torque = 0;
+    // left_joint[1].torque = 0;
+    // right_joint[0].torque = 0;
+    // right_joint[1].torque = 0;
+
     MI_motor_controlmode(left_joint[0].MI_Motor,left_joint[0].torque,0,0,0,0);
     MI_motor_controlmode(left_joint[1].MI_Motor,left_joint[1].torque,0,0,0,0);
     MI_motor_controlmode(right_joint[0].MI_Motor,right_joint[0].torque,0,0,0,0);
     MI_motor_controlmode(right_joint[1].MI_Motor,right_joint[1].torque,0,0,0,0);
+
+    // CANCmdWheel(rc_ctrl->rc.ch[1],rc_ctrl->rc.ch[3]);
+    // count_1++;
+    // if (count_1>100){
+    //     count_1 = 0;
+    //     cmd = -cmd;
+    // }
+    int16_t ccc= 500;
+    //CANCmdWheel(5000,5000);
+
+    //发送关节控制力矩
+    // MI_motor_controlmode(left_joint[0].MI_Motor,left_joint[0].torque,0,0,0,0);
+    // for (i=0;i<10;i++){
+    //     HAL_Delay(0);
+    // }
+
+    // MI_motor_controlmode(left_joint[1].MI_Motor,left_joint[1].torque,0,0,0,0);
+    // for (i=0;i<10;i++){
+    //     HAL_Delay(0);
+    // }
+
+    // MI_motor_controlmode(right_joint[0].MI_Motor,right_joint[0].torque,0,0,0,0);
+    // for (i=0;i<10;i++){
+    //     HAL_Delay(0);
+    // }
+
+    // MI_motor_controlmode(right_joint[1].MI_Motor,right_joint[1].torque,0,0,0,0);
+    // for (i=0;i<100;i++){
+    //     HAL_Delay(0);
+    // }
+
     //发送车轮控制力矩
-    CANCmdWheel(
-        (int16_t)(MotorTorqueToCurrent_2006(left_wheel.torque)*1000),
-        (int16_t)(MotorTorqueToCurrent_2006(right_wheel.torque)*1000)
-                );
+    // int16_t left_torque2current = (int16_t)(left_wheel.torque*6000);
+    // int16_t right_torque2current = (int16_t)(right_wheel.torque*6000);
+    // CANCmdWheel(
+    //     left_torque2current,
+    //     right_torque2current
+    //             );
+
+
+    // CANCmdWheel(
+    //     rc_ctrl->rc.ch[1],
+    //     rc_ctrl->rc.ch[3]
+    //             );
+
+    // CANCmdWheel(
+    //     -500,
+    //     500
+    //             );
+		
 }
 
 
-// /**
-//   * @brief          send control current of motor (0x205, 0x206, 0x207, 0x208)
-//   * @param[in]      yaw: (0x205) 6020 motor control current, range [-30000,30000] 
-//   * @param[in]      pitch: (0x206) 6020 motor control current, range [-30000,30000]
-//   * @param[in]      shoot: (0x207) 2006 motor control current, range [-10000,10000]
-//   * @param[in]      rev: (0x208) reserve motor control current
-//   * @retval         none
-//   */
-// /**
-//   * @brief          发送电机控制电流(0x205,0x206,0x207,0x208)
-//   * @param[in]      yaw: (0x205) 6020电机控制电流, 范围 [-30000,30000]
-//   * @param[in]      pitch: (0x206) 6020电机控制电流, 范围 [-30000,30000]
-//   * @param[in]      shoot: (0x207) 2006电机控制电流, 范围 [-10000,10000]
-//   * @param[in]      rev: (0x208) 保留，电机控制电流
-//   * @retval         none
-//   */
-// void CAN_cmd_gimbal(int16_t yaw, int16_t pitch, int16_t shoot, int16_t rev)
-// {
-//     uint32_t send_mail_box;
-//     wheel_tx_message.StdId = CAN_GIMBAL_ALL_ID;
-//     wheel_tx_message.IDE = CAN_ID_STD;
-//     wheel_tx_message.RTR = CAN_RTR_DATA;
-//     wheel_tx_message.DLC = 0x08;
-//     wheel_can_send_data[0] = (yaw >> 8);
-//     wheel_can_send_data[1] = yaw;
-//     wheel_can_send_data[2] = (pitch >> 8);
-//     wheel_can_send_data[3] = pitch;
-//     wheel_can_send_data[4] = (shoot >> 8);
-//     wheel_can_send_data[5] = shoot;
-//     wheel_can_send_data[6] = (rev >> 8);
-//     wheel_can_send_data[7] = rev;
-//     HAL_CAN_AddTxMessage(&GIMBAL_CAN, &wheel_tx_message, wheel_can_send_data, &send_mail_box);
-// }
-
-// /**
-//   * @brief          send CAN packet of ID 0x700, it will set chassis motor 3508 to quick ID setting
-//   * @param[in]      none
-//   * @retval         none
-//   */
-// /**
-//   * @brief          发送ID为0x700的CAN包,它会设置3508电机进入快速设置ID
-//   * @param[in]      none
-//   * @retval         none
-//   */
-// void CAN_cmd_chassis_reset_ID(void)
-// {
-//     uint32_t send_mail_box;
-//     chassis_tx_message.StdId = 0x700;
-//     chassis_tx_message.IDE = CAN_ID_STD;
-//     chassis_tx_message.RTR = CAN_RTR_DATA;
-//     chassis_tx_message.DLC = 0x08;
-//     chassis_can_send_data[0] = 0;
-//     chassis_can_send_data[1] = 0;
-//     chassis_can_send_data[2] = 0;
-//     chassis_can_send_data[3] = 0;
-//     chassis_can_send_data[4] = 0;
-//     chassis_can_send_data[5] = 0;
-//     chassis_can_send_data[6] = 0;
-//     chassis_can_send_data[7] = 0;
-
-//     HAL_CAN_AddTxMessage(&CHASSIS_CAN, &chassis_tx_message, chassis_can_send_data, &send_mail_box);
-// }
-
-
-// /**
-//   * @brief          send control current of motor (0x201, 0x202, 0x203, 0x204)
-//   * @param[in]      motor1: (0x201) 3508 motor control current, range [-16384,16384] 
-//   * @param[in]      motor2: (0x202) 3508 motor control current, range [-16384,16384] 
-//   * @param[in]      motor3: (0x203) 3508 motor control current, range [-16384,16384] 
-//   * @param[in]      motor4: (0x204) 3508 motor control current, range [-16384,16384] 
-//   * @retval         none
-//   */
-// /**
-//   * @brief          发送电机控制电流(0x201,0x202,0x203,0x204)
-//   * @param[in]      motor1: (0x201) 3508电机控制电流, 范围 [-16384,16384]
-//   * @param[in]      motor2: (0x202) 3508电机控制电流, 范围 [-16384,16384]
-//   * @param[in]      motor3: (0x203) 3508电机控制电流, 范围 [-16384,16384]
-//   * @param[in]      motor4: (0x204) 3508电机控制电流, 范围 [-16384,16384]
-//   * @retval         none
-//   */
-// void CAN_cmd_chassis(int16_t motor1, int16_t motor2, int16_t motor3, int16_t motor4)
-// {
-//     uint32_t send_mail_box;
-//     chassis_tx_message.StdId = CAN_CHASSIS_ALL_ID;
-//     chassis_tx_message.IDE = CAN_ID_STD;
-//     chassis_tx_message.RTR = CAN_RTR_DATA;
-//     chassis_tx_message.DLC = 0x08;
-//     chassis_can_send_data[0] = motor1 >> 8;
-//     chassis_can_send_data[1] = motor1;
-//     chassis_can_send_data[2] = motor2 >> 8;
-//     chassis_can_send_data[3] = motor2;
-//     chassis_can_send_data[4] = motor3 >> 8;
-//     chassis_can_send_data[5] = motor3;
-//     chassis_can_send_data[6] = motor4 >> 8;
-//     chassis_can_send_data[7] = motor4;
-
-//     HAL_CAN_AddTxMessage(&CHASSIS_CAN, &chassis_tx_message, chassis_can_send_data, &send_mail_box);
-// }
-
-// /**
-//   * @brief          return the yaw 6020 motor data point
-//   * @param[in]      none
-//   * @retval         motor data point
-//   */
-// /**
-//   * @brief          返回yaw 6020电机数据指针
-//   * @param[in]      none
-//   * @retval         电机数据指针
-//   */
-// const motor_measure_t *get_yaw_gimbal_motor_measure_point(void)
-// {
-//     return &motor_chassis[4];
-// }
-
-// /**
-//   * @brief          return the pitch 6020 motor data point
-//   * @param[in]      none
-//   * @retval         motor data point
-//   */
-// /**
-//   * @brief          返回pitch 6020电机数据指针
-//   * @param[in]      none
-//   * @retval         电机数据指针
-//   */
-// const motor_measure_t *get_pitch_gimbal_motor_measure_point(void)
-// {
-//     return &motor_chassis[5];
-// }
-
-
-// /**
-//   * @brief          return the trigger 2006 motor data point
-//   * @param[in]      none
-//   * @retval         motor data point
-//   */
-// /**
-//   * @brief          返回拨弹电机 2006电机数据指针
-//   * @param[in]      none
-//   * @retval         电机数据指针
-//   */
-// const motor_measure_t *get_trigger_motor_measure_point(void)
-// {
-//     return &motor_chassis[6];
-// }
-
-
-// /**
-//   * @brief          return the chassis 3508 motor data point
-//   * @param[in]      i: motor number,range [0,3]
-//   * @retval         motor data point
-//   */
-// /**
-//   * @brief          返回底盘电机 3508电机数据指针
-//   * @param[in]      i: 电机编号,范围[0,3]
-//   * @retval         电机数据指针
-//   */
-// const motor_measure_t *get_chassis_motor_measure_point(uint8_t i)
-// {
-//     return &motor_chassis[(i & 0x03)];
-// }

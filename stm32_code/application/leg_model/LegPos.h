@@ -1,8 +1,12 @@
 /*
- * File: LegPos.h
+ * Academic License - for use in teaching, academic research, and meeting
+ * course requirements at degree granting institutions only.  Not for
+ * government, commercial, or other organizational use.
  *
- * MATLAB Coder version            : 23.2
- * C/C++ source code generated on  : 02-Oct-2023 13:13:57
+ * LegPos.h
+ *
+ * Code generation for function 'LegPos'
+ *
  */
 
 #ifndef LEGPOS_H
@@ -25,8 +29,4 @@ extern void LegPos(float phi1, float phi4, float pos[2]);
 #endif
 
 #endif
-/*
- * File trailer for LegPos.h
- *
- * [EOF]
- */
+/* End of code generation (LegPos.h) */

@@ -22,112 +22,55 @@ Dialog DLL:      TCM.DLL V1.27.0.0
  
 <h2>Project:</h2>
 D:\PolarBear\Wheel_Leg_Balance_Vehicle\stm32_code\MDK-ARM\standard_robot.uvprojx
-Project File Date:  09/29/2023
+Project File Date:  10/03/2023
 
 <h2>Output:</h2>
 *** Using Compiler 'V5.06 update 4 (build 422)', folder: 'C:\Applications\Keil_v5\ARM\ARMCC\Bin'
 Build target 'standard_robot'
-compiling main.c...
-compiling usb_task.c...
-..\application\usb_task.c(298): warning:  #1-D: last line of file ends without a newline
+compiling Balance_Controler.c...
+..\application\./Drives/MI_motor_drive.h(124): warning:  #1-D: last line of file ends without a newline
+  #endif
+..\application\Balance_Controler.h(173): warning:  #1295-D: Deprecated declaration MotorInitAll - give arg types
+  extern void MotorInitAll();
+..\application\Balance_Controler.h(176): warning:  #1295-D: Deprecated declaration ChassisPostureUpdate - give arg types
+  extern void ChassisPostureUpdate();
+..\application\Balance_Controler.h(177): warning:  #1295-D: Deprecated declaration CtrlTargetUpdateTask - give arg types
+  extern void CtrlTargetUpdateTask();
+..\application\Balance_Controler.h(178): warning:  #1295-D: Deprecated declaration LegPosUpdateTask - give arg types
+  extern void LegPosUpdateTask();
+..\application\./Drives/MI_motor_drive.h(124): warning:  #1-D: last line of file ends without a newline
+  #endif
+..\application\Balance_Controler.c(120): warning:  #1035-D: single-precision operand implicitly converted to double-precision
+               -2.679887351989746f + 
+_PI_2,
+..\application\Balance_Controler.c(129): warning:  #1035-D: single-precision operand implicitly converted to double-precision
+_PI_2, 
+..\application\Balance_Controler.c(148): warning:  #1035-D: single-precision operand implicitly converted to double-precision
+               -2.9478385639190674f + 
+_PI_2, 
+..\application\Balance_Controler.c(157): warning:  #1035-D: single-precision operand implicitly converted to double-precision
+_PI_2, 
+..\application\Balance_Controler.c(261): warning:  #940-D: missing return statement at end of non-void function "CalcJointAngle" 
   }
-..\application\usb_task.c(208): warning:  #177-D: function "usb_printf"  was declared but never referenced
-  static void usb_printf(const char *fmt,...)
-..\application\usb_task.c(54): warning:  #550-D: variable "gimbal_INT_gyro_angle_point"  was set but never used
-  static const fp32* gimbal_INT_gyro_angle_point;
-..\application\usb_task.c: 3 warnings, 0 errors
-compiling CAN_communication.c...
-..\application\CAN_communication.h(53): warning:  #1295-D: Deprecated declaration SendChassisCmd - give arg types
-  extern void SendChassisCmd();
-..\application\./Drives/MI_motor_drive.h(124): warning:  #1-D: last line of file ends without a newline
-  #endif
-..\application\./Drives/MI_motor_drive.h(124): warning:  #1-D: last line of file ends without a newline
-  #endif
-..\application\Balance_Controler.h(172): warning:  #1295-D: Deprecated declaration MotorInitAll - give arg types
-  extern void MotorInitAll();
-..\application\Balance_Controler.h(175): warning:  #1295-D: Deprecated declaration ChassisPostureUpdate - give arg types
-  extern void ChassisPostureUpdate();
-..\application\Balance_Controler.h(176): warning:  #1295-D: Deprecated declaration CtrlTargetUpdateTask - give arg types
-  extern void CtrlTargetUpdateTask();
-..\application\Balance_Controler.h(177): warning:  #1295-D: Deprecated declaration LegPosUpdateTask - give arg types
-  extern void LegPosUpdateTask();
-..\application\CAN_communication.c(88): warning:  #1035-D: single-precision operand implicitly converted to double-precision
-                  left_wheel.angle = motor_chassis[0].ecd/8191.0f*
-_PI*2;
-..\application\CAN_communication.c(90): warning:  #1035-D: single-precision operand implicitly converted to double-precision
-                  right_wheel.angle = motor_chassis[1].ecd/8191.0f*
-_PI*2;
-..\application\CAN_communication.c(102): warning:  #223-D: function "memcpy" declared implicitly
-          memcpy(&RxCAN_info,&rx_header.ExtId,29);//将扩展标识符的内容解码成对应内容
-..\application\CAN_communication.c(106): warning:  #223-D: function "MI_motor_RxDecode" declared implicitly
-            MI_motor_RxDecode(&RxCAN_info,rx_data);
-..\application\CAN_communication.c(104): warning:  #177-D: variable "decode_temp_mi"  was declared but never referenced
-          uint16_t decode_temp_mi;//小米电机反馈数据解码缓冲
-..\application\CAN_communication.c: 12 warnings, 0 errors
-compiling chassis_task.c...
-..\application\./Drives/MI_motor_drive.h(124): warning:  #1-D: last line of file ends without a newline
-  #endif
-..\application\Balance_Controler.h(172): warning:  #1295-D: Deprecated declaration MotorInitAll - give arg types
-  extern void MotorInitAll();
-..\application\Balance_Controler.h(175): warning:  #1295-D: Deprecated declaration ChassisPostureUpdate - give arg types
-  extern void ChassisPostureUpdate();
-..\application\Balance_Controler.h(176): warning:  #1295-D: Deprecated declaration CtrlTargetUpdateTask - give arg types
-  extern void CtrlTargetUpdateTask();
-..\application\Balance_Controler.h(177): warning:  #1295-D: Deprecated declaration LegPosUpdateTask - give arg types
-  extern void LegPosUpdateTask();
-..\application\CAN_communication.h(53): warning:  #1295-D: Deprecated declaration SendChassisCmd - give arg types
-  extern void SendChassisCmd();
-..\application\chassis_task.c(69): warning:  #223-D: function "vTaskDelay" declared implicitly
-      vTaskDelay(CHASSIS_TASK_INIT_TIME);
-..\application\chassis_task.c(133): warning:  #1035-D: single-precision operand implicitly converted to double-precision
-              state_var.theta = (left_leg_pos.angle + right_leg_pos.angle) / 2 - 
-_PI_2 - chassis_imu.pitch;
-..\application\chassis_task.c(158): warning:  #223-D: function "memset" declared implicitly
-              memset(k, 0, sizeof(k));
-..\application\chassis_task.c(205): warning:  #223-D: function "GetMillis" declared implicitly
-              if(!is_touching_ground && (GetMillis() - lastTouchTime < 1000)) //若上次触地时间距离现在不超过1s，则认为当前瞬间接地，避免弹跳导致误�?
-..\application\chassis_task.c(211): warning:  #223-D: function "GetMillis" declared implicitly
-              lastTouchTime = GetMillis();
-..\application\chassis_task.c(231): warning:  #1035-D: single-precision operand implicitly converted to double-precision
-              float leftTheta = left_leg_pos.angle - chassis_imu.pitch - 
-_PI_2;
-..\application\chassis_task.c(232): warning:  #1035-D: single-precision operand implicitly converted to double-precision
-              float rightTheta = right_leg_pos.angle - chassis_imu.pitch - 
-_PI_2;
-..\application\chassis_task.c(236): warning:  #1035-D: single-precision operand implicitly converted to double-precision
-              if(
-ROTECT_CONDITION) //当前达到保护条件
-..\application\chassis_task.c(236): warning:  #1035-D: single-precision operand implicitly converted to double-precision
-              if(
-ROTECT_CONDITION) //当前达到保护条件
-..\application\chassis_task.c(236): warning:  #1035-D: single-precision operand implicitly converted to double-precision
-              if(
-ROTECT_CONDITION) //当前达到保护条件
-..\application\chassis_task.c(251): warning:  #1035-D: single-precision operand implicitly converted to double-precision
-                  while(
-ROTECT_CONDITION && standup_state == StandupState_None)
-..\application\chassis_task.c(251): warning:  #1035-D: single-precision operand implicitly converted to double-precision
-                  while(
-ROTECT_CONDITION && standup_state == StandupState_None)
-..\application\chassis_task.c(251): warning:  #1035-D: single-precision operand implicitly converted to double-precision
-                  while(
-ROTECT_CONDITION && standup_state == StandupState_None)
-..\application\chassis_task.c(253): warning:  #1035-D: single-precision operand implicitly converted to double-precision
-                  leftTheta = left_leg_pos.angle - chassis_imu.pitch - 
-_PI_2;
-..\application\chassis_task.c(254): warning:  #1035-D: single-precision operand implicitly converted to double-precision
-                  rightTheta = right_leg_pos.angle - chassis_imu.pitch - 
-_PI_2;
-..\application\chassis_task.c(264): warning:  #1035-D: single-precision operand implicitly converted to double-precision
-              if(standup_state == StandupState_Standup && (leftTheta < -
-_PI_4 || rightTheta > 
-_PI_4))
-..\application\chassis_task.c: 22 warnings, 0 errors
-compiling freertos.c...
+..\application\Balance_Controler.c(393): warning:  #1035-D: single-precision operand implicitly converted to double-precision
+    while(left_leg_pos.angle < 
+_3PI_4)
+..\application\Balance_Controler.c(394): warning:  #223-D: function "vTaskDelay" declared implicitly
+      vTaskDelay(5);
+..\application\Balance_Controler.c(397): warning:  #223-D: function "vTaskDelay" declared implicitly
+    vTaskDelay(1000);
+..\application\Balance_Controler.c(402): warning:  #1035-D: single-precision operand implicitly converted to double-precision
+    while(right_leg_pos.angle > 
+_PI_4)
+..\application\Balance_Controler.c(418): warning:  #223-D: function "vTaskDelete" declared implicitly
+    vTaskDelete(NULL);
+..\application\Balance_Controler.c(779): warning:  #1-D: last line of file ends without a newline
+  // }
+..\application\Balance_Controler.c: 17 warnings, 0 errors
 linking...
-Program Size: Code=95428 RO-data=13924 RW-data=1048 ZI-data=61360  
+Program Size: Code=113644 RO-data=14344 RW-data=1060 ZI-data=61436  
 FromELF: creating hex file...
-"standard_tpye_c\standard_tpye_c.axf" - 0 Error(s), 37 Warning(s).
+"standard_tpye_c\standard_tpye_c.axf" - 0 Error(s), 17 Warning(s).
 
 <h2>Software Packages used:</h2>
 
@@ -145,7 +88,7 @@ Package Vendor: ARM
 <h2>Collection of Component Files used:</h2>
 
    * Component: ARM::CMSIS:CORE:5.0.1
-Build Time Elapsed:  00:00:04
+Build Time Elapsed:  00:00:03
 </pre>
 </body>
 </html>

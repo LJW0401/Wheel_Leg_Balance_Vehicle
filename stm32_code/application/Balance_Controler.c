@@ -115,18 +115,18 @@ float Motor_CalcRevVolt2006(float speed)
 void MotorInitAll()
 {
   MotorInit(&left_joint[0],&MI_Motor_1, 
-             -0.40862035751342773f, 
-             0.6387209892272949f,
-             0.6387209892272949f + M_PI_2,
+             -0.9612453579902649f, 
+             -2.679887351989746f,
+             -2.679887351989746f + M_PI_2,
              2.184230089187622,
              -0.14477163553237915,
              7, 0.0316f, -1);
   MI_motor_enable(&MI_Motor_1,1);
   
   MotorInit(&left_joint[1],&MI_Motor_2, 
-             -0.8761081099510193f, 
-             2.1109814643859863f, 
-             2.1109814643859863f + M_PI_2, 
+             -0.42242637276649475f, 
+             1.3354843664169312f, 
+             1.3354843664169312f + M_PI_2, 
              2.7893948554992676,
              0.5413116812705994,
              7, 0.0317f, 1);
@@ -143,18 +143,18 @@ void MotorInitAll()
              4.0f, 0.0096f, 1);
   
   MotorInit(&right_joint[0],&MI_Motor_3, 
-             -0.68819260597229f, 
-             -3.753516435623169f, 
-             -3.753516435623169f - M_PI_2, 
+             -1.1829088926315308f, 
+             -2.9478385639190674f, 
+             -2.9478385639190674f + M_PI_2, 
              -2.181162118911743,
              -4.348710060119629,
              7, 0.0299f, -1);
   MI_motor_enable(&MI_Motor_3,3);
 
   MotorInit(&right_joint[1],&MI_Motor_4, 
-             -0.564321756362915f, 
-             -1.5729295015335083f, 
-             -1.5729295015335083f - M_PI_2, 
+             -0.7974904179573059f, 
+             0.8326855611801147f, 
+             0.8326855611801147f + M_PI_2, 
              -0.9044871926307678,
              -3.201658248901367,
              7, 0.0321f, -1);
@@ -222,7 +222,9 @@ void MotorSetTorque(Motor_s *motor, float torque)
 float MotorTorqueToCurrent_2006(float torque)
 {
     //a: 0.586563749263927, b: -1.95946924227303, c: 0.466670000000000
-    return 0.586563749263927f*torque*torque - 1.95946924227303f*torque*torque + 0.466670000000000f*torque;
+    float current;
+    current = 0.586563749263927f*torque*torque - 1.95946924227303f*torque*torque + 0.466670000000000f*torque;
+    return current;
 }
 
 
@@ -417,6 +419,29 @@ void CtrlStandupPrepareTask(void *arg)
 }
 
 
+/**
+  * @brief          PID部分初始化
+  * @note           
+  * @author         小企鹅
+  */
+void PIDInit()
+{
+  //初始化各个PID参数
+  // PID_Init();
+
+  PID_Init(&yaw_PID.inner, 0.01, 0, 0, 0, 0.1);
+  PID_Init(&yaw_PID.outer, 10, 0, 0, 0, 2);
+  PID_Init(&roll_PID.inner, 1, 0, 5, 0, 5);
+  PID_Init(&roll_PID.outer, 20, 0, 0, 0, 3);
+  PID_SetErrLpfRatio(&roll_PID.inner, 0.1f);
+  PID_Init(&leg_length_PID.inner, 10.0f, 1, 30.0f, 2.0f, 10.0f);
+  PID_Init(&leg_length_PID.outer, 5.0f, 0, 0.0f, 0.0f, 0.5f);
+  PID_SetErrLpfRatio(&leg_length_PID.inner, 0.5f);
+  PID_Init(&leg_angle_PID.inner, 0.04, 0, 0, 0, 1);
+  PID_Init(&leg_angle_PID.outer, 12, 0, 0, 0, 20);
+  PID_SetErrLpfRatio(&leg_angle_PID.outer, 0.5f);
+}
+
 // /**
 //   * @todo           将函数转换为c函数
 //   * 
@@ -601,32 +626,7 @@ void CtrlStandupPrepareTask(void *arg)
 //   // }
 // }
 
-/**
-  * @brief          控制模块初始化
-  * @note           
-  * @author         小企鹅
-  */
-void Ctrl_Init()
-{
-  //初始化各个PID参数
-  PID_Init(&yaw_PID.inner, 0.01, 0, 0, 0, 0.1);
-  PID_Init(&yaw_PID.outer, 10, 0, 0, 0, 2);
-  PID_Init(&roll_PID.inner, 1, 0, 5, 0, 5);
-  PID_Init(&roll_PID.outer, 20, 0, 0, 0, 3);
-  PID_SetErrLpfRatio(&roll_PID.inner, 0.1f);
-  PID_Init(&leg_length_PID.inner, 10.0f, 1, 30.0f, 2.0f, 10.0f);
-  PID_Init(&leg_length_PID.outer, 5.0f, 0, 0.0f, 0.0f, 0.5f);
-  PID_SetErrLpfRatio(&leg_length_PID.inner, 0.5f);
-  PID_Init(&leg_angle_PID.inner, 0.04, 0, 0, 0, 1);
-  PID_Init(&leg_angle_PID.outer, 12, 0, 0, 0, 20);
-  PID_SetErrLpfRatio(&leg_angle_PID.outer, 0.5f);
 
-  //触发各个控制任务
-  // xTaskCreate(CtrlTargetUpdateTask, "CtrlTargetUpdateTask", 4096, NULL, 3, NULL);
-  // xTaskCreate(LegPos_UpdateTask, "LegPos_UpdateTask", 4096, NULL, 2, NULL);
-  // vTaskDelay(2);
-  // xTaskCreate(Ctrl_Task, "Ctrl_Task", 4096, NULL, 1, NULL);
-}
 
 // //初始化
 // void setup()

@@ -1,8 +1,12 @@
 /*
- * File: LQR_K.h
+ * Academic License - for use in teaching, academic research, and meeting
+ * course requirements at degree granting institutions only.  Not for
+ * government, commercial, or other organizational use.
  *
- * MATLAB Coder version            : 23.2
- * C/C++ source code generated on  : 02-Oct-2023 13:14:04
+ * LQR_K.h
+ *
+ * Code generation for function 'LQR_K'
+ *
  */
 
 #ifndef LQR_K_H
@@ -25,8 +29,4 @@ extern void LQR_K(float L0, float K[12]);
 #endif
 
 #endif
-/*
- * File trailer for LQR_K.h
- *
- * [EOF]
- */
+/* End of code generation (LQR_K.h) */

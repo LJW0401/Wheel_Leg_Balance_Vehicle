@@ -46,12 +46,16 @@ void MI_Motor_CanTx(MI_Motor_t* hmotor) {
     CAN_TxHeader_MI.ExtId = *((uint32_t*)&(hmotor->EXT_ID));
     uint32_t mailbox;
     /* Start the Transmission process */
-    uint32_t ret = HAL_CAN_AddTxMessage(hmotor->phcan, &CAN_TxHeader_MI, hmotor->txdata, &mailbox);
-    while (ret != HAL_OK) {
-        /* Transmission request Error */
-			  HAL_Delay(1);
-        ret = HAL_CAN_AddTxMessage(hmotor->phcan, &CAN_TxHeader_MI, hmotor->txdata, &mailbox);
+    uint32_t free_TxMailbox = HAL_CAN_GetTxMailboxesFreeLevel(hmotor->phcan);//检测是否有空闲邮箱
+    while (free_TxMailbox<3){//等待空闲邮箱数达到3
+        free_TxMailbox = HAL_CAN_GetTxMailboxesFreeLevel(hmotor->phcan);
     }
+    uint32_t ret = HAL_CAN_AddTxMessage(hmotor->phcan, &CAN_TxHeader_MI, hmotor->txdata, &mailbox);//将发送的数据添加到发送邮箱中
+    // while (ret != HAL_OK) {
+    //     /* Transmission request Error */
+		// 	  HAL_Delay(0);
+    //     ret = HAL_CAN_AddTxMessage(hmotor->phcan, &CAN_TxHeader_MI, hmotor->txdata, &mailbox);
+    // }
 }
 /**
   * @brief  小米电机初始化

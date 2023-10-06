@@ -1,8 +1,12 @@
 /*
- * File: LegSpd.h
+ * Academic License - for use in teaching, academic research, and meeting
+ * course requirements at degree granting institutions only.  Not for
+ * government, commercial, or other organizational use.
  *
- * MATLAB Coder version            : 23.2
- * C/C++ source code generated on  : 02-Oct-2023 13:13:59
+ * LegSpd.h
+ *
+ * Code generation for function 'LegSpd'
+ *
  */
 
 #ifndef LEGSPD_H
@@ -25,8 +29,4 @@ extern void LegSpd(float dphi1, float dphi4, float phi1, float phi4,
 #endif
 
 #endif
-/*
- * File trailer for LegSpd.h
- *
- * [EOF]
- */
+/* End of code generation (LegSpd.h) */

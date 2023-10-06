@@ -27,6 +27,7 @@
         "stdint.h": "c",
         "stddef.h": "c",
         "legpos.h": "c",
-        "stdlib.h": "c"
+        "stdlib.h": "c",
+        "legspd.h": "c"
     }
 }
