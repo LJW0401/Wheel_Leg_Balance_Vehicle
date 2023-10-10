@@ -30,11 +30,11 @@ float motorOutRatio = 1.0f; //电机输出电压比例，对所有电机同时�
 
 extern CAN_HandleTypeDef hcan1;
 
-MI_Motor_t MI_Motor_1;
-MI_Motor_t MI_Motor_2;
-MI_Motor_t MI_Motor_3;
-MI_Motor_t MI_Motor_4;
-MI_Motor_t MI_Motor_None;
+MI_Motor_s MI_Motor_1;
+MI_Motor_s MI_Motor_2;
+MI_Motor_s MI_Motor_3;
+MI_Motor_s MI_Motor_4;
+MI_Motor_s MI_Motor_None;
 
 Chassis_IMU_t chassis_imu;
 Motor_s left_joint[2], right_joint[2], left_wheel, right_wheel; //六个电机对象
@@ -73,10 +73,10 @@ uint32_t GetMillis()
   * @param          torque_ratio 
   * @param          dir 
   */
-void MotorInit(Motor_s *motor, MI_Motor_t* MI_Motor, float initial_angle, float vertical_angle,float horizontal_angle ,float upper_limit_angle,float lower_limit_angle, float max_voltage, float torque_ratio, float dir)//, float (*calcRevVolt)(float speed))
+void MotorInit(Motor_s *motor, MI_Motor_s* MI_Motor,uint8_t motor_id, float initial_angle, float vertical_angle,float horizontal_angle ,float upper_limit_angle,float lower_limit_angle, float max_voltage, float torque_ratio, float dir)//, float (*calcRevVolt)(float speed))
 {
   motor->MI_Motor = MI_Motor;
-  MI_motor_init(MI_Motor,&MI_CAN_1);
+  MI_motor_init(MI_Motor,&MI_CAN_1,motor_id);
   motor->speed = motor->angle = motor->voltage = 0;
   // motor->offsetAngle = offsetAngle;
   motor->initial_angle = initial_angle;
@@ -114,27 +114,23 @@ float Motor_CalcRevVolt2006(float speed)
   */
 void MotorInitAll()
 {
-  MotorInit(&left_joint[0],&MI_Motor_1, 
+  MotorInit(&left_joint[0],&MI_Motor_1,1, 
              -0.9612453579902649f, 
              -2.679887351989746f,
              -2.679887351989746f + M_PI_2,
              2.184230089187622,
              -0.14477163553237915,
              7, 0.0316f, -1);
-  MI_motor_enable(&MI_Motor_1,1);
   
-  MotorInit(&left_joint[1],&MI_Motor_2, 
+  MotorInit(&left_joint[1],&MI_Motor_2,2,
              -0.42242637276649475f, 
              1.3354843664169312f, 
              1.3354843664169312f + M_PI_2, 
              2.7893948554992676,
              0.5413116812705994,
              7, 0.0317f, 1);
-  MI_motor_enable(&MI_Motor_2,2);
 
-  HAL_Delay(5);
-
-  MotorInit(&left_wheel,&MI_Motor_None, 
+  MotorInit(&left_wheel,&MI_Motor_None,0,
              0, 
              0, 
              0, 
@@ -142,25 +138,23 @@ void MotorInitAll()
              0,
              4.0f, 0.0096f, 1);
   
-  MotorInit(&right_joint[0],&MI_Motor_3, 
+  MotorInit(&right_joint[0],&MI_Motor_3,3,
              -1.1829088926315308f, 
              -2.9478385639190674f, 
              -2.9478385639190674f + M_PI_2, 
              -2.181162118911743,
              -4.348710060119629,
              7, 0.0299f, -1);
-  MI_motor_enable(&MI_Motor_3,3);
 
-  MotorInit(&right_joint[1],&MI_Motor_4, 
+  MotorInit(&right_joint[1],&MI_Motor_4,4,
              -0.7974904179573059f, 
              0.8326855611801147f, 
              0.8326855611801147f + M_PI_2, 
              -0.9044871926307678,
              -3.201658248901367,
              7, 0.0321f, -1);
-  MI_motor_enable(&MI_Motor_4,4);
 
-  MotorInit(&right_wheel,&MI_Motor_None, 
+  MotorInit(&right_wheel,&MI_Motor_None,0,
              0, 
              0, 
              0,

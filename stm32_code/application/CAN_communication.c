@@ -206,81 +206,45 @@ void SendChassisCmd(void)
         right_joint[1].torque = lower_limit_torque;
     }
     /*对关节角度范围加以限制，不得超过各电机的角度范围*/
-    if(left_leg_pos.angle > M_PI || left_leg_pos.angle < 0){
+    if(left_leg_pos.angle > 3 || left_leg_pos.angle < 0.2){
         left_joint[0].torque = 0;
         left_joint[1].torque = 0;
     }
-    if(-right_leg_pos.angle > M_PI || -right_leg_pos.angle < 0){
+    if(right_leg_pos.angle > 3 || right_leg_pos.angle < 0.2){
         right_joint[0].torque = 0;
         right_joint[1].torque = 0;
     }
 /*控制信号发送部分*/
-    const RC_ctrl_t* rc_ctrl = get_remote_control_point();
-
-    left_joint[0].torque = rc_ctrl->rc.ch[0]/660.0f;
-    left_joint[1].torque = rc_ctrl->rc.ch[1]/660.0f;
-    right_joint[0].torque = rc_ctrl->rc.ch[2]/660.0f;
-    right_joint[1].torque = rc_ctrl->rc.ch[3]/660.0f;
-
-    // left_joint[0].torque = 0;
-    // left_joint[1].torque = 0;
-    // right_joint[0].torque = 0;
-    // right_joint[1].torque = 0;
-
-    MI_motor_controlmode(left_joint[0].MI_Motor,left_joint[0].torque,0,0,0,0);
-    MI_motor_controlmode(left_joint[1].MI_Motor,left_joint[1].torque,0,0,0,0);
-    MI_motor_controlmode(right_joint[0].MI_Motor,right_joint[0].torque,0,0,0,0);
-    MI_motor_controlmode(right_joint[1].MI_Motor,right_joint[1].torque,0,0,0,0);
-
-    // CANCmdWheel(rc_ctrl->rc.ch[1],rc_ctrl->rc.ch[3]);
-    // count_1++;
-    // if (count_1>100){
-    //     count_1 = 0;
-    //     cmd = -cmd;
-    // }
-    int16_t ccc= 500;
-    //CANCmdWheel(5000,5000);
-
     //发送关节控制力矩
-    // MI_motor_controlmode(left_joint[0].MI_Motor,left_joint[0].torque,0,0,0,0);
-    // for (i=0;i<10;i++){
-    //     HAL_Delay(0);
-    // }
-
-    // MI_motor_controlmode(left_joint[1].MI_Motor,left_joint[1].torque,0,0,0,0);
-    // for (i=0;i<10;i++){
-    //     HAL_Delay(0);
-    // }
-
-    // MI_motor_controlmode(right_joint[0].MI_Motor,right_joint[0].torque,0,0,0,0);
-    // for (i=0;i<10;i++){
-    //     HAL_Delay(0);
-    // }
-
-    // MI_motor_controlmode(right_joint[1].MI_Motor,right_joint[1].torque,0,0,0,0);
-    // for (i=0;i<100;i++){
-    //     HAL_Delay(0);
-    // }
-
+    MI_motor_ControlMode(left_joint[0].MI_Motor,left_joint[0].torque,0,0,0,0);
+    MI_motor_ControlMode(left_joint[1].MI_Motor,left_joint[1].torque,0,0,0,0);
+    MI_motor_ControlMode(right_joint[0].MI_Motor,right_joint[0].torque,0,0,0,0);
+    MI_motor_ControlMode(right_joint[1].MI_Motor,right_joint[1].torque,0,0,0,0);
     //发送车轮控制力矩
-    // int16_t left_torque2current = (int16_t)(left_wheel.torque*6000);
-    // int16_t right_torque2current = (int16_t)(right_wheel.torque*6000);
-    // CANCmdWheel(
-    //     left_torque2current,
-    //     right_torque2current
-    //             );
+    int16_t left_torque2current = (int16_t)( left_wheel.torque*1000);
+    int16_t right_torque2current = (int16_t)(right_wheel.torque*1000);
+    CANCmdWheel(left_torque2current,right_torque2current);
 
+    //Test
+    // const RC_ctrl_t* rc_ctrl = get_remote_control_point();
 
-    // CANCmdWheel(
-    //     rc_ctrl->rc.ch[1],
-    //     rc_ctrl->rc.ch[3]
-    //             );
+    // left_joint[0].torque = rc_ctrl->rc.ch[0]/660.0f;
+    // left_joint[1].torque = rc_ctrl->rc.ch[1]/660.0f;
+    // right_joint[0].torque = rc_ctrl->rc.ch[2]/660.0f;
+    // right_joint[1].torque = rc_ctrl->rc.ch[3]/660.0f;
 
-    // CANCmdWheel(
-    //     -500,
-    //     500
-    //             );
-		
+    // // left_joint[0].torque/=100;
+    // // left_joint[1].torque/=100;
+    // // right_joint[0].torque/=100;
+    // // right_joint[1].torque/=100;
+
+    // MI_motor_controlmode(left_joint[0].MI_Motor,left_joint[0].torque,0,0,0,0);
+    // MI_motor_controlmode(left_joint[1].MI_Motor,left_joint[1].torque,0,0,0,0);
+    // MI_motor_controlmode(right_joint[0].MI_Motor,right_joint[0].torque,0,0,0,0);
+    // MI_motor_controlmode(right_joint[1].MI_Motor,right_joint[1].torque,0,0,0,0);
+
+    // CANCmdWheel((rc_ctrl->rc.s[0]-2)*500,(rc_ctrl->rc.s[1]-2)*500);
+
 }
 
 

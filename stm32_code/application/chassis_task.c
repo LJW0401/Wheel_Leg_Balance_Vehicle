@@ -109,19 +109,25 @@ void chassis_task(void const *pvParameters)
         const RC_ctrl_t* rc_ctrl = get_remote_control_point();
 
 
-        if(rc_ctrl->rc.s[1] == 0x01){//初始姿态标定（关闭电机）
-            float left_wheel_torque = ((float)rc_ctrl->rc.ch[1])/660.0f;
-            float right_wheel_torque = ((float)rc_ctrl->rc.ch[3])/660.0f;
-            MotorSetTorque(&left_wheel, left_wheel_torque);
-            MotorSetTorque(&right_wheel, right_wheel_torque);
+        if(rc_ctrl->rc.s[1] == 0x01){//[OFF0档]初始姿态标定（关闭电机）
+            MotorSetTorque(&left_wheel, 0);
+            MotorSetTorque(&right_wheel, 0);
             MotorSetTorque(&left_joint[0], 0);
             MotorSetTorque(&left_joint[1], 0);
             MotorSetTorque(&right_joint[0], 0);
             MotorSetTorque(&right_joint[1], 0);
+        }else if(rc_ctrl->rc.s[1] == 0x03){//[CL档]手动控制平衡控制状态
+            float left_wheel_torque = ((float)rc_ctrl->rc.ch[1])/660.0f;
+            float right_wheel_torque = -((float)rc_ctrl->rc.ch[3])/660.0f;
 
-            SendChassisCmd();
+            MotorSetTorque(&left_wheel, left_wheel_torque);
+            MotorSetTorque(&right_wheel, right_wheel_torque);
+            MotorSetTorque(&left_joint[0], 0.3);
+            MotorSetTorque(&left_joint[1], -0.3);
+            MotorSetTorque(&right_joint[0], 0.3);
+            MotorSetTorque(&right_joint[1], -0.3);
 
-        }else if(rc_ctrl->rc.s[1] == 0x3){//正常控制状态
+        }else if(rc_ctrl->rc.s[1] == 0x02){//[HL档]正常控制状态
             //计算状态变量
             state_var.phi = chassis_imu.pitch;
             state_var.dPhi = chassis_imu.pitchSpd;
@@ -220,12 +226,11 @@ void chassis_task(void const *pvParameters)
             
 
             //设定关节电机输出扭矩
-            MotorSetTorque(&left_joint[0], -left_joint_torque[0]);
-            MotorSetTorque(&left_joint[1], -left_joint_torque[1]);
-            MotorSetTorque(&right_joint[0], -right_joint_torque[0]);
-            MotorSetTorque(&right_joint[1], -right_joint_torque[1]);
+            // MotorSetTorque(&left_joint[0], -left_joint_torque[0]);
+            // MotorSetTorque(&left_joint[1], -left_joint_torque[1]);
+            // MotorSetTorque(&right_joint[0], -right_joint_torque[0]);
+            // MotorSetTorque(&right_joint[1], -right_joint_torque[1]);
 
-            SendChassisCmd();
         }else{//其他状态一律关闭电机
             MotorSetTorque(&left_wheel, 0);
             MotorSetTorque(&right_wheel, 0);
@@ -233,9 +238,9 @@ void chassis_task(void const *pvParameters)
             MotorSetTorque(&left_joint[1], 0);
             MotorSetTorque(&right_joint[0], 0);
             MotorSetTorque(&right_joint[1], 0);
-
-            SendChassisCmd();
         }
+        
+        SendChassisCmd();
 
 
         //os delay
