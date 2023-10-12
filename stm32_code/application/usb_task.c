@@ -141,9 +141,13 @@ void usb_task(void const * argument)
           OutputData.header = 0x6A;
           OutputData.length = sizeof(OutputData_s);
           char_to_uint(OutputData.name_1,"M1_temp"); 
+          OutputData.type_1 = 1;
           char_to_uint(OutputData.name_2,"M2_temp"); 
+          OutputData.type_2 = 1;
           char_to_uint(OutputData.name_3,"M3_temp"); 
-          char_to_uint(OutputData.name_4,"M4_temp"); 
+          OutputData.type_3 = 1;
+          char_to_uint(OutputData.name_4,"M4_temp");
+          OutputData.type_4 = 1; 
 
           // char_to_uint(OutputData.name_5,"roll"); 
           // OutputData.type_5 = 1;
@@ -155,13 +159,13 @@ void usb_task(void const * argument)
           // OutputData.type_7 = 1;
           // OutputData.data_7 = gimbal_INT_gyro_angle_point[0];//云台yaw
 
-          char_to_uint(OutputData.name_5,"lwheels"); 
-          OutputData.type_5 = 1;
-          OutputData.data_5 = left_wheel.speed;//云台roll
-          char_to_uint(OutputData.name_6,"rwheels"); 
-          OutputData.type_6 = 1;
-          OutputData.data_6 = right_wheel.speed;//云台pitch
 
+          char_to_uint(OutputData.name_5,"LegLength1"); 
+          OutputData.type_5 = 1;
+          OutputData.data_5 = left_leg_pos.length;
+          char_to_uint(OutputData.name_6,"LegLength2"); 
+          OutputData.type_6 = 1;
+          OutputData.data_6 = right_leg_pos.length;
 
           char_to_uint(OutputData.name_8,"LegAngle1"); 
           OutputData.type_8 = 1;

@@ -1,9 +1,20 @@
 /**
- *
- * @File:        MI_motor_drive.c
- * @Author:      小企鹅
- *
- */
+  ****************************(C) COPYRIGHT 2023 POLARBEAR****************************
+  * @file       MI_motor_drive.c
+  * @brief      小米电机CyberGear驱动
+  * @note       
+  * @history
+  *  Version    Date            Author          Modification
+  *  V1.0.0     Oct-11-2023     小企鹅           1. done
+  *
+  @verbatim
+  ==============================================================================
+
+  ==============================================================================
+  @endverbatim
+  ****************************(C) COPYRIGHT 2023 POLARBEAR****************************
+  */
+ 
 /* Includes -------------------------------------------------------------------*/
 #include "MI_motor_drive.h"
 
@@ -311,59 +322,50 @@ void MI_motor_ModeSwitch(MI_Motor_s* hmotor, uint8_t run_mode)
 /*-------------------- 封装的一些控制函数 --------------------*/
 
 /**
-  * @brief          小米电机运控模式控制指令
+  * @brief          小米电机力矩控制模式控制指令
   * @param[in]      hmotor 电机结构体
   * @param[in]      torque 目标力矩
-  * @param[in]      MechPosition 
-  * @param[in]      speed 
-  * @param[in]      kp 
-  * @param[in]      kd 
   * @retval         none
   */
-void MI_motor_ControlMode(MI_Motor_s* hmotor, float torque, float MechPosition , float speed , float kp , float kd)
+void MI_motor_TorqueControl(MI_Motor_s* hmotor, float torque)
 {
-    MI_motor_ModeSwitch(hmotor, CONTROL_MODE);
-    MI_motor_Enable(hmotor);
-    MI_motor_Control(hmotor, torque, MechPosition, speed, kp, kd);
+    MI_motor_Control(hmotor, torque, 0, 0, 0, 0);
 }
 
 /**
   * @brief          小米电机位置模式控制指令
   * @param[in]      hmotor 电机结构体
-  * @param[in]      loc_ref 控制位置 rad
-  * @param[in]      limit_spd 预设最大速度(0~30rad/s)
+  * @param[in]      location 控制位置 rad
+  * @param[in]      kp 响应速度(到达位置快慢)，一般取1-10
+  * @param[in]      kd 电机阻尼，过小会震荡，过大电机会震动明显。一般取0.5左右
   * @retval         none
   */
-void MI_motor_LocationMode(MI_Motor_s* hmotor, float loc_ref, float limit_spd)
+void MI_motor_LocationControl(MI_Motor_s* hmotor, float location, float kp, float kd)
 {
-    MI_motor_ModeSwitch(hmotor, LOCATION_MODE);
-    MI_motor_Enable(hmotor);
-    MI_motor_WritePram(hmotor, LIMIT_SPD, RangeRestrict(limit_spd, LIMIT_SPD_MIN, LIMIT_SPD_MAX));
-    MI_motor_WritePram(hmotor, LOC_REF, loc_ref);
+    MI_motor_Control(hmotor, 0, location, 0, kp, kd);
 }
 
 /**
   * @brief          小米电机速度模式控制指令
   * @param[in]      hmotor 电机结构体
-  * @param[in]      spd_ref 控制速度
+  * @param[in]      speed 控制速度
+  * @param[in]      kd 响应速度，一般取0.1-1
   * @retval         none
   */
-void MI_motor_SpeedMode(MI_Motor_s* hmotor, float spd_ref)
+void MI_motor_SpeedControl(MI_Motor_s* hmotor, float speed, float kd)
 {
-    MI_motor_ModeSwitch(hmotor, SPEED_MODE);
-    MI_motor_Enable(hmotor);
-    MI_motor_WritePram(hmotor, SPD_REF, RangeRestrict(spd_ref, SPD_REF_MIN, SPD_REF_MAX));
+    MI_motor_Control(hmotor, 0, 0, speed, 0, kd);
 }
 
-/**
-  * @brief          小米电机电流模式控制指令
-  * @param[in]      hmotor 电机结构体
-  * @param[in]      iq_ref 控制电流
-  * @retval         none
-  */
-void MI_motor_CurrentMode(MI_Motor_s* hmotor, float iq_ref)
-{
-    MI_motor_ModeSwitch(hmotor, CURRENT_MODE);
-    MI_motor_Enable(hmotor);
-    MI_motor_WritePram(hmotor, IQ_REF, RangeRestrict(iq_ref, IQ_REF_MIN, IQ_REF_MAX));
-}
+// /**
+//   * @brief          小米电机电流模式控制指令
+//   * @param[in]      hmotor 电机结构体
+//   * @param[in]      iq_ref 控制电流
+//   * @retval         none
+//   */
+// void MI_motor_CurrentMode(MI_Motor_s* hmotor, float iq_ref)
+// {
+//     MI_motor_ModeSwitch(hmotor, CURRENT_MODE);
+//     MI_motor_Enable(hmotor);
+//     MI_motor_WritePram(hmotor, IQ_REF, RangeRestrict(iq_ref, IQ_REF_MIN, IQ_REF_MAX));
+// }

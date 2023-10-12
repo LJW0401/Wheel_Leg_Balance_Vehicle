@@ -30,10 +30,7 @@ float motorOutRatio = 1.0f; //电机输出电压比例，对所有电机同时�
 
 extern CAN_HandleTypeDef hcan1;
 
-MI_Motor_s MI_Motor_1;
-MI_Motor_s MI_Motor_2;
-MI_Motor_s MI_Motor_3;
-MI_Motor_s MI_Motor_4;
+MI_Motor_s MI_Motor[5];
 MI_Motor_s MI_Motor_None;
 
 Chassis_IMU_t chassis_imu;
@@ -76,7 +73,7 @@ uint32_t GetMillis()
 void MotorInit(Motor_s *motor, MI_Motor_s* MI_Motor,uint8_t motor_id, float initial_angle, float vertical_angle,float horizontal_angle ,float upper_limit_angle,float lower_limit_angle, float max_voltage, float torque_ratio, float dir)//, float (*calcRevVolt)(float speed))
 {
   motor->MI_Motor = MI_Motor;
-  MI_motor_init(MI_Motor,&MI_CAN_1,motor_id);
+  MI_motor_Init(MI_Motor,&MI_CAN_1,motor_id);
   motor->speed = motor->angle = motor->voltage = 0;
   // motor->offsetAngle = offsetAngle;
   motor->initial_angle = initial_angle;
@@ -114,21 +111,23 @@ float Motor_CalcRevVolt2006(float speed)
   */
 void MotorInitAll()
 {
-  MotorInit(&left_joint[0],&MI_Motor_1,1, 
-             -0.9612453579902649f, 
-             -2.679887351989746f,
-             -2.679887351989746f + M_PI_2,
-             2.184230089187622,
-             -0.14477163553237915,
-             7, 0.0316f, -1);
+  HAL_Delay(1000);
+  // MotorInit(&left_joint[0],&MI_Motor[1],1, 
+  //            -0.00019175051420461386f, 
+  //            -1.9656345844268799f,
+  //            -1.9656345844268799f + M_PI_2,
+  //            2.184230089187622,
+  //            -0.14477163553237915,
+  //            7, 0.0316f, -1);
   
-  MotorInit(&left_joint[1],&MI_Motor_2,2,
-             -0.42242637276649475f, 
-             1.3354843664169312f, 
-             1.3354843664169312f + M_PI_2, 
-             2.7893948554992676,
-             0.5413116812705994,
-             7, 0.0317f, 1);
+  // HAL_Delay(100);
+  // MotorInit(&left_joint[1],&MI_Motor[2],2,
+  //            -0.00019175051420461386f, 
+  //            1.6960333585739136f, 
+  //            1.6960333585739136f + M_PI_2, 
+  //            2.7893948554992676,
+  //            0.5413116812705994,
+  //            7, 0.0317f, 1);
 
   MotorInit(&left_wheel,&MI_Motor_None,0,
              0, 
@@ -138,18 +137,20 @@ void MotorInitAll()
              0,
              4.0f, 0.0096f, 1);
   
-  MotorInit(&right_joint[0],&MI_Motor_3,3,
-             -1.1829088926315308f, 
-             -2.9478385639190674f, 
-             -2.9478385639190674f + M_PI_2, 
+  HAL_Delay(100);
+  MotorInit(&right_joint[0],&MI_Motor[3],3,
+             -0.00019175051420461386f, 
+             1.8908518552780151f, 
+             1.8908518552780151f - M_PI_2, 
              -2.181162118911743,
              -4.348710060119629,
              7, 0.0299f, -1);
 
-  MotorInit(&right_joint[1],&MI_Motor_4,4,
-             -0.7974904179573059f, 
-             0.8326855611801147f, 
-             0.8326855611801147f + M_PI_2, 
+  HAL_Delay(100);
+  MotorInit(&right_joint[1],&MI_Motor[4],4,
+             -0.00019175051420461386f, 
+             -1.6588337421417236f, 
+             -1.6588337421417236f - M_PI_2, 
              -0.9044871926307678,
              -3.201658248901367,
              7, 0.0321f, -1);
@@ -207,18 +208,18 @@ void MotorSetTorque(Motor_s *motor, float torque)
 
 
 /**
-  * @brief          2006电机力矩到电流的映射
+  * @brief          2006电机力矩到电流值的映射
   * @note           
   * @param          torque 力矩大小
   * @return         current 电流大小
   * @author         小企鹅
   */
-float MotorTorqueToCurrent_2006(float torque)
+uint16_t MotorTorqueToCurrentValue_2006(float torque)
 {
     //a: 0.586563749263927, b: -1.95946924227303, c: 0.466670000000000
-    float current;
-    current = 0.586563749263927f*torque*torque - 1.95946924227303f*torque*torque + 0.466670000000000f*torque;
-    return current;
+    float current_value;
+    current_value = 0.586563749263927f*torque*torque - 1.95946924227303f*torque*torque + 0.466670000000000f*torque;
+    return (uint16_t)current_value;
 }
 
 
@@ -249,10 +250,20 @@ void ChassisPostureUpdate()
  * @brief          计算关节与正方向水平面的夹角
  * @return         none
 */
-float CalcJointAngle(Motor_s* joint_motor)
+float CalcJointAngle(Motor_s* left_joint, Motor_s* right_joint)
 {
-  joint_motor->angle = joint_motor->MI_Motor->RxCAN_info.angle - joint_motor->horizontal_angle;
+  left_joint[0].angle = left_joint[0].horizontal_angle - left_joint[0].MI_Motor->RxCAN_info.angle;
+  // left_joint[0].angle = M_1_PI - left_joint[0].angle;
+  left_joint[1].angle = left_joint[1].horizontal_angle - left_joint[1].MI_Motor->RxCAN_info.angle;
+  // left_joint[1].angle = M_1_PI - left_joint[1].angle;
+  right_joint[0].angle = right_joint[0].MI_Motor->RxCAN_info.angle - right_joint[0].horizontal_angle;
+  // right_joint[0].angle = M_1_PI - right_joint[0].angle;
+  right_joint[1].angle = right_joint[1].MI_Motor->RxCAN_info.angle - right_joint[1].horizontal_angle;
+  // right_joint[1].angle = M_1_PI - right_joint[1].angle;
 }
+// {
+//   joint_motor->angle = joint_motor->MI_Motor->RxCAN_info.angle - joint_motor->horizontal_angle;
+// }
 
 /**
   * @brief          目标量更新
@@ -322,10 +333,11 @@ void CtrlTargetUpdateTask()
 void LegPosUpdateTask()
 {
   //更新关节信息
-  CalcJointAngle(&left_joint[0]);
-  CalcJointAngle(&left_joint[1]);
-  CalcJointAngle(&right_joint[0]);
-  CalcJointAngle(&right_joint[1]);
+  // CalcJointAngle(&left_joint[0]);
+  // CalcJointAngle(&left_joint[1]);
+  // CalcJointAngle(&right_joint[0]);
+  // CalcJointAngle(&right_joint[1]);
+  CalcJointAngle(left_joint, right_joint);
   left_joint[0].speed = left_joint[0].MI_Motor->RxCAN_info.speed;
   left_joint[1].speed = left_joint[1].MI_Motor->RxCAN_info.speed;
   right_joint[0].speed = right_joint[0].MI_Motor->RxCAN_info.speed;

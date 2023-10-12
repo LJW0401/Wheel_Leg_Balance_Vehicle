@@ -73,6 +73,20 @@ void chassis_task(void const *pvParameters)
 
     MotorInitAll();//初始化所有电机
 
+    //VMC解算时用到的PID控制器
+    PID left_length_pid;
+    PID_Init(&left_length_pid,50,0,10,100,100);
+    PID left_angle_pid;
+    PID_Init(&left_angle_pid,0.05,0.000,0.02,100,100);
+
+    //2023.10.12左腿电机出问题了，先调右腿
+    PID right_length_pid;
+    PID_Init(&right_length_pid,50,0.01,10,100,100);
+    PID right_angle_pid;
+    PID_Init(&right_angle_pid,0.1,0.00001,0.08,100,100);
+    //PID_Init(&right_angle_pid,0.01,0.00,0.02,100,100);
+
+
     static uint32_t lastTouchTime = 0;
 
     const float wheelRadius = 0.0425f; //m，车轮半径
@@ -109,25 +123,100 @@ void chassis_task(void const *pvParameters)
         const RC_ctrl_t* rc_ctrl = get_remote_control_point();
 
 
-        if(rc_ctrl->rc.s[1] == 0x01){//[OFF0档]初始姿态标定（关闭电机）
-            MotorSetTorque(&left_wheel, 0);
-            MotorSetTorque(&right_wheel, 0);
-            MotorSetTorque(&left_joint[0], 0);
-            MotorSetTorque(&left_joint[1], 0);
-            MotorSetTorque(&right_joint[0], 0);
-            MotorSetTorque(&right_joint[1], 0);
-        }else if(rc_ctrl->rc.s[1] == 0x03){//[CL档]手动控制平衡控制状态
-            float left_wheel_torque = ((float)rc_ctrl->rc.ch[1])/660.0f;
-            float right_wheel_torque = -((float)rc_ctrl->rc.ch[3])/660.0f;
+        if(rc_ctrl->rc.s[1] == 0x01){//[OFF档]初始姿态标定
+            // if(left_joint[0].MI_Motor->motor_mode_state==RESET_MODE)
+            //     MI_motor_Enable(left_joint[0].MI_Motor);
+            // if(left_joint[1].MI_Motor->motor_mode_state==RESET_MODE)
+            //     MI_motor_Enable(left_joint[1].MI_Motor);
+            if(right_joint[0].MI_Motor->motor_mode_state==RESET_MODE)
+                MI_motor_Enable(right_joint[0].MI_Motor);
+            if(right_joint[1].MI_Motor->motor_mode_state==RESET_MODE)
+                MI_motor_Enable(right_joint[1].MI_Motor);
 
-            MotorSetTorque(&left_wheel, left_wheel_torque);
-            MotorSetTorque(&right_wheel, right_wheel_torque);
-            MotorSetTorque(&left_joint[0], 0.3);
-            MotorSetTorque(&left_joint[1], -0.3);
-            MotorSetTorque(&right_joint[0], 0.3);
-            MotorSetTorque(&right_joint[1], -0.3);
+            float torque = 0.5;
+            // MI_motor_TorqueControl(left_joint[0].MI_Motor ,+torque);
+            // MI_motor_TorqueControl(left_joint[1].MI_Motor ,-torque);
+            MI_motor_TorqueControl(right_joint[0].MI_Motor,-torque);
+            MI_motor_TorqueControl(right_joint[1].MI_Motor,+torque);
 
-        }else if(rc_ctrl->rc.s[1] == 0x02){//[HL档]正常控制状态
+            if (rc_ctrl->rc.s[0] == 0x02){
+                // MI_motor_SetMechPositionToZero(left_joint[0].MI_Motor);
+                // MI_motor_SetMechPositionToZero(left_joint[1].MI_Motor);
+                MI_motor_SetMechPositionToZero(right_joint[0].MI_Motor);
+                MI_motor_SetMechPositionToZero(right_joint[1].MI_Motor);
+            }
+            
+        }else if(rc_ctrl->rc.s[1] == 0x03){//[CL档]腿部伸长
+            //伸长固定长度
+            // MI_motor_LocationControl(left_joint[0].MI_Motor , -1.1 ,5,0.5);
+            // MI_motor_LocationControl(left_joint[1].MI_Motor , +1 ,5,0.5);
+            // MI_motor_LocationControl(right_joint[0].MI_Motor, +1.1 ,5,0.5);
+            // MI_motor_LocationControl(right_joint[1].MI_Motor, -1 ,5,0.5);
+
+            //摇杆控制
+            // float loc[4];
+            // for (int i=0;i<5;i++){
+            //     loc[i] = rc_ctrl->rc.ch[i]/300.0f;
+            // }
+            // MI_motor_LocationControl(left_joint[0].MI_Motor , loc[0] ,5,0.5);
+            // MI_motor_LocationControl(left_joint[1].MI_Motor , loc[1] ,5,0.5);
+            // MI_motor_LocationControl(right_joint[0].MI_Motor, loc[2] ,5,0.5);
+            // MI_motor_LocationControl(right_joint[1].MI_Motor, loc[3] ,5,0.5);
+
+            //VMC解算
+            // float target_length = 0.17f;
+            float target_length = 0.16f;
+            target_length -= rc_ctrl->rc.ch[1]/16500.0f;
+            float target_angle = 1.5f;
+            target_angle -= rc_ctrl->rc.ch[0]/1320.0f;
+            float feedback;
+
+            //左腿
+            feedback = target_length - left_leg_pos.length;
+            PID_SingleCalc(&left_length_pid, 0, feedback);
+            feedback = target_angle - left_leg_pos.angle;
+            PID_SingleCalc(&left_angle_pid,  0, feedback);
+
+            //右腿
+            // feedback = target_length - right_leg_pos.length;
+            // PID_SingleCalc(&right_length_pid, 0, feedback);
+            // feedback = target_angle - right_leg_pos.angle;
+            // PID_SingleCalc(&right_angle_pid,  0, feedback);
+
+            PID_SingleCalc(&right_length_pid, target_length, right_leg_pos.length);
+            PID_SingleCalc(&right_angle_pid,  target_angle, right_leg_pos.angle);
+
+
+
+            float F_left_leg =  -left_length_pid.output;
+            float Tp_left_leg = left_angle_pid.output;
+
+            float F_right_leg =  -right_length_pid.output;
+            float Tp_right_leg = right_angle_pid.output;
+
+            float left_joint_torque[2];
+            float right_joint_torque[2];
+            LegConv(F_left_leg, Tp_left_leg, left_joint[1].angle, left_joint[0].angle, left_joint_torque);
+            LegConv(F_right_leg, Tp_right_leg, right_joint[1].angle, right_joint[0].angle, right_joint_torque);
+
+            for (int i=0;i<2;i++){
+                float limit_torque = 0.7;
+                if (left_joint_torque[i] > limit_torque)MotorSetTorque(&left_joint[i], limit_torque);
+                else if (left_joint_torque[i] < -limit_torque)MotorSetTorque(&left_joint[i], -limit_torque);
+                else MotorSetTorque(&left_joint[i], left_joint_torque[i]);
+
+                if (right_joint_torque[i] > limit_torque)MotorSetTorque(&right_joint[i], limit_torque);
+                else if (right_joint_torque[i] < -limit_torque)MotorSetTorque(&right_joint[i], -limit_torque);
+                else MotorSetTorque(&right_joint[i], right_joint_torque[i]);
+            }
+
+            // MI_motor_TorqueControl(left_joint[0].MI_Motor,left_joint[0].torque);
+            // MI_motor_TorqueControl(left_joint[1].MI_Motor,left_joint[1].torque);
+            MI_motor_TorqueControl(right_joint[0].MI_Motor,right_joint[0].torque);
+            MI_motor_TorqueControl(right_joint[1].MI_Motor,right_joint[1].torque);
+
+        }else if(rc_ctrl->rc.s[1] == 0x02){//[HL档]平衡控制
+
             //计算状态变量
             state_var.phi = chassis_imu.pitch;
             state_var.dPhi = chassis_imu.pitchSpd;
@@ -141,20 +230,6 @@ void chassis_task(void const *pvParameters)
             //计算LQR反馈矩阵
             float kRes[12] = {0}, k[2][6] = {0};
             LQR_K(leg_length, kRes);
-            if(ground_detector.is_touching_ground) //正常触地状态
-            {
-                for (int i = 0; i < 6; i++)
-                {
-                    for (int j = 0; j < 2; j++)
-                    k[j][i] = kRes[i * 2 + j] * kRatio[j][i];
-                }
-            }
-            else //腿部离地状态，手动修改反馈矩阵，仅保持腿部竖直
-            {
-                memset(k, 0, sizeof(k));
-                k[1][0] = kRes[1] * -2;
-                k[1][1] = kRes[3] * -10;
-            }
 
             //准备状态变量
             float x[6] = {state_var.theta, state_var.dTheta, state_var.x, state_var.dx, state_var.phi, state_var.dPhi};
@@ -163,86 +238,28 @@ void chassis_task(void const *pvParameters)
             x[3] -= target.speed;
 
             //矩阵相乘，计算LQR输出
-            float lqr_out_T = k[0][0] * x[0] + k[0][1] * x[1] + k[0][2] * x[2] + k[0][3] * x[3] + k[0][4] * x[4] + k[0][5] * x[5];
-            float lqr_out_Tp = k[1][0] * x[0] + k[1][1] * x[1] + k[1][2] * x[2] + k[1][3] * x[3] + k[1][4] * x[4] + k[1][5] * x[5];
+            float lqrOutT = k[0][0] * x[0] + k[0][1] * x[1] + k[0][2] * x[2] + k[0][3] * x[3] + k[0][4] * x[4] + k[0][5] * x[5];
+            float lqrOutTp = k[1][0] * x[0] + k[1][1] * x[1] + k[1][2] * x[2] + k[1][3] * x[3] + k[1][4] * x[4] + k[1][5] * x[5];
 
             //计算yaw轴PID输出
             PID_CascadeCalc(&yaw_PID, target.yaw_angle, chassis_imu.yaw, chassis_imu.yawSpd);
-            
+
             //设定车轮电机输出扭矩，为LQR和yaw轴PID输出的叠加
-            if(ground_detector.is_touching_ground) //正常接地状态
-            {
-                MotorSetTorque(&left_wheel, -lqr_out_T * lqrTRatio - yaw_PID.output);
-                MotorSetTorque(&right_wheel, -lqr_out_T * lqrTRatio + yaw_PID.output);
-            }
-            else //腿部离地状态，关闭车轮电机
-            {
-                MotorSetTorque(&left_wheel, 0);
-                MotorSetTorque(&right_wheel, 0);
-            }
+            MotorSetTorque(&left_wheel, -lqrOutT * lqrTRatio - yaw_PID.output);
+            MotorSetTorque(&right_wheel, -lqrOutT * lqrTRatio + yaw_PID.output);
 
-            //根据离地状态修改目标腿长，并计算腿长PID输出
-            PID_CascadeCalc(&leg_length_PID, (ground_detector.is_touching_ground && !ground_detector.is_cuchioning) ? target.leg_length : 0.12f, leg_length, dLegLength);
-            //计算roll轴PID输出
-            PID_CascadeCalc(&roll_PID, target.roll_angle, chassis_imu.roll, chassis_imu.rollSpd);
-            //根据离地状态计算左右腿推力，若离地则不考虑roll轴PID输出和前馈量
-            float leftForce = leg_length_PID.output + ((ground_detector.is_touching_ground && !ground_detector.is_cuchioning) ? 6-roll_PID.output : 0);
-            float rightForce = leg_length_PID.output + ((ground_detector.is_touching_ground && !ground_detector.is_cuchioning) ? 6+roll_PID.output : 0);
-            if(left_leg_pos.length > 0.12f) //保护腿部不能伸太长
-            leftForce -= (left_leg_pos.length - 0.12f) * 100;
-            if(right_leg_pos.length > 0.12f)
-            rightForce -= (right_leg_pos.length - 0.12f) * 100;
-            
-            //计算左右腿的地面支持力
-            ground_detector.left_support_force = leftForce + legMass * 9.8f - legMass * (left_leg_pos.ddLength - chassis_imu.zAccel);
-            ground_detector.right_support_force = rightForce + legMass * 9.8f - legMass * (right_leg_pos.ddLength - chassis_imu.zAccel);
-            //更新离地检测器数据
-            uint8_t is_touching_ground = ground_detector.left_support_force > 3 && ground_detector.right_support_force > 3; //判断当前瞬间是否接地
-            if(!is_touching_ground && (GetMillis() - lastTouchTime < 1000)) //若上次触地时间距离现在不超过1s，则认为当前瞬间接地，避免弹跳导致误判
-                is_touching_ground = 1;
-            if(!ground_detector.is_touching_ground && is_touching_ground) //判断转为接地状态，标记进入缓冲状态
-            {
-                target.position = state_var.x;
-                ground_detector.is_cuchioning = 1;
-                lastTouchTime = GetMillis();
-            }
-            if(ground_detector.is_cuchioning && leg_length < target.leg_length) //缓冲状态直到腿长压缩到目标腿长结束
-                ground_detector.is_cuchioning = 0;
-            ground_detector.is_touching_ground = is_touching_ground;
-
-            //计算左右腿角度差PID输出
-            PID_CascadeCalc(&leg_angle_PID, 0, left_leg_pos.angle - right_leg_pos.angle, left_leg_pos.dAngle - right_leg_pos.dAngle);
-            
-            //计算髋关节扭矩输出，为LQR输出和左右腿角度差PID输出的叠加
-            float leftTp = lqr_out_Tp * lqrTpRatio - leg_angle_PID.output * (left_leg_pos.length / 0.07f);
-            float rightTp = lqr_out_Tp * lqrTpRatio + leg_angle_PID.output * (right_leg_pos.length / 0.07f);
-            
-            //使用VMC计算各关节电机输出扭矩
-            float left_joint_torque[2]={0};
-            LegConv(leftForce, leftTp, left_joint[1].angle, left_joint[0].angle, left_joint_torque);
-            float right_joint_torque[2]={0};
-            LegConv(rightForce, rightTp, right_joint[1].angle, right_joint[0].angle, right_joint_torque);
-/*添加角度限制，用等效直杆及2关节电机夹角极小值进行限制*/
-            
-
-            //设定关节电机输出扭矩
-            // MotorSetTorque(&left_joint[0], -left_joint_torque[0]);
-            // MotorSetTorque(&left_joint[1], -left_joint_torque[1]);
-            // MotorSetTorque(&right_joint[0], -right_joint_torque[0]);
-            // MotorSetTorque(&right_joint[1], -right_joint_torque[1]);
+            CANCmdWheel(
+                MotorTorqueToCurrentValue_2006(left_wheel.torque), 
+                MotorTorqueToCurrentValue_2006(right_wheel.torque)
+                );
 
         }else{//其他状态一律关闭电机
-            MotorSetTorque(&left_wheel, 0);
-            MotorSetTorque(&right_wheel, 0);
-            MotorSetTorque(&left_joint[0], 0);
-            MotorSetTorque(&left_joint[1], 0);
-            MotorSetTorque(&right_joint[0], 0);
-            MotorSetTorque(&right_joint[1], 0);
+            MI_motor_Stop(left_joint[0].MI_Motor);
+            MI_motor_Stop(left_joint[1].MI_Motor);
+            MI_motor_Stop(right_joint[0].MI_Motor);
+            MI_motor_Stop(right_joint[1].MI_Motor);
         }
         
-        SendChassisCmd();
-
-
         //os delay
         //系统延时
         vTaskDelay(CHASSIS_CONTROL_TIME_MS);

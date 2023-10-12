@@ -75,7 +75,7 @@ typedef struct
   */
 typedef struct 
 {
-  MI_Motor_t* MI_Motor; // 小米电机对象
+  MI_Motor_s* MI_Motor; // 小米电机对象
 	float speed;			   // rad/s
 	float angle, offset_angle, initial_angle, vertical_angle, horizontal_angle;  // rad
 	float upper_limit_angle,lower_limit_angle;// rad
@@ -152,11 +152,8 @@ typedef enum{
 }StandupState;
 
 
-extern MI_Motor_t MI_Motor_1;
-extern MI_Motor_t MI_Motor_2;
-extern MI_Motor_t MI_Motor_3;
-extern MI_Motor_t MI_Motor_4;
-extern MI_Motor_t MI_Motor_None;
+extern MI_Motor_s MI_Motor[5];
+extern MI_Motor_s MI_Motor_None;
 
 extern Chassis_IMU_t chassis_imu;
 extern Motor_s left_joint[2], right_joint[2], left_wheel, right_wheel;

@@ -1,9 +1,20 @@
 /**
- *
- * @File:        MI_motor_drive.h
- * @Author:      小企鹅
- *
- */
+  ****************************(C) COPYRIGHT 2023 POLARBEAR****************************
+  * @file       MI_motor_drive.h
+  * @brief      小米电机CyberGear驱动
+  * @note       
+  * @history
+  *  Version    Date            Author          Modification
+  *  V1.0.0     Oct-11-2023     小企鹅           1. done
+  *
+  @verbatim
+  ==============================================================================
+
+  ==============================================================================
+  @endverbatim
+  ****************************(C) COPYRIGHT 2023 POLARBEAR****************************
+  */
+
 #ifndef MI_MOTOR_DRIVE_H
 #define MI_MOTOR_DRIVE_H
 #ifdef __cplusplus
@@ -60,7 +71,7 @@ typedef enum
     CONTROL_MODE  = 0, //运控模式
     LOCATION_MODE = 1, //位置模式
     SPEED_MODE    = 2, //速度模式
-    CURRENT_MODE  = 3 //电流模式
+    CURRENT_MODE  = 3  //电流模式
 } motor_run_mode_e;//电机运行模式
 
 typedef enum
@@ -78,10 +89,10 @@ typedef enum
 
 typedef enum
 {
-    RESET_MODE = 0,//Reset[模式]
+    RESET_MODE = 0,//Reset模式[复位]
     CALI_MODE  = 1,//Cali 模式[标定]
-    RUN_MODE   = 2//Motor模式[运行]
-} motor_mode_e;//电机状态模式
+    RUN_MODE   = 2 //Motor模式[运行]
+} motor_mode_state_e;//电机模式状态
 
 typedef struct
 {
@@ -117,7 +128,7 @@ typedef struct
     uint32_t magnetic_encoding_fault : 1;
     uint32_t HALL_encoding_failure : 1;
     uint32_t unmarked : 1;
-    uint32_t mode_status : 2;
+    uint32_t mode_state : 2;
     uint32_t communication_type : 5;
     uint32_t res : 3;
     float angle;//(rad)
@@ -140,7 +151,7 @@ typedef struct
 {
     CAN_HandleTypeDef *phcan;
     motor_state_e motor_state;
-    motor_mode_e  motor_mode;
+    motor_mode_state_e  motor_mode_state;
     EXT_ID_t EXT_ID;
     uint8_t motor_id;
     uint8_t txdata[8];
@@ -161,10 +172,10 @@ void MI_motor_ChangeID(MI_Motor_s* hmotor,uint8_t Now_ID,uint8_t Target_ID);
 void MI_motor_ReadParam(MI_Motor_s* hmotor, uint16_t index);
 
 
-void MI_motor_ControlMode(MI_Motor_s* hmotor, float torque, float MechPosition , float speed , float kp , float kd);
-void MI_motor_LocationMode(MI_Motor_s* hmotor, float loc_ref, float limit_spd);
-void MI_motor_SpeedMode(MI_Motor_s* hmotor, float spd_ref);
-void MI_motor_CurrentMode(MI_Motor_s* hmotor, float iq_ref);
+void MI_motor_TorqueControl(MI_Motor_s* hmotor, float torque);
+void MI_motor_LocationControl(MI_Motor_s* hmotor, float location, float kp, float kd);
+void MI_motor_SpeedControl(MI_Motor_s* hmotor, float speed, float kd);
+// void MI_motor_CurrentMode(MI_Motor_s* hmotor, float iq_ref);
 
 
 extern uint8_t MI_MASTERID;

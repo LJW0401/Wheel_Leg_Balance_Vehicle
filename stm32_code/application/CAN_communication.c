@@ -68,7 +68,6 @@ static uint8_t              wheel_can_send_data[8];
 void HAL_CAN_RxFifo0MsgPendingCallback(CAN_HandleTypeDef *hcan)
 {
     CAN_RxHeaderTypeDef rx_header;
-    RxCAN_info_s RxCAN_info;//用于存储小米电机反馈的数据
     uint8_t rx_data[8];
 
     HAL_CAN_GetRxMessage(hcan, CAN_RX_FIFO0, &rx_header, rx_data);//获取CAN数据
@@ -107,37 +106,34 @@ void HAL_CAN_RxFifo0MsgPendingCallback(CAN_HandleTypeDef *hcan)
         }
 
     }else if (rx_header.IDE == CAN_ID_EXT) {//小米电机解码
-        memcpy(&RxCAN_info,&rx_header.ExtId,29);//将扩展标识符的内容解码成对应内容
+        RxCAN_info_s RxCAN_info;//用于存储小米电机反馈的数据
+        memcpy(&RxCAN_info,&rx_header.ExtId,4);//将扩展标识符的内容解码成对应内容
 
         uint16_t decode_temp_mi;//小米电机反馈数据解码缓冲
-        if (RxCAN_info.communication_type == 2){//若为通信类型2的反馈帧就对应解码
-          MI_motor_RxDecode(&RxCAN_info,rx_data);
+        if(RxCAN_info.communication_type == 0){//通信类型0的反馈帧解码
+            RxCAN_info_type_0_s RxCAN_info_type_0;
+            memcpy(&RxCAN_info_type_0,&rx_header.ExtId,4);//将扩展标识符的内容解码成通信类型0的对应内容
+            memcpy(&RxCAN_info_type_0.MCU_id,rx_data,8);//获取MCU标识符
+            OutputData.data_3 = RxCAN_info_type_0.motor_id;
+        }else if(RxCAN_info.communication_type == 2){//通信类型2的反馈帧解码
+            RxCAN_info_type_2_s RxCAN_info_type_2;
+            memcpy(&RxCAN_info_type_2,&rx_header.ExtId,4);//将扩展标识符的内容解码成通信类型2的对应内容
+            MI_motor_RxDecode(&RxCAN_info_type_2,rx_data);//通信类型2的数据解码
+
+            MI_Motor[RxCAN_info_type_2.motor_id].RxCAN_info = RxCAN_info_type_2;
+            MI_Motor[RxCAN_info_type_2.motor_id].motor_mode_state = RxCAN_info_type_2.mode_state;
+
+        }else if(RxCAN_info.communication_type == 17){//通信类型17的反馈帧解码
+            RxCAN_info_type_17_s RxCAN_info_type_17;
+            memcpy(&RxCAN_info_type_17,&rx_header.ExtId,4);//将扩展标识符的内容解码成通信类型17的对应内容
+            memcpy(&RxCAN_info_type_17.index,&rx_data[0],2);//获取查找的参数索引码
+            memcpy(&RxCAN_info_type_17.param,&rx_data[4],4);//获取查找的参数信息
         }
 
-        if (RxCAN_info.motor_id == 1){
-            MI_Motor_1.RxCAN_info = RxCAN_info;
-        }else if (RxCAN_info.motor_id == 2){
-            MI_Motor_2.RxCAN_info = RxCAN_info;
-        }else if (RxCAN_info.motor_id == 3){
-            MI_Motor_3.RxCAN_info = RxCAN_info;
-        }else if (RxCAN_info.motor_id == 4){
-            MI_Motor_4.RxCAN_info = RxCAN_info;
-        }
-        char_to_uint(OutputData.name_1,"M1_temp"); 
-        OutputData.type_1 = 1;
-        OutputData.data_1 = MI_Motor_1.RxCAN_info.angle;
-
-        char_to_uint(OutputData.name_2,"M2_temp"); 
-        OutputData.type_2 = 1;
-        OutputData.data_2 = MI_Motor_2.RxCAN_info.angle;
-
-        char_to_uint(OutputData.name_3,"M3_temp"); 
-        OutputData.type_3 = 1;
-        OutputData.data_3 = MI_Motor_3.RxCAN_info.angle;
-
-        char_to_uint(OutputData.name_4,"M4_temp"); 
-        OutputData.type_4 = 1;
-        OutputData.data_4 = MI_Motor_4.RxCAN_info.angle;
+        OutputData.data_1 = MI_Motor[1].RxCAN_info.angle;
+        OutputData.data_2 = MI_Motor[2].RxCAN_info.angle;
+        OutputData.data_3 = MI_Motor[3].RxCAN_info.angle;
+        OutputData.data_4 = MI_Motor[4].RxCAN_info.angle;
     }
 
 }
@@ -216,10 +212,10 @@ void SendChassisCmd(void)
     }
 /*控制信号发送部分*/
     //发送关节控制力矩
-    MI_motor_ControlMode(left_joint[0].MI_Motor,left_joint[0].torque,0,0,0,0);
-    MI_motor_ControlMode(left_joint[1].MI_Motor,left_joint[1].torque,0,0,0,0);
-    MI_motor_ControlMode(right_joint[0].MI_Motor,right_joint[0].torque,0,0,0,0);
-    MI_motor_ControlMode(right_joint[1].MI_Motor,right_joint[1].torque,0,0,0,0);
+    // MI_motor_ControlMode(left_joint[0].MI_Motor,left_joint[0].torque,0,0,0,0);
+    // MI_motor_ControlMode(left_joint[1].MI_Motor,left_joint[1].torque,0,0,0,0);
+    // MI_motor_ControlMode(right_joint[0].MI_Motor,right_joint[0].torque,0,0,0,0);
+    // MI_motor_ControlMode(right_joint[1].MI_Motor,right_joint[1].torque,0,0,0,0);
     //发送车轮控制力矩
     int16_t left_torque2current = (int16_t)( left_wheel.torque*1000);
     int16_t right_torque2current = (int16_t)(right_wheel.torque*1000);
