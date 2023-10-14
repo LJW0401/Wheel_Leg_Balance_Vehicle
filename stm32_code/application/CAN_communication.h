@@ -53,8 +53,8 @@ typedef struct
     int16_t last_ecd;
 } motor_measure_t;
 
-extern void CANCmdWheel(int16_t left_wheel, int16_t right_wheel);
+void SendChassisCmd();
+void CANCmdWheel(int16_t left_wheel, int16_t right_wheel);
 
-extern void SendChassisCmd();
 
 #endif

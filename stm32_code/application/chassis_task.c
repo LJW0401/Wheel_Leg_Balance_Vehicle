@@ -71,7 +71,21 @@ void chassis_task(void const *pvParameters)
     //底盘初始化
     // chassis_init();
 
+    HAL_Delay(1000);
     MotorInitAll();//初始化所有电机
+    //HAL_Delay(2);
+    MI_motor_Enable(&MI_Motor[1]);
+
+    //HAL_Delay(2);
+    MI_motor_Enable(&MI_Motor[2]);
+
+    HAL_Delay(2);
+    MI_motor_Enable(&MI_Motor[3]);
+
+    //HAL_Delay(2);
+    MI_motor_Enable(&MI_Motor[4]);
+
+    //HAL_Delay(1000);
 
     //VMC解算时用到的PID控制器
     PID left_length_pid;
@@ -123,25 +137,27 @@ void chassis_task(void const *pvParameters)
         const RC_ctrl_t* rc_ctrl = get_remote_control_point();
 
 
-        if(rc_ctrl->rc.s[1] == 0x01){//[OFF档]初始姿态标定
-            // if(left_joint[0].MI_Motor->motor_mode_state==RESET_MODE)
-            //     MI_motor_Enable(left_joint[0].MI_Motor);
-            // if(left_joint[1].MI_Motor->motor_mode_state==RESET_MODE)
-            //     MI_motor_Enable(left_joint[1].MI_Motor);
-            if(right_joint[0].MI_Motor->motor_mode_state==RESET_MODE)
-                MI_motor_Enable(right_joint[0].MI_Motor);
-            if(right_joint[1].MI_Motor->motor_mode_state==RESET_MODE)
-                MI_motor_Enable(right_joint[1].MI_Motor);
+        if(left_joint[0].MI_Motor->motor_mode_state==RESET_MODE)
+            MI_motor_Enable(left_joint[0].MI_Motor);
+        if(left_joint[1].MI_Motor->motor_mode_state==RESET_MODE)
+            MI_motor_Enable(left_joint[1].MI_Motor);
+        if(right_joint[0].MI_Motor->motor_mode_state==RESET_MODE)
+            MI_motor_Enable(right_joint[0].MI_Motor);
+        if(right_joint[1].MI_Motor->motor_mode_state==RESET_MODE)
+            MI_motor_Enable(right_joint[1].MI_Motor);
 
-            float torque = 0.5;
-            // MI_motor_TorqueControl(left_joint[0].MI_Motor ,+torque);
-            // MI_motor_TorqueControl(left_joint[1].MI_Motor ,-torque);
-            MI_motor_TorqueControl(right_joint[0].MI_Motor,-torque);
-            MI_motor_TorqueControl(right_joint[1].MI_Motor,+torque);
+
+        if(rc_ctrl->rc.s[1] == 0x01){//[OFF档]初始姿态标定
+            // float torque = 0.5;
+            float torque = 0.0;
+            MotorSetTorque(&left_joint[0], torque);
+            MotorSetTorque(&left_joint[1], -torque);
+            MotorSetTorque(&right_joint[0], -torque);
+            MotorSetTorque(&right_joint[1], torque);
 
             if (rc_ctrl->rc.s[0] == 0x02){
-                // MI_motor_SetMechPositionToZero(left_joint[0].MI_Motor);
-                // MI_motor_SetMechPositionToZero(left_joint[1].MI_Motor);
+                MI_motor_SetMechPositionToZero(left_joint[0].MI_Motor);
+                MI_motor_SetMechPositionToZero(left_joint[1].MI_Motor);
                 MI_motor_SetMechPositionToZero(right_joint[0].MI_Motor);
                 MI_motor_SetMechPositionToZero(right_joint[1].MI_Motor);
             }
@@ -172,17 +188,22 @@ void chassis_task(void const *pvParameters)
             float feedback;
 
             //左腿
+            //这样正常，不知道为什么
             feedback = target_length - left_leg_pos.length;
             PID_SingleCalc(&left_length_pid, 0, feedback);
             feedback = target_angle - left_leg_pos.angle;
             PID_SingleCalc(&left_angle_pid,  0, feedback);
+            //这样会抽，不知道为什么
+            // PID_SingleCalc(&left_length_pid, target_length, left_leg_pos.length);
+            // PID_SingleCalc(&left_angle_pid,  target_angle, left_leg_pos.angle);
 
             //右腿
+            //这样会抽，不知道为什么
             // feedback = target_length - right_leg_pos.length;
             // PID_SingleCalc(&right_length_pid, 0, feedback);
             // feedback = target_angle - right_leg_pos.angle;
             // PID_SingleCalc(&right_angle_pid,  0, feedback);
-
+            //这样正常，不知道为什么
             PID_SingleCalc(&right_length_pid, target_length, right_leg_pos.length);
             PID_SingleCalc(&right_angle_pid,  target_angle, right_leg_pos.angle);
 
@@ -212,8 +233,8 @@ void chassis_task(void const *pvParameters)
 
             // MI_motor_TorqueControl(left_joint[0].MI_Motor,left_joint[0].torque);
             // MI_motor_TorqueControl(left_joint[1].MI_Motor,left_joint[1].torque);
-            MI_motor_TorqueControl(right_joint[0].MI_Motor,right_joint[0].torque);
-            MI_motor_TorqueControl(right_joint[1].MI_Motor,right_joint[1].torque);
+            // MI_motor_TorqueControl(right_joint[0].MI_Motor,right_joint[0].torque);
+            // MI_motor_TorqueControl(right_joint[1].MI_Motor,right_joint[1].torque);
 
         }else if(rc_ctrl->rc.s[1] == 0x02){//[HL档]平衡控制
 
@@ -248,17 +269,22 @@ void chassis_task(void const *pvParameters)
             MotorSetTorque(&left_wheel, -lqrOutT * lqrTRatio - yaw_PID.output);
             MotorSetTorque(&right_wheel, -lqrOutT * lqrTRatio + yaw_PID.output);
 
-            CANCmdWheel(
-                MotorTorqueToCurrentValue_2006(left_wheel.torque), 
-                MotorTorqueToCurrentValue_2006(right_wheel.torque)
-                );
+            // CANCmdWheel(
+            //     MotorTorqueToCurrentValue_2006(left_wheel.torque), 
+            //     MotorTorqueToCurrentValue_2006(right_wheel.torque)
+            //     );
 
         }else{//其他状态一律关闭电机
-            MI_motor_Stop(left_joint[0].MI_Motor);
-            MI_motor_Stop(left_joint[1].MI_Motor);
-            MI_motor_Stop(right_joint[0].MI_Motor);
-            MI_motor_Stop(right_joint[1].MI_Motor);
+            MotorSetTorque(&left_joint[0], 0);
+            MotorSetTorque(&left_joint[1], 0);
+            MotorSetTorque(&right_joint[0], 0);
+            MotorSetTorque(&right_joint[1], 0);
+
+            MotorSetTorque(&left_wheel, 0);
+            MotorSetTorque(&right_wheel, 0);
         }
+        
+        SendChassisCmd();//发送底盘控制指令
         
         //os delay
         //系统延时

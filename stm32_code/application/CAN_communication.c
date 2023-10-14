@@ -55,6 +55,11 @@ static motor_measure_t motor_chassis[7];
 static CAN_TxHeaderTypeDef  wheel_tx_message;
 static uint8_t              wheel_can_send_data[8];
 
+//Function declaration
+
+static void CANRxDecode(CAN_RxHeaderTypeDef rx_header,uint8_t rx_data[8]);
+
+
 /**
   * @brief          hal CAN fifo call back, receive motor data
   * @param[in]      hcan, the point to CAN handle
@@ -71,8 +76,40 @@ void HAL_CAN_RxFifo0MsgPendingCallback(CAN_HandleTypeDef *hcan)
     uint8_t rx_data[8];
 
     HAL_CAN_GetRxMessage(hcan, CAN_RX_FIFO0, &rx_header, rx_data);//获取CAN数据
+    CANRxDecode(rx_header,rx_data);//CAN数据解码
+}
+void HAL_CAN_RxFifo1MsgPendingCallback(CAN_HandleTypeDef *hcan)
+{
+    CAN_RxHeaderTypeDef rx_header;
+    uint8_t rx_data[8];
+
+    HAL_CAN_GetRxMessage(hcan, CAN_RX_FIFO1, &rx_header, rx_data);//获取CAN数据
+    CANRxDecode(rx_header,rx_data);//CAN数据解码
+}
+
+/**
+  * @brief          hal库CAN回调函数,处理CAN接收溢出
+  * @param[in]      hcan:CAN句柄指针
+  * @retval         none
+  */
+void HAL_CAN_RxFifo0FullCallback(CAN_HandleTypeDef *hcan)
+{
+    HAL_CAN_RxFifo0MsgPendingCallback(hcan);
+}
+void HAL_CAN_RxFifo1FullCallback(CAN_HandleTypeDef *hcan)
+{
+    HAL_CAN_RxFifo1MsgPendingCallback(hcan);
+}
 
 
+/**
+  * @brief          反馈数据解码
+  * @param[in]      left_wheel: (0x207) 2006电机控制电流, 范围 [-10000,10000]
+  * @param[in]      right_wheel: (0x208) 2006电机控制电流, 范围 [-10000,10000]
+  * @retval         none
+  */
+static void CANRxDecode(CAN_RxHeaderTypeDef rx_header,uint8_t rx_data[8])
+{
     if (rx_header.IDE == CAN_ID_STD) {//大疆2006电机解码
         switch (rx_header.StdId)
         {
@@ -130,12 +167,8 @@ void HAL_CAN_RxFifo0MsgPendingCallback(CAN_HandleTypeDef *hcan)
             memcpy(&RxCAN_info_type_17.param,&rx_data[4],4);//获取查找的参数信息
         }
 
-        OutputData.data_1 = MI_Motor[1].RxCAN_info.angle;
-        OutputData.data_2 = MI_Motor[2].RxCAN_info.angle;
-        OutputData.data_3 = MI_Motor[3].RxCAN_info.angle;
-        OutputData.data_4 = MI_Motor[4].RxCAN_info.angle;
-    }
 
+    }
 }
 
 /**
@@ -175,72 +208,29 @@ void SendChassisCmd(void)
 {
 /*安全保护措施*/
     /*进行关节力矩限制,输出力矩不得超过限制范围*/
-    float upper_limit_torque = 1.5;//N*m
-    float lower_limit_torque = -1.5;//N*m
+    float upper_limit_torque = 1.0;//N*m
+    float lower_limit_torque = -1.0;//N*m
+    for (int i=0;i<2;i++){
+        if(left_joint[i].torque > upper_limit_torque) left_joint[i].torque = upper_limit_torque;
+        else if(left_joint[i].torque < lower_limit_torque) left_joint[i].torque = lower_limit_torque;
 
-    if(left_joint[0].torque > upper_limit_torque){
-        left_joint[0].torque = upper_limit_torque;
-    }else if(left_joint[0].torque < lower_limit_torque){
-        left_joint[0].torque = lower_limit_torque;
+        if(right_joint[i].torque > upper_limit_torque) right_joint[i].torque = upper_limit_torque;
+        else if(right_joint[i].torque < lower_limit_torque) right_joint[i].torque = lower_limit_torque;
     }
     
-    if(left_joint[1].torque > upper_limit_torque){
-        left_joint[1].torque = upper_limit_torque;
-    }else if(left_joint[1].torque < lower_limit_torque){
-        left_joint[1].torque = lower_limit_torque;
-    }
-
-    if(right_joint[0].torque > upper_limit_torque){
-        right_joint[0].torque = upper_limit_torque;
-    }else if(right_joint[0].torque < lower_limit_torque){
-        right_joint[0].torque = lower_limit_torque;
-    }
-
-    if(right_joint[1].torque > upper_limit_torque){
-        right_joint[1].torque = upper_limit_torque;
-    }else if(right_joint[1].torque < lower_limit_torque){
-        right_joint[1].torque = lower_limit_torque;
-    }
-    /*对关节角度范围加以限制，不得超过各电机的角度范围*/
-    if(left_leg_pos.angle > 3 || left_leg_pos.angle < 0.2){
-        left_joint[0].torque = 0;
-        left_joint[1].torque = 0;
-    }
-    if(right_leg_pos.angle > 3 || right_leg_pos.angle < 0.2){
-        right_joint[0].torque = 0;
-        right_joint[1].torque = 0;
-    }
-/*控制信号发送部分*/
     //发送关节控制力矩
-    // MI_motor_ControlMode(left_joint[0].MI_Motor,left_joint[0].torque,0,0,0,0);
-    // MI_motor_ControlMode(left_joint[1].MI_Motor,left_joint[1].torque,0,0,0,0);
-    // MI_motor_ControlMode(right_joint[0].MI_Motor,right_joint[0].torque,0,0,0,0);
-    // MI_motor_ControlMode(right_joint[1].MI_Motor,right_joint[1].torque,0,0,0,0);
+    MI_motor_TorqueControl(left_joint[0].MI_Motor,left_joint[0].torque);
+    HAL_Delay(1);
+    MI_motor_TorqueControl(left_joint[1].MI_Motor,left_joint[1].torque);
+
+    HAL_Delay(1);
+
+    MI_motor_TorqueControl(right_joint[0].MI_Motor,right_joint[0].torque);
+    HAL_Delay(1);
+    MI_motor_TorqueControl(right_joint[1].MI_Motor,right_joint[1].torque);
+
     //发送车轮控制力矩
-    int16_t left_torque2current = (int16_t)( left_wheel.torque*1000);
-    int16_t right_torque2current = (int16_t)(right_wheel.torque*1000);
-    CANCmdWheel(left_torque2current,right_torque2current);
-
-    //Test
-    // const RC_ctrl_t* rc_ctrl = get_remote_control_point();
-
-    // left_joint[0].torque = rc_ctrl->rc.ch[0]/660.0f;
-    // left_joint[1].torque = rc_ctrl->rc.ch[1]/660.0f;
-    // right_joint[0].torque = rc_ctrl->rc.ch[2]/660.0f;
-    // right_joint[1].torque = rc_ctrl->rc.ch[3]/660.0f;
-
-    // // left_joint[0].torque/=100;
-    // // left_joint[1].torque/=100;
-    // // right_joint[0].torque/=100;
-    // // right_joint[1].torque/=100;
-
-    // MI_motor_controlmode(left_joint[0].MI_Motor,left_joint[0].torque,0,0,0,0);
-    // MI_motor_controlmode(left_joint[1].MI_Motor,left_joint[1].torque,0,0,0,0);
-    // MI_motor_controlmode(right_joint[0].MI_Motor,right_joint[0].torque,0,0,0,0);
-    // MI_motor_controlmode(right_joint[1].MI_Motor,right_joint[1].torque,0,0,0,0);
-
-    // CANCmdWheel((rc_ctrl->rc.s[0]-2)*500,(rc_ctrl->rc.s[1]-2)*500);
-
+    CANCmdWheel(0,0);
 }
 
 

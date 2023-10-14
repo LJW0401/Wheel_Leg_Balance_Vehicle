@@ -80,7 +80,7 @@ void MI_motor_CanTx(MI_Motor_s* hmotor)
     CAN_TxHeader_MI.ExtId = *((uint32_t*)&(hmotor->EXT_ID));
     /*检测可用的发送邮箱*/
     uint32_t free_TxMailbox = HAL_CAN_GetTxMailboxesFreeLevel(hmotor->phcan);//检测是否有空闲邮箱
-    while (free_TxMailbox<3){//等待空闲邮箱数达到3
+    while (free_TxMailbox<3){//等待空闲邮箱
         free_TxMailbox = HAL_CAN_GetTxMailboxesFreeLevel(hmotor->phcan);
     }
     /* 将发送信息添加到发送邮箱中 */

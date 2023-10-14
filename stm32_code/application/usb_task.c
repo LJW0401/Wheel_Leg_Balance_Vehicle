@@ -142,12 +142,16 @@ void usb_task(void const * argument)
           OutputData.length = sizeof(OutputData_s);
           char_to_uint(OutputData.name_1,"M1_temp"); 
           OutputData.type_1 = 1;
+          OutputData.data_1 = MI_Motor[1].RxCAN_info.angle;
           char_to_uint(OutputData.name_2,"M2_temp"); 
           OutputData.type_2 = 1;
+          OutputData.data_2 = MI_Motor[2].RxCAN_info.angle;
           char_to_uint(OutputData.name_3,"M3_temp"); 
           OutputData.type_3 = 1;
+          OutputData.data_3 = MI_Motor[3].RxCAN_info.angle;
           char_to_uint(OutputData.name_4,"M4_temp");
           OutputData.type_4 = 1; 
+          OutputData.data_4 = MI_Motor[4].RxCAN_info.angle;
 
           // char_to_uint(OutputData.name_5,"roll"); 
           // OutputData.type_5 = 1;
