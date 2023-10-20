@@ -73,31 +73,25 @@ void chassis_task(void const *pvParameters)
 
     HAL_Delay(1000);
     MotorInitAll();//初始化所有电机
-    //HAL_Delay(2);
     MI_motor_Enable(&MI_Motor[1]);
-
-    //HAL_Delay(2);
     MI_motor_Enable(&MI_Motor[2]);
 
     HAL_Delay(2);
     MI_motor_Enable(&MI_Motor[3]);
-
-    //HAL_Delay(2);
     MI_motor_Enable(&MI_Motor[4]);
 
     //HAL_Delay(1000);
 
     //VMC解算时用到的PID控制器
     PID left_length_pid;
-    PID_Init(&left_length_pid,50,0,10,100,100);
+    PID_Init(&left_length_pid,50,0.01,10,100,100);
     PID left_angle_pid;
-    PID_Init(&left_angle_pid,0.05,0.000,0.02,100,100);
+    PID_Init(&left_angle_pid,0.05,0.00001,0.05,100,100);
 
-    //2023.10.12左腿电机出问题了，先调右腿
     PID right_length_pid;
     PID_Init(&right_length_pid,50,0.01,10,100,100);
     PID right_angle_pid;
-    PID_Init(&right_angle_pid,0.1,0.00001,0.08,100,100);
+    PID_Init(&right_angle_pid,0.05,0.00001,0.05,100,100);
     //PID_Init(&right_angle_pid,0.01,0.00,0.02,100,100);
 
 
@@ -148,8 +142,8 @@ void chassis_task(void const *pvParameters)
 
 
         if(rc_ctrl->rc.s[1] == 0x01){//[OFF档]初始姿态标定
-            // float torque = 0.5;
-            float torque = 0.0;
+            float torque = 0.5;
+            // float torque = 0.0;
             MotorSetTorque(&left_joint[0], torque);
             MotorSetTorque(&left_joint[1], -torque);
             MotorSetTorque(&right_joint[0], -torque);
@@ -162,6 +156,9 @@ void chassis_task(void const *pvParameters)
                 MI_motor_SetMechPositionToZero(right_joint[1].MI_Motor);
             }
             
+            CANCmdLeftJoint();
+            HAL_Delay(1);
+            CANCmdRightJoint();
         }else if(rc_ctrl->rc.s[1] == 0x03){//[CL档]腿部伸长
             //伸长固定长度
             // MI_motor_LocationControl(left_joint[0].MI_Motor , -1.1 ,5,0.5);
@@ -187,7 +184,8 @@ void chassis_task(void const *pvParameters)
             target_angle -= rc_ctrl->rc.ch[0]/1320.0f;
             float feedback;
 
-            //左腿
+            float limit_torque = 0.7;
+            //左腿控制部分
             //这样正常，不知道为什么
             feedback = target_length - left_leg_pos.length;
             PID_SingleCalc(&left_length_pid, 0, feedback);
@@ -197,6 +195,21 @@ void chassis_task(void const *pvParameters)
             // PID_SingleCalc(&left_length_pid, target_length, left_leg_pos.length);
             // PID_SingleCalc(&left_angle_pid,  target_angle, left_leg_pos.angle);
 
+            float F_left_leg =  -left_length_pid.output;
+            float Tp_left_leg = left_angle_pid.output;
+
+            float left_joint_torque[2];
+            LegConv(F_left_leg, Tp_left_leg, left_joint[1].angle, left_joint[0].angle, left_joint_torque);
+            for (int i=0;i<2;i++){
+                if (left_joint_torque[i] > limit_torque)MotorSetTorque(&left_joint[i], limit_torque);
+                else if (left_joint_torque[i] < -limit_torque)MotorSetTorque(&left_joint[i], -limit_torque);
+                else MotorSetTorque(&left_joint[i], left_joint_torque[i]);
+            }
+
+            CANCmdLeftJoint();
+
+            HAL_Delay(2);
+            // vTaskDelay(1);
             //右腿
             //这样会抽，不知道为什么
             // feedback = target_length - right_leg_pos.length;
@@ -207,29 +220,19 @@ void chassis_task(void const *pvParameters)
             PID_SingleCalc(&right_length_pid, target_length, right_leg_pos.length);
             PID_SingleCalc(&right_angle_pid,  target_angle, right_leg_pos.angle);
 
-
-
-            float F_left_leg =  -left_length_pid.output;
-            float Tp_left_leg = left_angle_pid.output;
-
             float F_right_leg =  -right_length_pid.output;
             float Tp_right_leg = right_angle_pid.output;
 
-            float left_joint_torque[2];
             float right_joint_torque[2];
-            LegConv(F_left_leg, Tp_left_leg, left_joint[1].angle, left_joint[0].angle, left_joint_torque);
             LegConv(F_right_leg, Tp_right_leg, right_joint[1].angle, right_joint[0].angle, right_joint_torque);
 
             for (int i=0;i<2;i++){
-                float limit_torque = 0.7;
-                if (left_joint_torque[i] > limit_torque)MotorSetTorque(&left_joint[i], limit_torque);
-                else if (left_joint_torque[i] < -limit_torque)MotorSetTorque(&left_joint[i], -limit_torque);
-                else MotorSetTorque(&left_joint[i], left_joint_torque[i]);
-
                 if (right_joint_torque[i] > limit_torque)MotorSetTorque(&right_joint[i], limit_torque);
                 else if (right_joint_torque[i] < -limit_torque)MotorSetTorque(&right_joint[i], -limit_torque);
                 else MotorSetTorque(&right_joint[i], right_joint_torque[i]);
             }
+
+            CANCmdRightJoint();
 
             // MI_motor_TorqueControl(left_joint[0].MI_Motor,left_joint[0].torque);
             // MI_motor_TorqueControl(left_joint[1].MI_Motor,left_joint[1].torque);
@@ -284,7 +287,7 @@ void chassis_task(void const *pvParameters)
             MotorSetTorque(&right_wheel, 0);
         }
         
-        SendChassisCmd();//发送底盘控制指令
+        // SendChassisCmd();//发送底盘控制指令
         
         //os delay
         //系统延时

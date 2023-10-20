@@ -1,52 +1,56 @@
-# Prerequisites
+*.bak
+
+*.lst
+
+*.lnp
+
+*.obj
+
+*.tmp
+
+*.TMP
+
+*.__i
+
+*.crf
+
+*.o
+
 *.d
 
-# Object files
-*.o
-*.ko
-*.obj
-*.elf
+*.axf
 
-# Linker output
-*.ilk
+*.dep
+
+*.uvopt
+
+*.htm
+
+*.hsc
+
+~*
+
 *.map
-*.exp
 
-# Precompiled Headers
-*.gch
-*.pch
+*uvgui*
 
-# Libraries
-*.lib
-*.a
-*.la
-*.lo
+*.uvoptx
 
-# Shared objects (inc. Windows DLLs)
-*.dll
-*.so
-*.so.*
-*.dylib
+*.sct
 
-# Executables
-*.exe
-*.out
-*.app
-*.i*86
-*.x86_64
+*JLinkLog.txt
+
+*.dbgconf
+
+.vscode/tags
+
+.vscode/
+
 *.hex
 
-# Debug files
-*.dSYM/
-*.su
-*.idb
-*.pdb
+*.lnk
 
-# Kernel Module Compile Results
-*.mod*
-*.cmd
-.tmp_versions/
-modules.order
-Module.symvers
-Mkfile.old
-dkms.conf
+
+*.scvd
+*.iex
+*.ini

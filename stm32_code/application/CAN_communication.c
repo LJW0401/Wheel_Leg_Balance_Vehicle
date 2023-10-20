@@ -201,6 +201,30 @@ void CANCmdWheel(int16_t left_wheel, int16_t right_wheel)
 }
 
 /**
+  * @brief          发送左关节控制信号
+  * @retval         none
+  */
+void CANCmdLeftJoint(void)
+{
+    MI_motor_TorqueControl(left_joint[0].MI_Motor,left_joint[0].torque);
+    HAL_Delay(1);
+    MI_motor_TorqueControl(left_joint[1].MI_Motor,left_joint[1].torque);
+}
+
+/**
+  * @brief          发送右关节控制信号
+  * @retval         none
+  */
+void CANCmdRightJoint(void)
+{
+    MI_motor_TorqueControl(right_joint[0].MI_Motor,right_joint[0].torque);
+    HAL_Delay(1);
+    MI_motor_TorqueControl(right_joint[1].MI_Motor,right_joint[1].torque);
+}
+
+
+
+/**
   * @brief          发送控制信号
   * @retval         none
   */
@@ -222,9 +246,7 @@ void SendChassisCmd(void)
     MI_motor_TorqueControl(left_joint[0].MI_Motor,left_joint[0].torque);
     HAL_Delay(1);
     MI_motor_TorqueControl(left_joint[1].MI_Motor,left_joint[1].torque);
-
     HAL_Delay(1);
-
     MI_motor_TorqueControl(right_joint[0].MI_Motor,right_joint[0].torque);
     HAL_Delay(1);
     MI_motor_TorqueControl(right_joint[1].MI_Motor,right_joint[1].torque);

@@ -10,13 +10,14 @@
       <TargetName>standard_robot</TargetName>
       <ToolsetNumber>0x4</ToolsetNumber>
       <ToolsetName>ARM-ADS</ToolsetName>
-      <pCCUsed>5060422::V5.06 update 4 (build 422)::ARMCC</pCCUsed>
+      <pCCUsed>5060750::V5.06 update 6 (build 750)::ARMCC</pCCUsed>
+      <uAC6>0</uAC6>
       <TargetOption>
         <TargetCommonOption>
           <Device>STM32F407IGHx</Device>
           <Vendor>STMicroelectronics</Vendor>
-          <PackID>Keil.STM32F4xx_DFP.2.17.1</PackID>
-          <PackURL>https://www.keil.com/pack/</PackURL>
+          <PackID>Keil.STM32F4xx_DFP.2.10.0</PackID>
+          <PackURL>http://www.keil.com/pack</PackURL>
           <Cpu>IRAM(0x20000000-0x2001FFFF) IRAM2(0x10000000-0x1000FFFF) IROM(0x8000000-0x80FFFFF) CLOCK(25000000) FPU2 CPUTYPE("Cortex-M4")</Cpu>
           <FlashUtilSpec></FlashUtilSpec>
           <StartupFile></StartupFile>
@@ -133,11 +134,11 @@
             <RunIndependent>0</RunIndependent>
             <UpdateFlashBeforeDebugging>1</UpdateFlashBeforeDebugging>
             <Capability>1</Capability>
-            <DriverSelection>4096</DriverSelection>
+            <DriverSelection>4107</DriverSelection>
           </Flash1>
           <bUseTDR>1</bUseTDR>
           <Flash2>BIN\UL2CM3.DLL</Flash2>
-          <Flash3>"" ()</Flash3>
+          <Flash3></Flash3>
           <Flash4></Flash4>
           <pFcarmOut></pFcarmOut>
           <pFcarmGrp></pFcarmGrp>
@@ -183,6 +184,8 @@
             <hadXRAM>0</hadXRAM>
             <uocXRam>0</uocXRam>
             <RvdsVP>2</RvdsVP>
+            <RvdsMve>0</RvdsMve>
+            <RvdsCdeCp>0</RvdsCdeCp>
             <hadIRAM2>1</hadIRAM2>
             <hadIROM2>0</hadIROM2>
             <StupSel>8</StupSel>
@@ -323,6 +326,7 @@
             <uThumb>0</uThumb>
             <uSurpInc>0</uSurpInc>
             <uC99>1</uC99>
+            <uGnu>0</uGnu>
             <useXO>0</useXO>
             <v6Lang>1</v6Lang>
             <v6LangP>1</v6LangP>
@@ -348,7 +352,7 @@
             <NoWarn>0</NoWarn>
             <uSurpInc>0</uSurpInc>
             <useXO>0</useXO>
-            <uClangAs>0</uClangAs>
+            <ClangAsOpt>4</ClangAsOpt>
             <VariousControls>
               <MiscControls></MiscControls>
               <Define></Define>
@@ -820,9 +824,9 @@
               <FilePath>..\application\calibrate_task.c</FilePath>
             </File>
             <File>
-              <FileName>CAN_communication.c</FileName>
+              <FileName>CAN_receive.c</FileName>
               <FileType>1</FileType>
-              <FilePath>..\application\CAN_communication.c</FilePath>
+              <FilePath>..\application\CAN_receive.c</FilePath>
             </File>
             <File>
               <FileName>chassis_behaviour.c</FileName>
@@ -908,41 +912,6 @@
               <FileName>servo_task.c</FileName>
               <FileType>1</FileType>
               <FilePath>..\application\servo_task.c</FilePath>
-            </File>
-            <File>
-              <FileName>Balance_Controler.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>..\application\Balance_Controler.c</FilePath>
-            </File>
-            <File>
-              <FileName>PID.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>..\application\leg_model\PID.c</FilePath>
-            </File>
-            <File>
-              <FileName>MI_motor_drive.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>..\application\Drives\MI_motor_drive.c</FilePath>
-            </File>
-            <File>
-              <FileName>LegConv.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>..\application\leg_model\LegConv.c</FilePath>
-            </File>
-            <File>
-              <FileName>LegPos.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>..\application\leg_model\LegPos.c</FilePath>
-            </File>
-            <File>
-              <FileName>LegSpd.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>..\application\leg_model\LegSpd.c</FilePath>
-            </File>
-            <File>
-              <FileName>LQR_K.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>..\application\leg_model\LQR_K.c</FilePath>
             </File>
           </Files>
         </Group>
@@ -1050,5 +1019,20 @@
     </components>
     <files/>
   </RTE>
+
+  <LayerInfo>
+    <Layers>
+      <Layer>
+        <LayName>&lt;Project Info&gt;</LayName>
+        <LayDesc></LayDesc>
+        <LayUrl></LayUrl>
+        <LayKeys></LayKeys>
+        <LayCat></LayCat>
+        <LayLic></LayLic>
+        <LayTarg>0</LayTarg>
+        <LayPrjMark>1</LayPrjMark>
+      </Layer>
+    </Layers>
+  </LayerInfo>
 
 </Project>
