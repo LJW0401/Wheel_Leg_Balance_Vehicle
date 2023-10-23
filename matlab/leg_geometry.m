@@ -12,14 +12,23 @@ syms l0 phi0;
 Lca2 = l0^2+(l5/2)^2+l0*l5*cos(phi0);
 Lce2 = l0^2+(l5/2)^2-l0*l5*cos(phi0);
 
-phi11 = acos(((l5/2)^2+Lca2-l0^2)/(l5*sqrt(Lca2)));
-phi12 = acos((l1^2+Lca2-l2^2)/(2*l1*sqrt(Lca2)));
+cos_phi11 = ((l5/2)^2+Lca2-l0^2)/(l5*sqrt(Lca2));
+cos_phi12 = (l1^2+Lca2-l2^2)/(2*l1*sqrt(Lca2));
+cos_phi41 = ((l5/2)^2+Lce2-l0^2)/(l5*sqrt(Lce2));
+cos_phi42 = (l4^2+Lce2-l3^2)/(2*l4*sqrt(Lce2));
 
-phi41 = acos(((l5/2)^2+Lce2-l0^2)/(l5*sqrt(Lce2)));
-phi42 = acos((l4^2+Lce2-l3^2)/(2*l4*sqrt(Lce2)));
+%if abs(cos_phi11)<=1 && abs(cos_phi12)<=1 && abs(cos_phi41)<=1 && abs(cos_phi42)<=1
+    phi11 = acos(cos_phi11);
+    phi12 = acos(cos_phi12);
+
+    phi41 = acos(cos_phi41);
+    phi42 = acos(cos_phi42);
+%else
+%    phi11 = 0;phi12 = 0;phi41 = 0;phi42 = 0;
+%end
 
 phi1 = phi11 + phi12;
-phi4 = phi41 + phi42;
+phi4 = pi-(phi41 + phi42);
 
 % 求得关节角度 [phi1; phi4] = JointPos(l0, phi0)
 pos=[phi1; phi4];
