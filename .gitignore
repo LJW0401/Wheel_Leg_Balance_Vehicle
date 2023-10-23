@@ -1,6 +1,7 @@
 # MATLAB files
 */slprj/
-
+*/codegen/
+*.prj
 
 # Keil v5 files
 *.bak
