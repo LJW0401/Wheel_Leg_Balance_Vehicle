@@ -1,8 +1,8 @@
 
 clear
 % 定义 l0 和 phi0 的范围
-l0_range = linspace(0, 0.4, 100); % 0 到 10 之间取 100 个点
-phi0_range = linspace(0, pi, 100); % 0 到 2*pi 之间取 100 个点
+l0_range = linspace(0.14, 0.2, 100); % 0 到 10 之间取 100 个点
+phi0_range = linspace(pi/6, pi*5/6, 100); % 0 到 2*pi 之间取 100 个点
 
 % 生成 l0 和 phi0 的网格
 [l0_grid, phi0_grid] = meshgrid(l0_range, phi0_range);

@@ -50,7 +50,6 @@ StandupState standup_state = StandupState_None;
 
 /**
   * @brief          获取从系统运行开始经过的时间，默认情况下单位为ms；
-  * @author         小企鹅
   */
 uint32_t GetMillis()
 {
@@ -62,7 +61,6 @@ uint32_t GetMillis()
   * @brief          初始化一个电机对象
   * @attention      
   * @note           
-  * @author         小企鹅
   * @param          motor 电机结构体地址
   * @param          MI_Motor 小米电机结构体地址
   * @param          offsetAngle 
@@ -93,7 +91,6 @@ void MotorInit(Motor_s *motor, MI_Motor_s* MI_Motor,uint8_t motor_id, float init
   * @attention      系数需要自行测量并拟合，目前还没测量
   * @note           测量并拟合出不同电压下对应的电机空载转速，调换自变量和因变量就是本函数。
   * @note           由于该测量方法忽略阻力对空载转速的影响，最终抵消反电动势时也会抵消大部分电机本身的阻力。
-  * @author         小企鹅
   * @param          speed 速度
   */
 float Motor_CalcRevVolt2006(float speed)
@@ -107,7 +104,6 @@ float Motor_CalcRevVolt2006(float speed)
 /**
   * @brief          初始化所有电机对象
   * @attention      各个参数需要通过实际测量或拟合得到，目前还没拟合
-  * @author         小企鹅
   */
 void MotorInitAll()
 {
@@ -167,13 +163,19 @@ void MotorInitAll()
 
 /**
   * @brief          设置电机扭矩
-  * @author         小企鹅
   */
 void MotorSetTorque(Motor_s *motor, float torque)
 {
   motor->torque = torque;
 }
 
+/**
+  * @brief          设置电机目标角度
+  */
+void MotorSetTargetAngle(Motor_s *motor, float target_angle)
+{
+  motor->target_angle = target_angle;
+}
 
 // /**
 //   * @brief          从CAN总线接收到的数据中解析出电机角度和速度
@@ -190,7 +192,6 @@ void MotorSetTorque(Motor_s *motor, float torque)
 /**
   * @brief          由设置的目标扭矩和当前转速计算补偿反电动势后的驱动输出电压，并进行限幅
   * @note           补偿的意义: 电机转速越快反电动势越大，需要加大驱动电压来抵消反电动势，使电流(扭矩)不随转速发生变化
-  * @author         小企鹅
   */
 // void Motor_UpdateVoltage(Motor_s *motor)
 // {
@@ -211,15 +212,15 @@ void MotorSetTorque(Motor_s *motor, float torque)
   * @brief          2006电机力矩到电流值的映射
   * @note           
   * @param          torque 力矩大小
-  * @return         current 电流大小
-  * @author         小企鹅
+  * @return         send_velue 电流值大小
   */
 uint16_t MotorTorqueToCurrentValue_2006(float torque)
 {
-    //a: 0.586563749263927, b: -1.95946924227303, c: 0.466670000000000
-    float current_value;
-    current_value = 0.586563749263927f*torque*torque - 1.95946924227303f*torque*torque + 0.466670000000000f*torque;
-    return (uint16_t)current_value;
+    float k = 0.18;//N*m/A
+    float current; //A
+    current = torque/k;
+    uint16_t send_velue = (uint16_t)(1000*current);
+    return send_velue;
 }
 
 
@@ -228,7 +229,6 @@ uint16_t MotorTorqueToCurrentValue_2006(float torque)
 /**
   * @brief          底盘姿态更新
   * @note           通过INS模块获取机体底盘的姿态数据
-  * @author         小企鹅
   */
 void ChassisPostureUpdate()
 {
@@ -253,13 +253,9 @@ void ChassisPostureUpdate()
 float CalcJointAngle(Motor_s* left_joint, Motor_s* right_joint)
 {
   left_joint[0].angle = left_joint[0].horizontal_angle - left_joint[0].MI_Motor->RxCAN_info.angle;
-  // left_joint[0].angle = M_1_PI - left_joint[0].angle;
   left_joint[1].angle = left_joint[1].horizontal_angle - left_joint[1].MI_Motor->RxCAN_info.angle;
-  // left_joint[1].angle = M_1_PI - left_joint[1].angle;
   right_joint[0].angle = right_joint[0].MI_Motor->RxCAN_info.angle - right_joint[0].horizontal_angle;
-  // right_joint[0].angle = M_1_PI - right_joint[0].angle;
   right_joint[1].angle = right_joint[1].MI_Motor->RxCAN_info.angle - right_joint[1].horizontal_angle;
-  // right_joint[1].angle = M_1_PI - right_joint[1].angle;
 }
 // {
 //   joint_motor->angle = joint_motor->MI_Motor->RxCAN_info.angle - joint_motor->horizontal_angle;
@@ -269,7 +265,6 @@ float CalcJointAngle(Motor_s* left_joint, Motor_s* right_joint)
   * @brief          目标量更新
   * @attention      从遥控器获取目标值
   * @note           根据目标量(target)计算实际控制算法的给定量
-  * @author         小企鹅
   */
 void TargetUpdate()
 {
@@ -280,7 +275,6 @@ void TargetUpdate()
   * @brief          控制算法给定量更新任务
   * @attention      这里作为一个被调用的任务函数，而非FreeRTOS任务
   * @note           根据目标量(target)计算实际控制算法的给定量
-  * @author         小企鹅
   */
 void CtrlTargetUpdateTask()
 {
@@ -328,7 +322,6 @@ void CtrlTargetUpdateTask()
 /**
   * @brief          腿部姿态更新任务
   * @note           根据关节电机数据计算腿部姿态
-  * @author         小企鹅
   */
 void LegPosUpdateTask()
 {
@@ -387,7 +380,6 @@ void LegPosUpdateTask()
   * @brief          站立准备任务
   * @attention      目前看来就是一个劈叉任务，没有实际价值
   * @note           将机器人从任意姿态调整到准备站立前的劈叉状态
-  * @author         小企鹅
   */
 void CtrlStandupPrepareTask(void *arg)
 {
@@ -428,7 +420,6 @@ void CtrlStandupPrepareTask(void *arg)
 /**
   * @brief          PID部分初始化
   * @note           
-  * @author         小企鹅
   */
 void PIDInit()
 {

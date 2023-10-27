@@ -222,6 +222,25 @@ void CANCmdRightJoint(void)
     MI_motor_TorqueControl(right_joint[1].MI_Motor,right_joint[1].torque);
 }
 
+/**
+  * @brief          发送关节位置控制信号
+  * @retval         none
+  */
+void CANCmdJointLocation(void)
+{
+    float kp=5;
+    float kd=0.5;
+    float send_angle;
+    send_angle = left_joint[0].horizontal_angle - left_joint[0].target_angle;
+    MI_motor_LocationControl(left_joint[0].MI_Motor,send_angle,kp,kd);
+    send_angle = left_joint[1].horizontal_angle - left_joint[1].target_angle;
+    MI_motor_LocationControl(left_joint[1].MI_Motor,send_angle,kp,kd);
+    HAL_Delay(1);
+    send_angle = right_joint[0].horizontal_angle + right_joint[0].target_angle;
+    MI_motor_LocationControl(right_joint[0].MI_Motor,send_angle,kp,kd);
+    send_angle = right_joint[1].horizontal_angle + right_joint[1].target_angle;
+    MI_motor_LocationControl(right_joint[1].MI_Motor,send_angle,kp,kd);
+}
 
 
 /**

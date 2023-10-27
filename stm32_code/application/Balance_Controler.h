@@ -24,6 +24,7 @@
 
 #include "struct_typedef.h"
 //导入轮腿模型
+#include "./leg_model/JointPos.h"
 #include "./leg_model/LegConv.h"
 #include "./leg_model/LegPos.h"
 #include "./leg_model/LegSpd.h"
@@ -75,9 +76,14 @@ typedef struct
   */
 typedef struct 
 {
-  MI_Motor_s* MI_Motor; // 小米电机对象
-	float speed;			   // rad/s
-	float angle, offset_angle, initial_angle, vertical_angle, horizontal_angle;  // rad
+  MI_Motor_s* MI_Motor;  // 小米电机对象
+	float speed;           // rad/s
+	float angle;           // rad 关节与机体水平正方向的夹角
+  float offset_angle;    // rad 
+  float initial_angle;   // rad 初始状态下电机反馈的角度
+  float vertical_angle;  // rad 关节朝向机体竖直正方向的反馈角度
+  float horizontal_angle;// rad 关节朝向机体水平正方向的反馈角度
+  float target_angle;    // rad 关节与机体水平正方向的目标夹角
 	float upper_limit_angle,lower_limit_angle;// rad
   float voltage, max_voltage; // V
 	float torque, torque_ratio; // Nm, voltage = torque / torque_ratio
@@ -169,6 +175,7 @@ extern StandupState standup_state;
 
 extern void MotorInitAll();
 extern void MotorSetTorque(Motor_s *motor, float torque);
+extern void MotorSetTargetAngle(Motor_s *motor, float target_angle);
 
 extern void ChassisPostureUpdate();
 extern void CtrlTargetUpdateTask();
