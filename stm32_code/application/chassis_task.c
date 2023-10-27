@@ -105,7 +105,7 @@ void chassis_task(void const *pvParameters)
     //手动为反馈矩阵和输出叠加一个系数，用于手动优化控制效果
     float kRatio[2][6] = {{1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f},
                           {1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f}};
-    float lqrTpRatio = 1.0f, lqrTRatio = 1.0f;
+    float lqrTpRatio = 1.0f, lqrTRatio = 2.0f;
 
     //设定初始目标值
     target.roll_angle = 0.0f;
@@ -163,11 +163,24 @@ void chassis_task(void const *pvParameters)
             CANCmdRightJoint();
         }else if(rc_ctrl->rc.s[1] == 0x03){//[CL档]腿部伸长
             float joint_pos[2];
-            JointPos(left_leg_length_target,M_PI_2,joint_pos);//计算关节摆角
+
+            float left_angle;
+            float right_angle;
+
+            left_leg_length_target = 0.18f + rc_ctrl->rc.ch[1]/16500.0f;
+            left_angle = M_PI_2 + rc_ctrl->rc.ch[0]/1350.0f;
+
+            right_leg_length_target = 0.18f + rc_ctrl->rc.ch[3]/16500.0f;
+            right_angle = M_PI_2 + rc_ctrl->rc.ch[2]/1350.0f;
+
+            OutputData.data_5 = left_leg_length_target;
+            OutputData.data_6 = left_angle;
+
+            JointPos(left_leg_length_target,left_angle,joint_pos);//计算关节摆角
             MotorSetTargetAngle(&left_joint[1],joint_pos[0]);
             MotorSetTargetAngle(&left_joint[0],joint_pos[1]);
 
-            JointPos(right_leg_length_target,M_PI_2,joint_pos);//计算关节摆角
+            JointPos(right_leg_length_target,right_angle,joint_pos);//计算关节摆角
             MotorSetTargetAngle(&right_joint[1],joint_pos[0]);
             MotorSetTargetAngle(&right_joint[0],joint_pos[1]);
 
@@ -203,9 +216,13 @@ void chassis_task(void const *pvParameters)
             //计算yaw轴PID输出
             PID_CascadeCalc(&yaw_PID, target.yaw_angle, chassis_imu.yaw, chassis_imu.yawSpd);
 
-            //设定车轮电机输出扭矩，为LQR和yaw轴PID输出的叠加
-            MotorSetTorque(&left_wheel, -lqrOutT * lqrTRatio - yaw_PID.output);
-            MotorSetTorque(&right_wheel, -lqrOutT * lqrTRatio + yaw_PID.output);
+            // //设定车轮电机输出扭矩，为LQR和yaw轴PID输出的叠加
+            // MotorSetTorque(&left_wheel, -lqrOutT * lqrTRatio - yaw_PID.output);
+            // MotorSetTorque(&right_wheel, -lqrOutT * lqrTRatio + yaw_PID.output);
+            
+            //设定车轮电机输出扭矩，仅lqr反馈
+            MotorSetTorque(&left_wheel, -lqrOutT * lqrTRatio);
+            MotorSetTorque(&right_wheel, -lqrOutT * lqrTRatio);
 
             CANCmdWheel(
                 MotorTorqueToCurrentValue_2006(left_wheel.torque), 

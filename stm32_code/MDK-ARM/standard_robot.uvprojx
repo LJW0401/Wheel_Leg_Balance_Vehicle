@@ -944,6 +944,11 @@
               <FileType>1</FileType>
               <FilePath>..\application\leg_model\LQR_K.c</FilePath>
             </File>
+            <File>
+              <FileName>JointPos.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\application\leg_model\JointPos.c</FilePath>
+            </File>
           </Files>
         </Group>
         <Group>
