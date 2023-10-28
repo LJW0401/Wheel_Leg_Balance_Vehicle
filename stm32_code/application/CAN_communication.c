@@ -254,7 +254,7 @@ void CANCmdJointLocation(void)
     for (int i=0;i<1;i++){
         MI_motor_ReadParam(left_joint[0].MI_Motor,0X7005);
     }
-    
+
     send_angle[3] = right_joint[1].horizontal_angle + right_joint[1].target_angle;
     MI_motor_LocationControl(right_joint[1].MI_Motor,send_angle[3],kp,kd);
 
@@ -330,11 +330,23 @@ void SendChassisCmd(void)
     
     //发送关节控制力矩
     MI_motor_TorqueControl(left_joint[0].MI_Motor,left_joint[0].torque);
-    HAL_Delay(1);
+
+    for (int i=0;i<1;i++){
+        MI_motor_ReadParam(left_joint[0].MI_Motor,0X7005);
+    }
+
     MI_motor_TorqueControl(left_joint[1].MI_Motor,left_joint[1].torque);
-    HAL_Delay(1);
+
+    for (int i=0;i<1;i++){
+        MI_motor_ReadParam(left_joint[0].MI_Motor,0X7005);
+    }
+
     MI_motor_TorqueControl(right_joint[0].MI_Motor,right_joint[0].torque);
-    HAL_Delay(1);
+
+    for (int i=0;i<1;i++){
+        MI_motor_ReadParam(left_joint[0].MI_Motor,0X7005);
+    }
+    
     MI_motor_TorqueControl(right_joint[1].MI_Motor,right_joint[1].torque);
 
     //发送车轮控制力矩

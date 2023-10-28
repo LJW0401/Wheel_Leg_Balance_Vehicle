@@ -236,6 +236,9 @@ void chassis_task(void const *pvParameters)
                 MotorTorqueToCurrentValue_2006(right_wheel.torque)
                 );
 
+            OutputData.data_1 = -lqrOutT;
+            OutputData.data_7 = chassis_imu.pitch;
+
         }else{//其他状态一律关闭电机
             MotorSetTorque(&left_joint[0], 0);
             MotorSetTorque(&left_joint[1], 0);

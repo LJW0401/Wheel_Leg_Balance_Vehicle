@@ -234,16 +234,15 @@ uint16_t MotorTorqueToCurrentValue_2006(float torque)
   */
 void ChassisPostureUpdate()
 {
-  const fp32* INS_angle_point = get_INS_angle_point();
-  const fp32* INS_gyro_data_point = get_gyro_data_point();
-  const fp32* INS_accel_data_point = get_accel_data_point();
-  chassis_imu.yaw = INS_angle_point[0];
-  chassis_imu.pitch = INS_angle_point[1];
-  chassis_imu.roll = INS_angle_point[2];
-  chassis_imu.yawSpd = INS_gyro_data_point[0];
-  chassis_imu.pitchSpd = INS_gyro_data_point[1];
-  chassis_imu.rollSpd = INS_gyro_data_point[2];
-  chassis_imu.zAccel = INS_accel_data_point[2];
+  chassis_imu.yaw = get_INS_angle_point()[0];
+  chassis_imu.pitch = get_INS_angle_point()[1];
+  chassis_imu.roll = get_INS_angle_point()[2];
+
+  chassis_imu.yawSpd = get_gyro_data_point()[0];
+  chassis_imu.pitchSpd = get_gyro_data_point()[1];
+  chassis_imu.rollSpd = get_gyro_data_point()[2];
+
+  chassis_imu.zAccel = get_accel_data_point()[2];
 }
 
 
