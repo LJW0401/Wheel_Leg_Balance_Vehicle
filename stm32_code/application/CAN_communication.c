@@ -95,17 +95,17 @@ void HAL_CAN_RxFifo1MsgPendingCallback(CAN_HandleTypeDef *hcan)
 void HAL_CAN_RxFifo0FullCallback(CAN_HandleTypeDef *hcan)
 {
     HAL_CAN_RxFifo0MsgPendingCallback(hcan);
+    HAL_CAN_RxFifo0MsgPendingCallback(hcan);
 }
 void HAL_CAN_RxFifo1FullCallback(CAN_HandleTypeDef *hcan)
 {
+    HAL_CAN_RxFifo1MsgPendingCallback(hcan);
     HAL_CAN_RxFifo1MsgPendingCallback(hcan);
 }
 
 
 /**
   * @brief          反馈数据解码
-  * @param[in]      left_wheel: (0x207) 2006电机控制电流, 范围 [-10000,10000]
-  * @param[in]      right_wheel: (0x208) 2006电机控制电流, 范围 [-10000,10000]
   * @retval         none
   */
 static void CANRxDecode(CAN_RxHeaderTypeDef rx_header,uint8_t rx_data[8])
@@ -230,17 +230,84 @@ void CANCmdJointLocation(void)
 {
     float kp=5;
     float kd=0.5;
+    float send_angle[4];
+    send_angle[0] = left_joint[0].horizontal_angle - left_joint[0].target_angle;
+    MI_motor_LocationControl(left_joint[0].MI_Motor,send_angle[0],kp,kd);
+
+    // HAL_Delay(1);
+    for (int i=0;i<1;i++){
+        MI_motor_ReadParam(left_joint[0].MI_Motor,0X7005);
+    }
+
+    send_angle[1] = left_joint[1].horizontal_angle - left_joint[1].target_angle;
+    MI_motor_LocationControl(left_joint[1].MI_Motor,send_angle[1],kp,kd);
+
+    // HAL_Delay(1);
+    for (int i=0;i<1;i++){
+        MI_motor_ReadParam(left_joint[0].MI_Motor,0X7005);
+    }
+
+    send_angle[2] = right_joint[0].horizontal_angle + right_joint[0].target_angle;
+    MI_motor_LocationControl(right_joint[0].MI_Motor,send_angle[2],kp,kd);
+
+    // HAL_Delay(1);
+    for (int i=0;i<1;i++){
+        MI_motor_ReadParam(left_joint[0].MI_Motor,0X7005);
+    }
+    
+    send_angle[3] = right_joint[1].horizontal_angle + right_joint[1].target_angle;
+    MI_motor_LocationControl(right_joint[1].MI_Motor,send_angle[3],kp,kd);
+
+    //重复发送一下
+    // for (int i=0;i<4;i++){
+    //     MI_motor_ReadParam(left_joint[0].MI_Motor,0X7005);
+    // }
+    // for (int i=0;i<2;i++){
+    //     MI_motor_LocationControl(left_joint[0].MI_Motor,send_angle[0],kp,kd);
+    //     MI_motor_LocationControl(left_joint[1].MI_Motor,send_angle[1],kp,kd);
+    //     MI_motor_LocationControl(right_joint[0].MI_Motor,send_angle[2],kp,kd);
+    //     MI_motor_LocationControl(right_joint[1].MI_Motor,send_angle[3],kp,kd);
+    // }
+    
+}
+
+/**
+  * @brief          发送左关节位置控制信号
+  * @retval         none
+  */
+void CANCmdLeftJointLocation(void)
+{
+    float kp=5;
+    float kd=0.5;
     float send_angle;
     send_angle = left_joint[0].horizontal_angle - left_joint[0].target_angle;
     MI_motor_LocationControl(left_joint[0].MI_Motor,send_angle,kp,kd);
+
+    HAL_Delay(1);
+
     send_angle = left_joint[1].horizontal_angle - left_joint[1].target_angle;
     MI_motor_LocationControl(left_joint[1].MI_Motor,send_angle,kp,kd);
-    HAL_Delay(1);
+}
+
+/**
+  * @brief          发送右关节位置控制信号
+  * @retval         none
+  */
+void CANCmdRightJointLocation(void)
+{
+    float kp=5;
+    float kd=0.5;
+    float send_angle;
     send_angle = right_joint[0].horizontal_angle + right_joint[0].target_angle;
     MI_motor_LocationControl(right_joint[0].MI_Motor,send_angle,kp,kd);
+
+    HAL_Delay(1);
+    nop_delay_us(300);
+
     send_angle = right_joint[1].horizontal_angle + right_joint[1].target_angle;
     MI_motor_LocationControl(right_joint[1].MI_Motor,send_angle,kp,kd);
 }
+
 
 
 /**

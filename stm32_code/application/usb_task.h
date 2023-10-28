@@ -102,4 +102,6 @@ extern OutputData_s OutputData;
 
 extern void usb_task(void const * argument);
 extern void char_to_uint(uint8_t * word, const char * str);
+
+extern float send_temp[5];
 #endif

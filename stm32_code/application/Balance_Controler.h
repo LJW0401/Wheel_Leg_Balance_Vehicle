@@ -112,6 +112,17 @@ typedef struct
 }Leg_Pos_t;
 
 
+/** @brief      腿部姿态目标量
+  * @note       无
+  */
+typedef struct 
+{
+  float angle, length;   // rad, m
+  float dAngle, dLength; // rad/s, m/s
+  float ddLength;       // m/s^2
+} Leg_Pos_Target_t;
+
+
 /** @brief      状态变量结构体
   * @note       无
   */
@@ -164,6 +175,7 @@ extern MI_Motor_s MI_Motor_None;
 extern Chassis_IMU_t chassis_imu;
 extern Motor_s left_joint[2], right_joint[2], left_wheel, right_wheel;
 extern Leg_Pos_t left_leg_pos, right_leg_pos;
+extern Leg_Pos_Target_t left_leg_pos_target, right_leg_pos_target;
 extern State_Var_s state_var;
 extern Target_s target;
 extern GroundDetector ground_detector;
@@ -181,7 +193,9 @@ extern void ChassisPostureUpdate();
 extern void CtrlTargetUpdateTask();
 extern void LegPosUpdateTask();
 
-extern float MotorTorqueToCurrent_2006(float torque);
+extern uint16_t MotorTorqueToCurrentValue_2006(float torque);
+
+extern void nop_delay_us(uint16_t us);
 
 #endif
 

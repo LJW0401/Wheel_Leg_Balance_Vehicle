@@ -58,6 +58,8 @@ void CANCmdWheel(int16_t left_wheel, int16_t right_wheel);
 void CANCmdLeftJoint(void);
 void CANCmdRightJoint(void);
 void CANCmdJointLocation(void);
+void CANCmdLeftJointLocation(void);
+void CANCmdRightJointLocation(void);
 
 
 #endif

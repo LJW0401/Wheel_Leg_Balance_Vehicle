@@ -20,6 +20,13 @@ doc文件夹中均为说明文档，请阅读
 4. 开始平衡，遥控器左端拨杆置于`HL`档，此时理论上应该能平衡了
 
 ## 参考
-[RoboMaster平衡步兵机器人控制系统设计](https://zhuanlan.zhihu.com/p/563048952)
+- [RoboMaster平衡步兵机器人控制系统设计](https://zhuanlan.zhihu.com/p/563048952)
+- [无刷轮腿平衡机器人开源GitHub仓库](https://github.com/Skythinker616/foc-wheel-legged-robot/tree/master)
 
-[无刷轮腿平衡机器人开源GitHub仓库](https://github.com/Skythinker616/foc-wheel-legged-robot/tree/master)
+详见 [reference](./doc/reference.md)
+
+## 开发方向
+- 解决小米电机反馈问题
+  - 考虑一下在发送时进行检测，若接收器中有数据未解析，先解析再发送。
+- 实现丝滑的VMC解算效果
+- 

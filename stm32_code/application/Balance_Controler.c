@@ -29,6 +29,7 @@
 float motorOutRatio = 1.0f; //电机输出电压比例，对所有电机同时有效
 
 extern CAN_HandleTypeDef hcan1;
+extern CAN_HandleTypeDef hcan2;
 
 MI_Motor_s MI_Motor[5];
 MI_Motor_s MI_Motor_None;
@@ -38,6 +39,7 @@ Motor_s left_joint[2], right_joint[2], left_wheel, right_wheel; //六个电机�
 // Joint_Length_t left_jointLength =  {0.05f, 0.105f, 0.105f, 0.05f, 0.06f}; //关节长度
 // Joint_Length_t right_jointLength = {0.05f, 0.105f, 0.105f, 0.05f, 0.06f}; //关节长度
 Leg_Pos_t left_leg_pos, right_leg_pos; //左右腿部姿态
+Leg_Pos_Target_t left_leg_pos_target, right_leg_pos_target;
 State_Var_s state_var;
 Target_s target = {0, 0, 0, 0, 0, 0, 0.07f};
 GroundDetector ground_detector = {10, 10, 1, 0};
@@ -68,10 +70,10 @@ uint32_t GetMillis()
   * @param          torque_ratio 
   * @param          dir 
   */
-void MotorInit(Motor_s *motor, MI_Motor_s* MI_Motor,uint8_t motor_id, float initial_angle, float vertical_angle,float horizontal_angle ,float upper_limit_angle,float lower_limit_angle, float max_voltage, float torque_ratio, float dir)//, float (*calcRevVolt)(float speed))
+void MotorInit(Motor_s *motor, MI_Motor_s* MI_Motor, CAN_HandleTypeDef *hcan, uint8_t motor_id, float initial_angle, float vertical_angle,float horizontal_angle ,float upper_limit_angle,float lower_limit_angle, float max_voltage, float torque_ratio, float dir)//, float (*calcRevVolt)(float speed))
 {
   motor->MI_Motor = MI_Motor;
-  MI_motor_Init(MI_Motor,&MI_CAN_1,motor_id);
+  MI_motor_Init(MI_Motor,hcan,motor_id);
   motor->speed = motor->angle = motor->voltage = 0;
   // motor->offsetAngle = offsetAngle;
   motor->initial_angle = initial_angle;
@@ -108,7 +110,7 @@ float Motor_CalcRevVolt2006(float speed)
 void MotorInitAll()
 {
   HAL_Delay(10);
-  MotorInit(&left_joint[0],&MI_Motor[1],1, 
+  MotorInit(&left_joint[0],&MI_Motor[1],&MI_CAN_1,1, 
              -0.00019175051420461386f, 
              -1.9656345844268799f,
              -1.9656345844268799f + M_PI_2,
@@ -117,7 +119,7 @@ void MotorInitAll()
              7, 0.0316f, -1);
   
   HAL_Delay(10);
-  MotorInit(&left_joint[1],&MI_Motor[2],2,
+  MotorInit(&left_joint[1],&MI_Motor[2],&MI_CAN_1,2,
              -0.00019175051420461386f, 
              1.6960333585739136f, 
              1.6960333585739136f + M_PI_2, 
@@ -125,7 +127,7 @@ void MotorInitAll()
              0.5413116812705994,
              7, 0.0317f, 1);
 
-  MotorInit(&left_wheel,&MI_Motor_None,0,
+  MotorInit(&left_wheel,&MI_Motor_None,&MI_CAN_1,0,
              0, 
              0, 
              0, 
@@ -134,7 +136,7 @@ void MotorInitAll()
              4.0f, 0.0096f, 1);
   
   HAL_Delay(10);
-  MotorInit(&right_joint[0],&MI_Motor[3],3,
+  MotorInit(&right_joint[0],&MI_Motor[3],&MI_CAN_1,3,
              -0.00019175051420461386f, 
              1.8908518552780151f, 
              1.8908518552780151f - M_PI_2, 
@@ -143,7 +145,7 @@ void MotorInitAll()
              7, 0.0299f, -1);
 
   HAL_Delay(10);
-  MotorInit(&right_joint[1],&MI_Motor[4],4,
+  MotorInit(&right_joint[1],&MI_Motor[4],&MI_CAN_1,4,
              -0.00019175051420461386f, 
              -1.6588337421417236f, 
              -1.6588337421417236f - M_PI_2, 
@@ -151,7 +153,7 @@ void MotorInitAll()
              -3.201658248901367,
              7, 0.0321f, -1);
 
-  MotorInit(&right_wheel,&MI_Motor_None,0,
+  MotorInit(&right_wheel,&MI_Motor_None,&MI_CAN_1,0,
              0, 
              0, 
              0,
@@ -338,41 +340,38 @@ void LegPosUpdateTask()
 
   const float lpf_ratio = 0.5f; //低通滤波系数(新值的权重)
   float last_left_dLength = 0, last_right_dLength = 0;
-  // TickType_t xLastWakeTime = xTaskGetTickCount();
-  // while (1)
-  // {
-    float legPos[2], legSpd[2];
 
-    //计算左腿位置
-		LegPos(left_joint[1].angle, left_joint[0].angle, legPos);
-    left_leg_pos.length = legPos[0];
-    left_leg_pos.angle = legPos[1];
+  float legPos[2], legSpd[2];
 
-    //计算左腿速度
-		LegSpd(left_joint[1].speed, left_joint[0].speed, left_joint[1].angle, left_joint[0].angle, legSpd);
-    left_leg_pos.dLength = legSpd[0];
-    left_leg_pos.dAngle = legSpd[1];
 
-    //计算左腿腿长加速度
-    left_leg_pos.ddLength = ((left_leg_pos.dLength - last_left_dLength) * 1000 / 4) * lpf_ratio + left_leg_pos.ddLength * (1 - lpf_ratio);
-    last_left_dLength = left_leg_pos.dLength;
+  //计算左腿位置
+  LegPos(left_joint[1].angle, left_joint[0].angle, legPos);
+  left_leg_pos.length = legPos[0];
+  left_leg_pos.angle = legPos[1];
 
-    //计算右腿位置
-		LegPos(right_joint[1].angle, right_joint[0].angle, legPos);
-    right_leg_pos.length = legPos[0];
-    right_leg_pos.angle = legPos[1];
+  //计算左腿速度
+  LegSpd(left_joint[1].speed, left_joint[0].speed, left_joint[1].angle, left_joint[0].angle, legSpd);
+  left_leg_pos.dLength = legSpd[0];
+  left_leg_pos.dAngle = legSpd[1];
 
-    //计算右腿速度
-		LegSpd(right_joint[1].speed, right_joint[0].speed, right_joint[1].angle, right_joint[0].angle, legSpd);
-    right_leg_pos.dLength = legSpd[0];
-    right_leg_pos.dAngle = legSpd[1];
+  //计算左腿腿长加速度
+  left_leg_pos.ddLength = ((left_leg_pos.dLength - last_left_dLength) * 1000 / 4) * lpf_ratio + left_leg_pos.ddLength * (1 - lpf_ratio);
+  last_left_dLength = left_leg_pos.dLength;
 
-    //计算右腿腿长加速度
-    right_leg_pos.ddLength = ((right_leg_pos.dLength - last_right_dLength) * 1000 / 4) * lpf_ratio + right_leg_pos.ddLength * (1 - lpf_ratio);
-    last_right_dLength = right_leg_pos.dLength;
+  //计算右腿位置
+  LegPos(right_joint[1].angle, right_joint[0].angle, legPos);
+  right_leg_pos.length = legPos[0];
+  right_leg_pos.angle = legPos[1];
 
-    // vTaskDelayUntil(&xLastWakeTime, 4); //每4ms更新一次
-  // }
+  //计算右腿速度
+  LegSpd(right_joint[1].speed, right_joint[0].speed, right_joint[1].angle, right_joint[0].angle, legSpd);
+  right_leg_pos.dLength = legSpd[0];
+  right_leg_pos.dAngle = legSpd[1];
+
+  //计算右腿腿长加速度
+  right_leg_pos.ddLength = ((right_leg_pos.dLength - last_right_dLength) * 1000 / 4) * lpf_ratio + right_leg_pos.ddLength * (1 - lpf_ratio);
+  last_right_dLength = right_leg_pos.dLength;
+
 }
 
 
@@ -439,6 +438,36 @@ void PIDInit()
   PID_SetErrLpfRatio(&leg_angle_PID.outer, 0.5f);
 }
 
+
+/**
+  * @brief          延迟us
+  * @param[in]      us:延时时间
+  * @note           
+  */
+void nop_delay_us(uint16_t us)
+{
+  for(; us > 0; us--)
+  {
+    for(uint8_t i = 10; i > 0; i--)
+    {
+      __nop();
+      __nop();
+      __nop();
+      __nop();
+      __nop();
+      __nop();
+      __nop();
+      __nop();
+      __nop();
+      __nop();
+      __nop();
+      __nop();
+      __nop();
+      __nop();
+      __nop();
+    }
+  }
+}
 // /**
 //   * @todo           将函数转换为c函数
 //   * 

@@ -118,9 +118,16 @@ void chassis_task(void const *pvParameters)
     target.yaw_speed_cmd = 0.0f;
     target.yaw_angle = 0.0f;
 
-    //腿长目标值
-    float left_leg_length_target = 0.17f;
-    float right_leg_length_target = 0.17f;
+    //腿部目标控制量
+    left_leg_pos_target.length = 0.17f;
+    left_leg_pos_target.angle = M_PI_2;
+    right_leg_pos_target.length = 0.17f;
+    right_leg_pos_target.angle = M_PI_2;
+
+
+    extern CAN_HandleTypeDef hcan1;
+    extern CAN_HandleTypeDef hcan2;
+
     while (1)
     {
         //1.更新腿部姿态信息
@@ -164,23 +171,21 @@ void chassis_task(void const *pvParameters)
         }else if(rc_ctrl->rc.s[1] == 0x03){//[CL档]腿部伸长
             float joint_pos[2];
 
-            float left_angle;
-            float right_angle;
+            left_leg_pos_target.length = 0.18f + rc_ctrl->rc.ch[1]/16500.0f;
+            left_leg_pos_target.angle = M_PI_2 + rc_ctrl->rc.ch[0]/1350.0f;
 
-            left_leg_length_target = 0.18f + rc_ctrl->rc.ch[1]/16500.0f;
-            left_angle = M_PI_2 + rc_ctrl->rc.ch[0]/1350.0f;
+            right_leg_pos_target.length = 0.18f + rc_ctrl->rc.ch[3]/16500.0f;
+            right_leg_pos_target.angle = M_PI_2 + rc_ctrl->rc.ch[2]/1350.0f;
 
-            right_leg_length_target = 0.18f + rc_ctrl->rc.ch[3]/16500.0f;
-            right_angle = M_PI_2 + rc_ctrl->rc.ch[2]/1350.0f;
+            OutputData.data_5 = left_leg_pos_target.length;
+            OutputData.data_6 = left_leg_pos_target.angle;
 
-            OutputData.data_5 = left_leg_length_target;
-            OutputData.data_6 = left_angle;
-
-            JointPos(left_leg_length_target,left_angle,joint_pos);//计算关节摆角
+            JointPos(left_leg_pos_target.length,left_leg_pos_target.angle,joint_pos);//计算关节摆角
             MotorSetTargetAngle(&left_joint[1],joint_pos[0]);
             MotorSetTargetAngle(&left_joint[0],joint_pos[1]);
 
-            JointPos(right_leg_length_target,right_angle,joint_pos);//计算关节摆角
+            JointPos(right_leg_pos_target.length,right_leg_pos_target.angle,joint_pos);//计算关节摆角
+            JointPos(left_leg_pos_target.length,left_leg_pos_target.angle,joint_pos);//计算关节摆角
             MotorSetTargetAngle(&right_joint[1],joint_pos[0]);
             MotorSetTargetAngle(&right_joint[0],joint_pos[1]);
 
@@ -193,11 +198,13 @@ void chassis_task(void const *pvParameters)
             state_var.dPhi = chassis_imu.pitchSpd;
             state_var.x = (left_wheel.angle + right_wheel.angle) / 2 * wheelRadius;
             state_var.dx = (left_wheel.speed + right_wheel.speed) / 2 * wheelRadius;
-            state_var.theta = (left_leg_pos.angle + right_leg_pos.angle) / 2 - M_PI_2 - chassis_imu.pitch;
+            // state_var.theta = (left_leg_pos.angle + right_leg_pos.angle) / 2 - M_PI_2 - chassis_imu.pitch;
+            // state_var.dTheta = (left_leg_pos.dAngle + right_leg_pos.dAngle) / 2 - chassis_imu.pitchSpd;
+            state_var.theta = (left_leg_pos_target.angle + right_leg_pos_target.angle) / 2 - M_PI_2 - chassis_imu.pitch;
             state_var.dTheta = (left_leg_pos.dAngle + right_leg_pos.dAngle) / 2 - chassis_imu.pitchSpd;
             // float leg_length = (left_leg_pos.length + right_leg_pos.length) / 2;
             // float dLegLength = (left_leg_pos.dLength + right_leg_pos.dLength) / 2;
-            float leg_length = (left_leg_length_target + right_leg_length_target) / 2;
+            float leg_length = (left_leg_pos_target.length + right_leg_pos_target.length) / 2;
 
             //计算LQR反馈矩阵
             float kRes[12] = {0}, k[2][6] = {0};
@@ -242,6 +249,7 @@ void chassis_task(void const *pvParameters)
         }
         
         // SendChassisCmd();//发送底盘控制指令
+        // HAL_Delay(3);
         
         //os delay
         //系统延时

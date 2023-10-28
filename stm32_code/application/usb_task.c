@@ -88,10 +88,9 @@ static uint8_t usb_rx_buf[APP_RX_DATA_SIZE];
 uint32_t UserTxLengthFS = 0;
 #define CRC16_INIT 0xFFFF
 
-
 void usb_task(void const * argument)
 {
-    //»ù´¡²ÎÊı
+    //åŸºç¡€å‚æ•°
     MX_USB_DEVICE_Init();
     
     buzzer_off();
@@ -114,20 +113,20 @@ void usb_task(void const * argument)
         
         uint8_t crc_ok = Verify_CRC16_Check_Sum((const uint8_t *)(&ReceivedData), sizeof(ReceivedData));
         if (crc_ok)
-        { /*½ÓÊÕµ½ÕıÈ·Êı¾İÕâÒ»²¿·ÖµÄÔËĞĞÂß¼­¿ÉÄÜ»¹ÒªÖØĞÂ¹¹½¨Ò»ÏÂ*/
+        { /*æ¥æ”¶åˆ°æ­£ç¡®æ•°æ®è¿™ä¸€éƒ¨åˆ†çš„è¿è¡Œé€»è¾‘å¯èƒ½è¿˜è¦é‡æ–°æ„å»ºä¸€ä¸‹*/
           AimingParameter = ReceivedData;
         }
 
-        /*ÒÔÏÂÊı¾İÎª·¢ËÍÊı¾İµÄ²âÊÔÓÃÊı¾İ£¬ÕıÊ½Ê¹ÓÃÊ±ÇëÉ¾³ı»ò×¢ÊÍµô*/
-        // gimbal_INT_gyro_angle_point = get_INS_angle_point();//»ñÈ¡Å·À­½Ç, 0:yaw, 1:pitch, 2:roll µ¥Î» rad
+        /*ä»¥ä¸‹æ•°æ®ä¸ºå‘é€æ•°æ®çš„æµ‹è¯•ç”¨æ•°æ®ï¼Œæ­£å¼ä½¿ç”¨æ—¶è¯·åˆ é™¤æˆ–æ³¨é‡Šæ‰*/
+        // gimbal_INT_gyro_angle_point = get_INS_angle_point();//è·å–æ¬§æ‹‰è§’, 0:yaw, 1:pitch, 2:roll å•ä½ rad
         // SendData.detect_color = 0;
         // SendData.reset_tracker = 0;
         // SendData.reserved = 1;
-        // SendData.roll = gimbal_INT_gyro_angle_point[2];//ÔÆÌ¨roll
-        // SendData.pitch = gimbal_INT_gyro_angle_point[1];//ÔÆÌ¨pitch
-        // SendData.yaw = gimbal_INT_gyro_angle_point[0];//ÔÆÌ¨yaw
+        // SendData.roll = gimbal_INT_gyro_angle_point[2];//äº‘å°roll
+        // SendData.pitch = gimbal_INT_gyro_angle_point[1];//äº‘å°pitch
+        // SendData.yaw = gimbal_INT_gyro_angle_point[0];//äº‘å°yaw
 
-        usb_send_AutoAim();//·¢ËÍÊı¾İ
+        usb_send_AutoAim();//å‘é€æ•°æ®
 
       }else if (USB_STATE == OUTPUT_PC_STATE){
 
@@ -135,33 +134,36 @@ void usb_task(void const * argument)
 
         if (crc_ok)
         {
-          gimbal_INT_gyro_angle_point = get_INS_angle_point();//»ñÈ¡Å·À­½Ç, 0:yaw, 1:pitch, 2:roll µ¥Î» rad
+          gimbal_INT_gyro_angle_point = get_INS_angle_point();//è·å–æ¬§æ‹‰è§’, 0:yaw, 1:pitch, 2:roll å•ä½ rad
           buzzer_on(500, 30000);
           
           OutputData.header = 0x6A;
           OutputData.length = sizeof(OutputData_s);
           char_to_uint(OutputData.name_1,"M1_temp"); 
           OutputData.type_1 = 1;
-          OutputData.data_1 = MI_Motor[1].RxCAN_info.angle;
+          OutputData.data_1 = MI_Motor[1].RxCAN_info.speed;
+
           char_to_uint(OutputData.name_2,"M2_temp"); 
           OutputData.type_2 = 1;
-          OutputData.data_2 = MI_Motor[2].RxCAN_info.angle;
+          OutputData.data_2 = MI_Motor[2].RxCAN_info.speed;
+
           char_to_uint(OutputData.name_3,"M3_temp"); 
           OutputData.type_3 = 1;
-          OutputData.data_3 = MI_Motor[3].RxCAN_info.angle;
+          OutputData.data_3 = MI_Motor[3].RxCAN_info.speed;
+
           char_to_uint(OutputData.name_4,"M4_temp");
           OutputData.type_4 = 1; 
-          OutputData.data_4 = MI_Motor[4].RxCAN_info.angle;
+          OutputData.data_4 = MI_Motor[4].RxCAN_info.speed;
 
           char_to_uint(OutputData.name_5,"t_length"); 
           OutputData.type_5 = 1;
-          // OutputData.data_5 = gimbal_INT_gyro_angle_point[2];//ÔÆÌ¨roll
+          // OutputData.data_5 = gimbal_INT_gyro_angle_point[2];//äº‘å°roll
           char_to_uint(OutputData.name_6,"t_angle"); 
           OutputData.type_6 = 1;
-          // OutputData.data_6 = gimbal_INT_gyro_angle_point[1];//ÔÆÌ¨pitch
-          // char_to_uint(OutputData.name_7,"yaw"); 
-          // OutputData.type_7 = 1;
-          // OutputData.data_7 = gimbal_INT_gyro_angle_point[0];//ÔÆÌ¨yaw
+          // OutputData.data_6 = gimbal_INT_gyro_angle_point[1];//äº‘å°pitch
+          char_to_uint(OutputData.name_7,"RxLevel"); 
+          OutputData.type_7 = 1;
+          // OutputData.data_7 = gimbal_INT_gyro_angle_point[0];//äº‘å°yaw
 
 
           // char_to_uint(OutputData.name_5,"LegLength1"); 
@@ -210,7 +212,7 @@ static void usb_send_outputPC(void){
 
 static void usb_recieve(void){
     uint32_t len = 384;//48*8 bit
-    CDC_Receive_FS(usb_rx_buf, &len);//½«Êı¾İ¶ÁÈë»º´æÇø
+    CDC_Receive_FS(usb_rx_buf, &len);//å°†æ•°æ®è¯»å…¥ç¼“å­˜åŒº
     if (usb_rx_buf[0] == 0xA5){
       memcpy(&ReceivedData, usb_rx_buf, sizeof(ReceivedData_s));
     }else if (usb_rx_buf[0] == 0xA6){
@@ -232,7 +234,7 @@ static void usb_printf(const char *fmt,...)
 }
 
 
-//CRCĞ£ÑéÓÃµÄ±í
+//CRCæ ¡éªŒç”¨çš„è¡¨
 const uint16_t W_CRC_TABLE[256] = {
   0x0000, 0x1189, 0x2312, 0x329b, 0x4624, 0x57ad, 0x6536, 0x74bf, 0x8c48, 0x9dc1, 0xaf5a, 0xbed3,
   0xca6c, 0xdbe5, 0xe97e, 0xf8f7, 0x1081, 0x0108, 0x3393, 0x221a, 0x56a5, 0x472c, 0x75b7, 0x643e,
