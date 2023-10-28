@@ -105,7 +105,7 @@ void chassis_task(void const *pvParameters)
     //手动为反馈矩阵和输出叠加一个系数，用于手动优化控制效果
     float kRatio[2][6] = {{1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f},
                           {1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f}};
-    float lqrTpRatio = 1.0f, lqrTRatio = 2.0f;
+    float lqrTpRatio = 1.0f, lqrTRatio = 1.0f;
 
     //设定初始目标值
     target.roll_angle = 0.0f;
@@ -209,9 +209,23 @@ void chassis_task(void const *pvParameters)
             //计算LQR反馈矩阵
             float kRes[12] = {0}, k[2][6] = {0};
             LQR_K(leg_length, kRes);
+			
+            //正常触地状态
+            for (int i = 0; i < 6; i++)
+			{
+				for (int j = 0; j < 2; j++)
+					k[j][i] = kRes[i * 2 + j] * kRatio[j][i];
+			}
 
             //准备状态变量
-            float x[6] = {state_var.theta, state_var.dTheta, state_var.x, state_var.dx, state_var.phi, state_var.dPhi};
+            float x[6] = {
+                state_var.theta, 
+                state_var.dTheta, 
+                state_var.x, 
+                state_var.dx, 
+                state_var.phi, 
+                state_var.dPhi
+                };
             //与给定量作差
             x[2] -= target.position;
             x[3] -= target.speed;
@@ -233,11 +247,11 @@ void chassis_task(void const *pvParameters)
 
             CANCmdWheel(
                 MotorTorqueToCurrentValue_2006(left_wheel.torque), 
-                MotorTorqueToCurrentValue_2006(right_wheel.torque)
+                -MotorTorqueToCurrentValue_2006(right_wheel.torque)
                 );
 
-            OutputData.data_1 = -lqrOutT;
-            OutputData.data_7 = chassis_imu.pitch;
+            OutputData.data_1 = MotorTorqueToCurrentValue_2006(left_wheel.torque);
+            OutputData.data_2 = -lqrOutT;
 
         }else{//其他状态一律关闭电机
             MotorSetTorque(&left_joint[0], 0);

@@ -139,13 +139,13 @@ void usb_task(void const * argument)
           
           OutputData.header = 0x6A;
           OutputData.length = sizeof(OutputData_s);
-          char_to_uint(OutputData.name_1,"l_w_tor"); 
+          char_to_uint(OutputData.name_1,"l_w_cur"); 
           OutputData.type_1 = 1;
           // OutputData.data_1 = MI_Motor[1].RxCAN_info.speed;
 
-          char_to_uint(OutputData.name_2,"pitch"); 
+          char_to_uint(OutputData.name_2,"lqrOutT"); 
           OutputData.type_2 = 1;
-          OutputData.data_2 = gimbal_INT_gyro_angle_point[1];
+          // OutputData.data_2 = gimbal_INT_gyro_angle_point[1];
           // OutputData.data_2 = MI_Motor[2].RxCAN_info.speed;
 
           char_to_uint(OutputData.name_3,"M3_temp"); 
@@ -164,7 +164,7 @@ void usb_task(void const * argument)
           // OutputData.data_6 = gimbal_INT_gyro_angle_point[1];//云台pitch
           char_to_uint(OutputData.name_7,"cha_pitch"); 
           OutputData.type_7 = 1;
-          // OutputData.data_7 = gimbal_INT_gyro_angle_point[0];//云台yaw
+          OutputData.data_7 = gimbal_INT_gyro_angle_point[1];
 
 
           // char_to_uint(OutputData.name_5,"LegLength1"); 
