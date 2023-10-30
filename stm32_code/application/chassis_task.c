@@ -105,7 +105,7 @@ void chassis_task(void const *pvParameters)
     //手动为反馈矩阵和输出叠加一个系数，用于手动优化控制效果
     float kRatio[2][6] = {{1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f},
                           {1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f}};
-    float lqrTpRatio = 1.0f, lqrTRatio = 1.0f;
+    float lqrTpRatio = 1.0f, lqrTRatio = 1.0f/5;
 
     //设定初始目标值
     target.roll_angle = 0.0f;
@@ -168,6 +168,8 @@ void chassis_task(void const *pvParameters)
             CANCmdLeftJoint();
             HAL_Delay(1);
             CANCmdRightJoint();
+
+            CANCmdWheel(0,0);
         }else if(rc_ctrl->rc.s[1] == 0x03){//[CL档]腿部伸长
             float joint_pos[2];
 
@@ -242,16 +244,21 @@ void chassis_task(void const *pvParameters)
             // MotorSetTorque(&right_wheel, -lqrOutT * lqrTRatio + yaw_PID.output);
             
             //设定车轮电机输出扭矩，仅lqr反馈
-            MotorSetTorque(&left_wheel, -lqrOutT * lqrTRatio);
+            MotorSetTorque(&left_wheel , lqrOutT * lqrTRatio);
             MotorSetTorque(&right_wheel, -lqrOutT * lqrTRatio);
 
+            CANCmdJointLocation();
             CANCmdWheel(
                 MotorTorqueToCurrentValue_2006(left_wheel.torque), 
-                -MotorTorqueToCurrentValue_2006(right_wheel.torque)
+                MotorTorqueToCurrentValue_2006(right_wheel.torque)
                 );
 
             OutputData.data_1 = MotorTorqueToCurrentValue_2006(left_wheel.torque);
             OutputData.data_2 = -lqrOutT;
+            OutputData.data_3 = left_wheel.torque;
+
+            float k1 = 0.18f;//N*m/A
+            OutputData.data_4 = (int16_t)(1000*left_wheel.torque/k1);
 
         }else{//其他状态一律关闭电机
             MotorSetTorque(&left_joint[0], 0);

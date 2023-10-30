@@ -130,9 +130,9 @@ static void CANRxDecode(CAN_RxHeaderTypeDef rx_header,uint8_t rx_data[8])
 
                 //这里还要改改，将2006电机数据获取后改为驱动轮电机的数据
                 left_wheel.angle = motor_chassis[6].ecd/8191.0f*M_PI*2;
-                left_wheel.speed = motor_chassis[6].speed_rpm*M_PI*2;
+                left_wheel.speed = motor_chassis[6].speed_rpm*M_PI/30;
                 right_wheel.angle = motor_chassis[7].ecd/8191.0f*M_PI*2;
-                right_wheel.speed = motor_chassis[7].speed_rpm*M_PI*2;
+                right_wheel.speed = motor_chassis[7].speed_rpm*M_PI/30;
                 break;
             }
 
@@ -180,6 +180,13 @@ static void CANRxDecode(CAN_RxHeaderTypeDef rx_header,uint8_t rx_data[8])
 void CANCmdWheel(int16_t left_wheel, int16_t right_wheel)
 {
     uint32_t send_mail_box;
+
+    if (left_wheel > 10000) left_wheel = 10000;
+    else if (left_wheel < -10000) left_wheel = -10000;
+
+    if (right_wheel > 10000) right_wheel = 10000;
+    else if (right_wheel < -10000) right_wheel = -10000;
+
     wheel_tx_message.StdId = CAN_GIMBAL_ALL_ID;
     wheel_tx_message.IDE = CAN_ID_STD;
     wheel_tx_message.RTR = CAN_RTR_DATA;
@@ -350,7 +357,10 @@ void SendChassisCmd(void)
     MI_motor_TorqueControl(right_joint[1].MI_Motor,right_joint[1].torque);
 
     //发送车轮控制力矩
-    CANCmdWheel(0,0);
+    CANCmdWheel(
+                MotorTorqueToCurrentValue_2006(left_wheel.torque), 
+                -MotorTorqueToCurrentValue_2006(right_wheel.torque)
+                );
 }
 
 

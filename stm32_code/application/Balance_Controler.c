@@ -216,12 +216,12 @@ void MotorSetTargetAngle(Motor_s *motor, float target_angle)
   * @param          torque 力矩大小
   * @return         send_velue 电流值大小
   */
-uint16_t MotorTorqueToCurrentValue_2006(float torque)
+int16_t MotorTorqueToCurrentValue_2006(float torque)
 {
-    float k = 0.18;//N*m/A
+    float k = 0.18f;//N*m/A
     float current; //A
     current = torque/k;
-    uint16_t send_velue = (uint16_t)(1000*current);
+    int16_t send_velue = (int16_t)(1000*current);
     return send_velue;
 }
 

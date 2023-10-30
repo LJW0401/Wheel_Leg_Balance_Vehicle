@@ -193,7 +193,7 @@ extern void ChassisPostureUpdate();
 extern void CtrlTargetUpdateTask();
 extern void LegPosUpdateTask();
 
-extern uint16_t MotorTorqueToCurrentValue_2006(float torque);
+extern int16_t MotorTorqueToCurrentValue_2006(float torque);
 
 extern void nop_delay_us(uint16_t us);
 
