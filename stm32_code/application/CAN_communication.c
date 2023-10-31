@@ -130,9 +130,9 @@ static void CANRxDecode(CAN_RxHeaderTypeDef rx_header,uint8_t rx_data[8])
 
                 //这里还要改改，将2006电机数据获取后改为驱动轮电机的数据
                 left_wheel.angle = motor_chassis[6].ecd/8191.0f*M_PI*2;
-                left_wheel.speed = motor_chassis[6].speed_rpm*M_PI/30;
+                left_wheel.speed = motor_chassis[6].speed_rpm*M_PI/30*REDUCTION_RATIO_2006;//反馈的是转子速度，乘减速比得到轮子转速
                 right_wheel.angle = motor_chassis[7].ecd/8191.0f*M_PI*2;
-                right_wheel.speed = motor_chassis[7].speed_rpm*M_PI/30;
+                right_wheel.speed = motor_chassis[7].speed_rpm*M_PI/30*REDUCTION_RATIO_2006;
                 break;
             }
 
