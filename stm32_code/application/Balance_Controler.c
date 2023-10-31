@@ -252,10 +252,14 @@ void CtrlTargetUpdateTask()
 {
   //通过遥控器设定速度
   const RC_ctrl_t * rc_ctrl = get_remote_control_point();
-  target.speed_cmd = rc_ctrl->rc.ch[1]*1/660.0f;
+  //设置前进速度
+  target.speed_cmd = 0.1f + rc_ctrl->rc.ch[1]/660.0f;//其中第一个量为速度修正量，因为重心问题在初始状态下并不能稳定站在原地。
   target.speed = target.speed_cmd;
-  
-  buzzer_on((int)fabs(target.speed*500),30000);
+  //设置旋转速度
+  target.yaw_speed_cmd = rc_ctrl->rc.ch[2]/660.0f;
+  target.yaw_speed = target.yaw_speed_cmd;
+
+
   //=====控制给定量=====
   // float speed_slope_step = 0.003f;
   // //根据当前腿长计算速度斜坡步长(腿越短越稳定，加减速斜率越大)

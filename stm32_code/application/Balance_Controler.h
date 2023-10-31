@@ -142,8 +142,9 @@ typedef struct
 {
   float position;	 // m
   float speed_cmd;	 // m/s
-  float speed;    // m/s
+  float speed;    // m/s 目标前进速度
   float yaw_speed_cmd; // rad/s
+  float yaw_speed; // rad/s 目标转动速度
   float yaw_angle;	 // rad
   float roll_angle; // rad
   float leg_length; // m

@@ -105,7 +105,9 @@ void chassis_task(void const *pvParameters)
     //手动为反馈矩阵和输出叠加一个系数，用于手动优化控制效果
     float kRatio[2][6] = {{1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f},
                           {1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f}};
-    float lqrTpRatio = 1.0f, lqrTRatio = 1.0f/10;
+    float lqrTpRatio = 1.0f;
+    float lqrTRatio = 1.0f/10;
+    float rotational_ratio = 1.0f/10;//旋转速度转换为力矩的系数
 
     //设定初始目标值
     target.roll_angle = 0.0f;
@@ -114,9 +116,9 @@ void chassis_task(void const *pvParameters)
     target.position = (left_wheel.angle + right_wheel.angle) / 2 * wheelRadius;
 
     //追加的控制项，先站起来再说
-    target.speed_cmd = 0.0f;
-    target.yaw_speed_cmd = 0.0f;
-    target.yaw_angle = 0.0f;
+    // target.speed_cmd = 0.0f;
+    // target.yaw_speed_cmd = 0.0f;
+    // target.yaw_angle = 0.0f;
 
     //腿部目标控制量
     left_leg_pos_target.length = 0.17f;
@@ -237,15 +239,15 @@ void chassis_task(void const *pvParameters)
             float lqrOutTp = k[1][0] * x[0] + k[1][1] * x[1] + k[1][2] * x[2] + k[1][3] * x[3] + k[1][4] * x[4] + k[1][5] * x[5];
 
             //计算yaw轴PID输出
-            PID_CascadeCalc(&yaw_PID, target.yaw_angle, chassis_imu.yaw, chassis_imu.yawSpd);
+            // PID_CascadeCalc(&yaw_PID, target.yaw_angle, chassis_imu.yaw, chassis_imu.yawSpd);
 
             // //设定车轮电机输出扭矩，为LQR和yaw轴PID输出的叠加
             // MotorSetTorque(&left_wheel, -lqrOutT * lqrTRatio - yaw_PID.output);
             // MotorSetTorque(&right_wheel, -lqrOutT * lqrTRatio + yaw_PID.output);
             
-            //设定车轮电机输出扭矩，仅lqr反馈
-            MotorSetTorque(&left_wheel , lqrOutT * lqrTRatio);
-            MotorSetTorque(&right_wheel, -lqrOutT * lqrTRatio);
+            //设定车轮电机输出扭矩，为LQR和旋转量的叠加
+            MotorSetTorque(&left_wheel ,  lqrOutT * lqrTRatio + target.yaw_speed * rotational_ratio);
+            MotorSetTorque(&right_wheel, -lqrOutT * lqrTRatio + target.yaw_speed * rotational_ratio);
 
             CANCmdJointLocation();
             CANCmdWheel(
