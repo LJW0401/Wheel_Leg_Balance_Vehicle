@@ -105,7 +105,7 @@ void chassis_task(void const *pvParameters)
     //手动为反馈矩阵和输出叠加一个系数，用于手动优化控制效果
     float kRatio[2][6] = {{1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f},
                           {1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f}};
-    float lqrTpRatio = 1.0f, lqrTRatio = 1.0f/5;
+    float lqrTpRatio = 1.0f, lqrTRatio = 1.0f/15;
 
     //设定初始目标值
     target.roll_angle = 0.0f;

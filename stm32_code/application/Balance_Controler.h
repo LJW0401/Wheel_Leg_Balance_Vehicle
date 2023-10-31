@@ -58,6 +58,7 @@
 #define M_LOG2_E        _M_LN2
 #define M_INVLN2        1.4426950408889633870E0  /* 1 / log(2) */
 
+#define REDUCTION_RATIO_2006 0.027777777777777776 /*2006减速比(1:36)*/
 
 /** @brief      底盘IMU数据结构体
   * @note       
