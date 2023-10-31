@@ -29,6 +29,7 @@
         "legpos.h": "c",
         "stdlib.h": "c",
         "legspd.h": "c",
-        "jointpos.h": "c"
+        "jointpos.h": "c",
+        "bsp_buzzer.h": "c"
     }
 }

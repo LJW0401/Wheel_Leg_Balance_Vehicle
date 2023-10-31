@@ -24,7 +24,10 @@
 #include <math.h>
 #include "INS_task.h"
 #include "./Drives/MI_motor_drive.h"
+
 #include "main.h"
+#include "remote_control.h"
+#include "bsp_buzzer.h"
 
 float motorOutRatio = 1.0f; //电机输出电压比例，对所有电机同时有效
 
@@ -247,44 +250,45 @@ void TargetUpdate()
   */
 void CtrlTargetUpdateTask()
 {
-  // TickType_t xLastWakeTime = xTaskGetTickCount();
+  //通过遥控器设定速度
+  const RC_ctrl_t * rc_ctrl = get_remote_control_point();
+  target.speed_cmd = rc_ctrl->rc.ch[1]*1/660.0f;
+  target.speed = target.speed_cmd;
+  
+  buzzer_on((int)fabs(target.speed*500),30000);
+  //=====控制给定量=====
+  // float speed_slope_step = 0.003f;
+  // //根据当前腿长计算速度斜坡步长(腿越短越稳定，加减速斜率越大)
+  // float leg_length = (left_leg_pos.length + right_leg_pos.length) / 2;
+  // speed_slope_step = -(leg_length - 0.07f) * 0.02f + 0.002f;
 
-  float speed_slope_step = 0.003f;
-  // while (1)
+  // //计算速度斜坡，斜坡值更新到target.speed
+  // if(fabs(target.speed_cmd - target.speed) < speed_slope_step)
+  //   target.speed = target.speed_cmd;
+  // else
   // {
-    //根据当前腿长计算速度斜坡步长(腿越短越稳定，加减速斜率越大)
-    float leg_length = (left_leg_pos.length + right_leg_pos.length) / 2;
-    speed_slope_step = -(leg_length - 0.07f) * 0.02f + 0.002f;
-
-    //计算速度斜坡，斜坡值更新到target.speed
-    if(fabs(target.speed_cmd - target.speed) < speed_slope_step)
-      target.speed = target.speed_cmd;
-    else
-    {
-      if(target.speed_cmd - target.speed > 0)
-        target.speed += speed_slope_step;
-      else
-        target.speed -= speed_slope_step;
-    }
-
-    //计算位置目标，并限制在当前位置的±0.1m内
-    target.position += target.speed * 0.004f;
-    if(target.position - state_var.x > 0.1f)
-      target.position = state_var.x + 0.1f; 
-    else if(target.position - state_var.x < -0.1f)
-      target.position = state_var.x - 0.1f;
-
-    //限制速度目标在当前速度的±0.3m/s内
-    if(target.speed - state_var.dx > 0.3f)
-      target.speed = state_var.dx + 0.3f;
-    else if(target.speed - state_var.dx < -0.3f)
-      target.speed = state_var.dx - 0.3f;
-
-    //计算yaw方位角目标
-    target.yaw_angle += target.yaw_speed_cmd * 0.004f;
-    
-    // vTaskDelayUntil(&xLastWakeTime, 4); //每4ms更新一次
+  //   if(target.speed_cmd - target.speed > 0)
+  //     target.speed += speed_slope_step;
+  //   else
+  //     target.speed -= speed_slope_step;
   // }
+
+  // //计算位置目标，并限制在当前位置的±0.1m内
+  // target.position += target.speed * 0.004f;
+  // if(target.position - state_var.x > 0.1f)
+  //   target.position = state_var.x + 0.1f; 
+  // else if(target.position - state_var.x < -0.1f)
+  //   target.position = state_var.x - 0.1f;
+
+  // //限制速度目标在当前速度的±0.3m/s内
+  // if(target.speed - state_var.dx > 0.3f)
+  //   target.speed = state_var.dx + 0.3f;
+  // else if(target.speed - state_var.dx < -0.3f)
+  //   target.speed = state_var.dx - 0.3f;
+
+  // //计算yaw方位角目标
+  // target.yaw_angle += target.yaw_speed_cmd * 0.004f;
+    
 }
 
 
