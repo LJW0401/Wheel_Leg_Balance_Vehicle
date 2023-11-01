@@ -21,6 +21,8 @@
 #include "CAN_communication.h"
 #include "remote_control.h"
 #include "usb_task.h"
+#include "INS_task.h"
+
 // #include "chassis_behaviour.h"
 
 // #include "cmsis_os.h"
@@ -80,27 +82,12 @@ void chassis_task(void const *pvParameters)
     MI_motor_Enable(&MI_Motor[3]);
     MI_motor_Enable(&MI_Motor[4]);
 
-    //HAL_Delay(1000);
-
-    //VMC解算时用到的PID控制器
-    PID left_length_pid;
-    PID_Init(&left_length_pid,50,0.01,10,100,100);
-    PID left_angle_pid;
-    PID_Init(&left_angle_pid,0.05,0.00001,0.05,100,100);
-
-    PID right_length_pid;
-    PID_Init(&right_length_pid,50,0.01,10,100,100);
-    PID right_angle_pid;
-    PID_Init(&right_angle_pid,0.05,0.00001,0.05,100,100);
-    //PID_Init(&right_angle_pid,0.01,0.00,0.02,100,100);
-
+    PIDInit();
 
     static uint32_t lastTouchTime = 0;
 
     const float wheelRadius = 0.0425f; //m，车轮半径
     const float legMass = 0.12368f; //kg，腿部质量
-
-    // TickType_t xLastWakeTime = xTaskGetTickCount();
 
     //手动为反馈矩阵和输出叠加一个系数，用于手动优化控制效果
     float kRatio[2][6] = {{1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f},
@@ -114,21 +101,13 @@ void chassis_task(void const *pvParameters)
     target.leg_length = 0.17f;
     target.speed = 0.0f;
     target.position = (left_wheel.angle + right_wheel.angle) / 2 * wheelRadius;
-
-    //追加的控制项，先站起来再说
-    // target.speed_cmd = 0.0f;
-    // target.yaw_speed_cmd = 0.0f;
-    // target.yaw_angle = 0.0f;
+    target.yaw_angle = 0.0f;
 
     //腿部目标控制量
     left_leg_pos_target.length = 0.17f;
     left_leg_pos_target.angle = M_PI_2;
     right_leg_pos_target.length = 0.17f;
     right_leg_pos_target.angle = M_PI_2;
-
-
-    extern CAN_HandleTypeDef hcan1;
-    extern CAN_HandleTypeDef hcan2;
 
     while (1)
     {
@@ -239,15 +218,14 @@ void chassis_task(void const *pvParameters)
             float lqrOutTp = k[1][0] * x[0] + k[1][1] * x[1] + k[1][2] * x[2] + k[1][3] * x[3] + k[1][4] * x[4] + k[1][5] * x[5];
 
             //计算yaw轴PID输出
-            // PID_CascadeCalc(&yaw_PID, target.yaw_angle, chassis_imu.yaw, chassis_imu.yawSpd);
+            // float feedback;
+            // feedback = target.yaw_angle - chassis_imu.yaw;
+            // PID_SingleCalc(&yaw_PID, 0, feedback);
+            PID_SingleCalc(&yaw_PID, target.yaw_angle, chassis_imu.yaw);
 
-            // //设定车轮电机输出扭矩，为LQR和yaw轴PID输出的叠加
-            // MotorSetTorque(&left_wheel, -lqrOutT * lqrTRatio - yaw_PID.output);
-            // MotorSetTorque(&right_wheel, -lqrOutT * lqrTRatio + yaw_PID.output);
-            
-            //设定车轮电机输出扭矩，为LQR和旋转量的叠加
-            MotorSetTorque(&left_wheel ,  lqrOutT * lqrTRatio + target.yaw_speed * rotational_ratio);
-            MotorSetTorque(&right_wheel, -lqrOutT * lqrTRatio + target.yaw_speed * rotational_ratio);
+            //设定车轮电机输出扭矩，为LQR和yaw轴PID输出的叠加
+            MotorSetTorque(&left_wheel ,  lqrOutT * lqrTRatio - yaw_PID.output);
+            MotorSetTorque(&right_wheel, -lqrOutT * lqrTRatio - yaw_PID.output);
 
             CANCmdJointLocation();
             CANCmdWheel(

@@ -44,8 +44,9 @@ Leg_Pos_Target_t left_leg_pos_target, right_leg_pos_target;
 State_Var_s state_var;
 Target_s target = {0, 0, 0, 0, 0, 0, 0.07f};
 GroundDetector ground_detector = {10, 10, 1, 0};
-CascadePID leg_angle_PID, leg_length_PID; //腿部角度和长度控制PID
-CascadePID yaw_PID, roll_PID; //机身yaw和roll控制PID
+// CascadePID leg_angle_PID, leg_length_PID; //腿部角度和长度控制PID
+// CascadePID yaw_PID, roll_PID; //机身yaw和roll控制PID
+PID yaw_PID;
 
 StandupState standup_state = StandupState_None;
 
@@ -229,24 +230,12 @@ float CalcJointAngle(Motor_s* left_joint, Motor_s* right_joint)
   right_joint[0].angle = right_joint[0].MI_Motor->RxCAN_info.angle - right_joint[0].horizontal_angle;
   right_joint[1].angle = right_joint[1].MI_Motor->RxCAN_info.angle - right_joint[1].horizontal_angle;
 }
-// {
-//   joint_motor->angle = joint_motor->MI_Motor->RxCAN_info.angle - joint_motor->horizontal_angle;
-// }
 
-/**
-  * @brief          目标量更新
-  * @attention      从遥控器获取目标值
-  * @note           根据目标量(target)计算实际控制算法的给定量
-  */
-void TargetUpdate()
-{
-
-};
 
 /**
   * @brief          控制算法给定量更新任务
   * @attention      这里作为一个被调用的任务函数，而非FreeRTOS任务
-  * @note           根据目标量(target)计算实际控制算法的给定量
+  * @note           根据通道设置控制算法的给定量
   */
 void CtrlTargetUpdateTask()
 {
@@ -255,44 +244,11 @@ void CtrlTargetUpdateTask()
   //设置前进速度
   target.speed_cmd = 0.25f + rc_ctrl->rc.ch[1]/660.0f*0.7;//其中第一个量为速度修正量，因为重心问题在初始状态下并不能稳定站在原地。
   target.speed = target.speed_cmd;
-  //设置旋转速度
-  target.yaw_speed_cmd = rc_ctrl->rc.ch[2]/660.0f;
-  target.yaw_speed = target.yaw_speed_cmd;
-
-
-  //=====控制给定量=====
-  // float speed_slope_step = 0.003f;
-  // //根据当前腿长计算速度斜坡步长(腿越短越稳定，加减速斜率越大)
-  // float leg_length = (left_leg_pos.length + right_leg_pos.length) / 2;
-  // speed_slope_step = -(leg_length - 0.07f) * 0.02f + 0.002f;
-
-  // //计算速度斜坡，斜坡值更新到target.speed
-  // if(fabs(target.speed_cmd - target.speed) < speed_slope_step)
-  //   target.speed = target.speed_cmd;
-  // else
-  // {
-  //   if(target.speed_cmd - target.speed > 0)
-  //     target.speed += speed_slope_step;
-  //   else
-  //     target.speed -= speed_slope_step;
-  // }
-
-  // //计算位置目标，并限制在当前位置的±0.1m内
-  // target.position += target.speed * 0.004f;
-  // if(target.position - state_var.x > 0.1f)
-  //   target.position = state_var.x + 0.1f; 
-  // else if(target.position - state_var.x < -0.1f)
-  //   target.position = state_var.x - 0.1f;
-
-  // //限制速度目标在当前速度的±0.3m/s内
-  // if(target.speed - state_var.dx > 0.3f)
-  //   target.speed = state_var.dx + 0.3f;
-  // else if(target.speed - state_var.dx < -0.3f)
-  //   target.speed = state_var.dx - 0.3f;
-
-  // //计算yaw方位角目标
-  // target.yaw_angle += target.yaw_speed_cmd * 0.004f;
-    
+  //设置yaw方位角
+  target.yaw_angle = target.yaw_angle + rc_ctrl->rc.ch[2]/660.0f*0.001;
+  //确保设置角度位于范围内
+  if(target.yaw_angle>M_PI)        target.yaw_angle = target.yaw_angle - M_PI*2;
+  else if (target.yaw_angle<-M_PI) target.yaw_angle = target.yaw_angle + M_PI*2;
 }
 
 
@@ -398,19 +354,18 @@ void CtrlStandupPrepareTask(void *arg)
 void PIDInit()
 {
   //初始化各个PID参数
-  // PID_Init();
-
-  PID_Init(&yaw_PID.inner, 0.01, 0, 0, 0, 0.1);
-  PID_Init(&yaw_PID.outer, 10, 0, 0, 0, 2);
-  PID_Init(&roll_PID.inner, 1, 0, 5, 0, 5);
-  PID_Init(&roll_PID.outer, 20, 0, 0, 0, 3);
-  PID_SetErrLpfRatio(&roll_PID.inner, 0.1f);
-  PID_Init(&leg_length_PID.inner, 10.0f, 1, 30.0f, 2.0f, 10.0f);
-  PID_Init(&leg_length_PID.outer, 5.0f, 0, 0.0f, 0.0f, 0.5f);
-  PID_SetErrLpfRatio(&leg_length_PID.inner, 0.5f);
-  PID_Init(&leg_angle_PID.inner, 0.04, 0, 0, 0, 1);
-  PID_Init(&leg_angle_PID.outer, 12, 0, 0, 0, 20);
-  PID_SetErrLpfRatio(&leg_angle_PID.outer, 0.5f);
+  PID_Init(&yaw_PID, 0.04, 0.0, 0.4, 0, 0.7);
+  // PID_Init(&yaw_PID.inner, 0.01, 0, 0, 0, 0.1);
+  // PID_Init(&yaw_PID.outer, 10, 0, 0, 0, 2);
+  // PID_Init(&roll_PID.inner, 1, 0, 5, 0, 5);
+  // PID_Init(&roll_PID.outer, 20, 0, 0, 0, 3);
+  // PID_SetErrLpfRatio(&roll_PID.inner, 0.1f);
+  // PID_Init(&leg_length_PID.inner, 10.0f, 1, 30.0f, 2.0f, 10.0f);
+  // PID_Init(&leg_length_PID.outer, 5.0f, 0, 0.0f, 0.0f, 0.5f);
+  // PID_SetErrLpfRatio(&leg_length_PID.inner, 0.5f);
+  // PID_Init(&leg_angle_PID.inner, 0.04, 0, 0, 0, 1);
+  // PID_Init(&leg_angle_PID.outer, 12, 0, 0, 0, 20);
+  // PID_SetErrLpfRatio(&leg_angle_PID.outer, 0.5f);
 }
 
 
