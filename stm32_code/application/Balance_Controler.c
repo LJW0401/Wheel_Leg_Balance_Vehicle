@@ -242,10 +242,10 @@ void CtrlTargetUpdateTask()
   //通过遥控器设定速度
   const RC_ctrl_t * rc_ctrl = get_remote_control_point();
   //设置前进速度
-  target.speed_cmd = 0.25f + rc_ctrl->rc.ch[1]/660.0f*0.7;//其中第一个量为速度修正量，因为重心问题在初始状态下并不能稳定站在原地。
+  target.speed_cmd = 0.25f + rc_ctrl->rc.ch[1]/660.0f*0.4;//其中第一个量为速度修正量，因为重心问题在初始状态下并不能稳定站在原地。
   target.speed = target.speed_cmd;
   //设置yaw方位角
-  target.yaw_angle = target.yaw_angle + rc_ctrl->rc.ch[2]/660.0f*0.001;
+  target.yaw_angle = target.yaw_angle - rc_ctrl->rc.ch[2]/660.0f*0.005;
   //确保设置角度位于范围内
   if(target.yaw_angle>M_PI)        target.yaw_angle = target.yaw_angle - M_PI*2;
   else if (target.yaw_angle<-M_PI) target.yaw_angle = target.yaw_angle + M_PI*2;
@@ -354,7 +354,7 @@ void CtrlStandupPrepareTask(void *arg)
 void PIDInit()
 {
   //初始化各个PID参数
-  PID_Init(&yaw_PID, 0.04, 0.0, 0.4, 0, 0.7);
+  PID_Init(&yaw_PID, 0.05, 0.0, 0.4, 0, 1.5);
   // PID_Init(&yaw_PID.inner, 0.01, 0, 0, 0, 0.1);
   // PID_Init(&yaw_PID.outer, 10, 0, 0, 0, 2);
   // PID_Init(&roll_PID.inner, 1, 0, 5, 0, 5);
