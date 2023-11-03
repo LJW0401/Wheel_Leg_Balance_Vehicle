@@ -93,7 +93,7 @@ void usb_task(void const * argument)
     //基础参数
     MX_USB_DEVICE_Init();
     
-    buzzer_off();
+    // buzzer_off();
     while(1)
     {
       //Receive Data
@@ -108,7 +108,7 @@ void usb_task(void const * argument)
       if (USB_STATE == AUTO_AIM_STATE)
       {
         SendData.header = 0x5A;
-        buzzer_on(1000, 30000);
+        // buzzer_on(1000, 30000);
 
         
         uint8_t crc_ok = Verify_CRC16_Check_Sum((const uint8_t *)(&ReceivedData), sizeof(ReceivedData));
@@ -135,35 +135,32 @@ void usb_task(void const * argument)
         if (crc_ok)
         {
           gimbal_INT_gyro_angle_point = get_INS_angle_point();//获取欧拉角, 0:yaw, 1:pitch, 2:roll 单位 rad
-          buzzer_on(500, 30000);
+          // buzzer_on(500, 30000);
           
           OutputData.header = 0x6A;
           OutputData.length = sizeof(OutputData_s);
-          char_to_uint(OutputData.name_1,"l_w_cur"); 
+          char_to_uint(OutputData.name_1,"l_length"); 
           OutputData.type_1 = 1;
-          // OutputData.data_1 = MI_Motor[1].RxCAN_info.speed;
+          OutputData.data_1 = left_leg_pos.length;
 
-          char_to_uint(OutputData.name_2,"lqrOutT"); 
+          char_to_uint(OutputData.name_2,"l_angle"); 
           OutputData.type_2 = 1;
-          // OutputData.data_2 = gimbal_INT_gyro_angle_point[1];
-          // OutputData.data_2 = MI_Motor[2].RxCAN_info.speed;
+          OutputData.data_2 = left_leg_pos.angle;
 
-          char_to_uint(OutputData.name_3,"l_w_t"); 
+          char_to_uint(OutputData.name_3,"l_dLength"); 
           OutputData.type_3 = 1;
 
-          char_to_uint(OutputData.name_4,"cha_yaw");
+          char_to_uint(OutputData.name_4,"l_L_pid_i");
           OutputData.type_4 = 1; 
-          OutputData.data_4 = chassis_imu.yaw;
 
-          char_to_uint(OutputData.name_5,"tar_yaw"); 
+          char_to_uint(OutputData.name_5,"l_L_pid_o"); 
           OutputData.type_5 = 1;
-          OutputData.data_5 = target.yaw_angle;
-          char_to_uint(OutputData.name_6,"roll"); 
+          
+          char_to_uint(OutputData.name_6,"l_Ang_pid"); 
           OutputData.type_6 = 1;
-          OutputData.data_6 = gimbal_INT_gyro_angle_point[2];
-          char_to_uint(OutputData.name_7,"pitch"); 
+          
+          char_to_uint(OutputData.name_7,"r_len_pid"); 
           OutputData.type_7 = 1;
-          OutputData.data_7 = gimbal_INT_gyro_angle_point[1];
 
 
           // char_to_uint(OutputData.name_5,"LegLength1"); 
@@ -183,7 +180,7 @@ void usb_task(void const * argument)
           usb_send_outputPC();
 
         }else{
-          buzzer_off();
+          // buzzer_off();
         }
       }
 

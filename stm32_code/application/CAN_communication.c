@@ -309,7 +309,6 @@ void CANCmdRightJointLocation(void)
     MI_motor_LocationControl(right_joint[0].MI_Motor,send_angle,kp,kd);
 
     HAL_Delay(1);
-    nop_delay_us(300);
 
     send_angle = right_joint[1].horizontal_angle + right_joint[1].target_angle;
     MI_motor_LocationControl(right_joint[1].MI_Motor,send_angle,kp,kd);
@@ -325,14 +324,13 @@ void SendChassisCmd(void)
 {
 /*安全保护措施*/
     /*进行关节力矩限制,输出力矩不得超过限制范围*/
-    float upper_limit_torque = 1.0;//N*m
-    float lower_limit_torque = -1.0;//N*m
+    float limit_torque = 0.5;//N*m
     for (int i=0;i<2;i++){
-        if(left_joint[i].torque > upper_limit_torque) left_joint[i].torque = upper_limit_torque;
-        else if(left_joint[i].torque < lower_limit_torque) left_joint[i].torque = lower_limit_torque;
+        if(left_joint[i].torque > limit_torque) left_joint[i].torque = limit_torque;
+        else if(left_joint[i].torque < -limit_torque) left_joint[i].torque = -limit_torque;
 
-        if(right_joint[i].torque > upper_limit_torque) right_joint[i].torque = upper_limit_torque;
-        else if(right_joint[i].torque < lower_limit_torque) right_joint[i].torque = lower_limit_torque;
+        if(right_joint[i].torque > limit_torque) right_joint[i].torque = limit_torque;
+        else if(right_joint[i].torque < -limit_torque) right_joint[i].torque = -limit_torque;
     }
     
     //发送关节控制力矩
@@ -359,7 +357,7 @@ void SendChassisCmd(void)
     //发送车轮控制力矩
     CANCmdWheel(
                 MotorTorqueToCurrentValue_2006(left_wheel.torque), 
-                -MotorTorqueToCurrentValue_2006(right_wheel.torque)
+                MotorTorqueToCurrentValue_2006(right_wheel.torque)
                 );
 }
 

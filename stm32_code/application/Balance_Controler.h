@@ -59,6 +59,8 @@
 #define M_INVLN2        1.4426950408889633870E0  /* 1 / log(2) */
 
 #define REDUCTION_RATIO_2006 0.027777777777777776 /*2006减速比(1:36)*/
+#define MAX_LEG_LENGTH 0.22 /*最大腿长*/
+
 
 /** @brief      底盘IMU数据结构体
   * @note       
@@ -68,7 +70,7 @@ typedef struct
   float yaw, pitch, roll; // rad
   float yawSpd, pitchSpd, rollSpd; // rad/s
   float zAccel; // m/s^2
-}Chassis_IMU_t;
+} Chassis_IMU_t;
 
 
 /** @brief      电机结构体
@@ -100,7 +102,6 @@ typedef struct
 {
   float l1, l2, l3, l4, l5; // m
 }Joint_Length_t;
-// l1=0.05;l2=0.105;l3=l2;l4=l1;l5=0.06; % @遥想星空 的腿部杆长
 
 /** @brief      腿部姿态结构体
   * @note       无
@@ -132,7 +133,7 @@ typedef struct
   float theta, dTheta;
   float x, dx;
   float phi, dPhi;
-}State_Var_s; 
+} State_Var_s; 
 
 
 /** @brief      目标量结构体
@@ -148,6 +149,7 @@ typedef struct
   float yaw_angle;	 // rad
   float roll_angle; // rad
   float leg_length; // m
+  float left_leg_length, right_leg_length; // m
 } Target_s;
 
 
@@ -157,33 +159,39 @@ typedef struct
 typedef struct 
 {
   float left_support_force, right_support_force;
-  uint8_t is_touching_ground, is_cuchioning;
-} GroundDetector;
+  boolean is_touching_ground, is_cuchioning;
+} Ground_Detector_s;
 
 
 /** @brief      站立过程状态枚举量
   * @note       无
   */
-typedef enum{
+typedef enum 
+{
   StandupState_None,
   StandupState_Prepare,
   StandupState_Standup,
-}StandupState;
+} Standup_State_e;
 
 
 extern MI_Motor_s MI_Motor[5];
 extern MI_Motor_s MI_Motor_None;
 
-extern Chassis_IMU_t chassis_imu;
 extern Motor_s left_joint[2], right_joint[2], left_wheel, right_wheel;
 extern Leg_Pos_t left_leg_pos, right_leg_pos;
 extern Leg_Pos_Target_t left_leg_pos_target, right_leg_pos_target;
+
+extern Chassis_IMU_t chassis_imu; //底盘IMU数据
 extern State_Var_s state_var;
 extern Target_s target;
-extern GroundDetector ground_detector;
-extern PID yaw_PID;
+extern Ground_Detector_s ground_detector;
+extern Standup_State_e standup_state;
 
-extern StandupState standup_state;
+extern CascadePID yaw_PID, roll_PID;
+extern CascadePID leg_delta_angle_PID; //腿部角度差控制PID
+extern CascadePID leg_length_PID; //腿部角度和长度控制PID
+extern PID left_leg_angle_PID ,right_leg_angle_PID;  //腿部角度PID
+extern PID left_leg_length_PID,right_leg_length_PID;//腿部长度PID
 
 
 extern void MotorInitAll();
@@ -195,7 +203,5 @@ extern void CtrlTargetUpdateTask();
 extern void LegPosUpdateTask();
 
 extern int16_t MotorTorqueToCurrentValue_2006(float torque);
-
-extern void nop_delay_us(uint16_t us);
 
 #endif

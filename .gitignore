@@ -1,3 +1,9 @@
+# VSCode files
+*.vscode/
+
+# Duplicate files
+*(*)*
+
 # MATLAB files
 */slprj/
 */codegen/
