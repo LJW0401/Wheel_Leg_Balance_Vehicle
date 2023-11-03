@@ -147,35 +147,20 @@ void usb_task(void const * argument)
           OutputData.type_2 = 1;
           OutputData.data_2 = left_leg_pos.angle;
 
-          char_to_uint(OutputData.name_3,"l_dLength"); 
+          char_to_uint(OutputData.name_3,"l_An_pid"); 
           OutputData.type_3 = 1;
 
-          char_to_uint(OutputData.name_4,"l_L_pid_i");
-          OutputData.type_4 = 1; 
+          // char_to_uint(OutputData.name_4,"l_L_pid_i");
+          // OutputData.type_4 = 1; 
 
-          char_to_uint(OutputData.name_5,"l_L_pid_o"); 
-          OutputData.type_5 = 1;
-          
-          char_to_uint(OutputData.name_6,"l_Ang_pid"); 
-          OutputData.type_6 = 1;
-          
-          char_to_uint(OutputData.name_7,"r_len_pid"); 
-          OutputData.type_7 = 1;
-
-
-          // char_to_uint(OutputData.name_5,"LegLength1"); 
+          // char_to_uint(OutputData.name_5,"l_L_pid_o"); 
           // OutputData.type_5 = 1;
-          // OutputData.data_5 = left_leg_pos.length;
-          // char_to_uint(OutputData.name_6,"LegLength2"); 
+          
+          // char_to_uint(OutputData.name_6,"l_Ang_pid"); 
           // OutputData.type_6 = 1;
-          // OutputData.data_6 = right_leg_pos.length;
-
-          // char_to_uint(OutputData.name_8,"LegAngle1"); 
-          // OutputData.type_8 = 1;
-          // OutputData.data_8 = left_leg_pos.angle;
-          // char_to_uint(OutputData.name_9,"LegAngle2"); 
-          // OutputData.type_9 = 1;
-          // OutputData.data_9 = right_leg_pos.angle;
+          
+          // char_to_uint(OutputData.name_7,"r_len_pid"); 
+          // OutputData.type_7 = 1;
 
           usb_send_outputPC();
 

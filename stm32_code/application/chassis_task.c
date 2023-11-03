@@ -114,21 +114,19 @@ void chassis_task(void const *pvParameters)
     //VMC解算时用到的PID控制器
     CascadePID left_length_pid;
     PID_Init(&left_length_pid.inner,0.5,1,5,0.05,8);
-    // PID_SetErrLpfRatio(&leg_length_PID.inner, 0.5f);
-    PID_Init(&left_length_pid.outer,60,5,5,0.07,10);
+    PID_Init(&left_length_pid.outer,100,5,5,0.07,10);
 
     PID left_angle_pid;
-    PID_Init(&left_angle_pid,0.1,0.00001,0.08,1,10);
+    PID_Init(&left_angle_pid,3,1,5,0.03,1);
 
 
 
     CascadePID right_length_pid;
     PID_Init(&right_length_pid.inner,0.5,1,5,0.05,8);
-    // PID_SetErrLpfRatio(&leg_length_PID.inner, 0.5f);
-    PID_Init(&right_length_pid.outer,60,5,5,0.07,10);
+    PID_Init(&right_length_pid.outer,100,5,5,0.07,10);
 
     PID right_angle_pid;
-    PID_Init(&right_angle_pid,0.1,0.00001,0.08,1,10);
+    PID_Init(&right_angle_pid,3,1,5,0.03,1);
 
     while (1)
     {
@@ -220,32 +218,22 @@ void chassis_task(void const *pvParameters)
                     target_length, 
                     left_leg_pos.length, left_leg_pos.dLength
                 );
-            OutputData.data_3 = left_leg_pos.dLength;
-            OutputData.data_4 = left_length_pid.output;
-            OutputData.data_5 = left_length_pid.outer.output;
             PID_SingleCalc(&left_angle_pid,  target_angle, left_leg_pos.angle);
-            OutputData.data_6 = left_angle_pid.output;
+            OutputData.data_3 = left_angle_pid.output;
             //右腿
-            //这样会抽，不知道为什么
-            // feedback = target_length - right_leg_pos.length;
-            // PID_SingleCalc(&right_length_pid, 0, feedback);
-            // feedback = target_angle - right_leg_pos.angle;
-            // PID_SingleCalc(&right_angle_pid,  0, feedback);
-            //这样正常，不知道为什么
             PID_CascadeCalc(&right_length_pid, 
                     target_length, 
                     right_leg_pos.length, right_leg_pos.dLength
                 );
             PID_SingleCalc(&right_angle_pid,  target_angle, right_leg_pos.angle);
-            OutputData.data_7 = right_length_pid.output;
 
 
 
             float F_left_leg =  left_length_pid.output;
-            float Tp_left_leg = left_angle_pid.output;
+            float Tp_left_leg = -left_angle_pid.output;
 
             float F_right_leg =  right_length_pid.output;
-            float Tp_right_leg = right_angle_pid.output;
+            float Tp_right_leg = -right_angle_pid.output;
 
             float left_joint_torque[2];
             float right_joint_torque[2];
