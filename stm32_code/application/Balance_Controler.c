@@ -187,7 +187,7 @@ void CtrlTargetUpdateTask()
   // target.roll_angle = 0.0f;// = rc_ctrl->rc.ch[0]/660.0f*0.1;
   
   //设置左右腿目标长度
-  target.leg_length = 0.18f;
+  target.leg_length = 0.20f;
   target.left_leg_length = target.leg_length;
   target.right_leg_length = target.leg_length;
   
@@ -291,21 +291,23 @@ void LegPosUpdateTask()
   */
 void PIDInit()
 {
-  //初始化各个PID参数
-  PID_Init(&yaw_PID.inner, 0.05, 0.0, 0.4, 0, 1.5);
-  PID_Init(&yaw_PID.outer, 0.05, 0.0, 0.4, 0, 1.5);
+    //初始化各个PID参数
+    PID_Init(&yaw_PID.inner, 0.05, 0.0, 0.4, 0, 1.5);
+    PID_Init(&yaw_PID.outer, 0.05, 0.0, 0.4, 0, 1.5);
 
-  PID_Init(&roll_PID.inner, 1, 0, 5, 0, 5);
-  PID_SetErrLpfRatio(&roll_PID.inner, 0.1f);
-  PID_Init(&roll_PID.outer, 20, 0, 0, 0, 3);
+    PID_Init(&roll_PID.inner, 1, 0, 5, 0, 5);
+    PID_SetErrLpfRatio(&roll_PID.inner, 0.1f);
+    PID_Init(&roll_PID.outer, 20, 0, 0, 0, 3);
 
-  PID_Init(&leg_delta_angle_PID.inner, 0.04, 0, 0, 0, 1);
-  PID_Init(&leg_delta_angle_PID.outer, 12,   0, 0, 0, 20);
-  PID_SetErrLpfRatio(&leg_delta_angle_PID.outer, 0.5f);
+    PID_Init(&leg_delta_angle_PID.inner, 0.04, 0, 0, 0, 1);
+    PID_Init(&leg_delta_angle_PID.outer, 12,   0, 0, 0, 20);
+    PID_SetErrLpfRatio(&leg_delta_angle_PID.outer, 0.5f);
 
-  PID_Init(&leg_length_PID.inner, 500, 700, 200, 10.0f, 20.0f);
-  PID_SetErrLpfRatio(&leg_length_PID.inner, 0.5f);
-  PID_Init(&leg_length_PID.outer, 5.0f, 0, 0.0f, 0.0f, 1.5f);
+    PID_Init(&leg_length_PID.inner, 5, 0, 0, 10, 50);
+    PID_SetErrLpfRatio(&leg_length_PID.inner, 0.5f);
+    PID_Init(&leg_length_PID.outer, 500, 700, 200, 10, 50);
+
+//   PID_Init(&leg_length_PID.outer, 5.0f, 0, 0.0f, 0.0f, 1.5f);
 
   // PID_Init(&left_leg_length_PID , 500, 700, 200, 0, 100);
   // PID_Init(&right_leg_length_PID, 500, 700, 200, 0, 100);

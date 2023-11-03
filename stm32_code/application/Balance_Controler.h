@@ -59,7 +59,7 @@
 #define M_INVLN2        1.4426950408889633870E0  /* 1 / log(2) */
 
 #define REDUCTION_RATIO_2006 0.027777777777777776 /*2006减速比(1:36)*/
-#define MAX_LEG_LENGTH 0.22 /*最大腿长*/
+#define MAX_LEG_LENGTH 0.25 /*最大腿长*/
 
 
 /** @brief      底盘IMU数据结构体

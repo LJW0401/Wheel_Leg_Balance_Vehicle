@@ -270,6 +270,7 @@ void chassis_task(void const *pvParameters)
             //计算LQR反馈矩阵
             // float kRes[12] = {0}, k[2][6] = {0};
             // LQR_K(leg_length, kRes);
+
             if(ground_detector.is_touching_ground) //正常触地状态
             {
                 for (int i = 0; i < 6; i++)
@@ -308,7 +309,7 @@ void chassis_task(void const *pvParameters)
             //设定车轮电机输出扭矩，为LQR和yaw轴PID输出的叠加
             if(ground_detector.is_touching_ground) //正常接地状态
             {
-                MotorSetTorque(&left_wheel, -lqr_out_T * lqr_T_ratio - yaw_PID.output);
+                MotorSetTorque(&left_wheel, lqr_out_T * lqr_T_ratio + yaw_PID.output);
                 MotorSetTorque(&right_wheel, -lqr_out_T * lqr_T_ratio + yaw_PID.output);
             }
             else //腿部离地状态，关闭车轮电机
@@ -327,6 +328,7 @@ void chassis_task(void const *pvParameters)
             //根据离地状态计算左右腿推力，若离地则不考虑roll轴PID输出和前馈量
             float leftForce = leg_length_PID.output + ((ground_detector.is_touching_ground && !ground_detector.is_cuchioning) ? 6-roll_PID.output : 0);
             float rightForce = leg_length_PID.output + ((ground_detector.is_touching_ground && !ground_detector.is_cuchioning) ? 6+roll_PID.output : 0);
+            
             if(left_leg_pos.length > MAX_LEG_LENGTH) //保护腿部不能伸太长
                 leftForce -= (left_leg_pos.length - MAX_LEG_LENGTH) * 100;
             if(right_leg_pos.length > MAX_LEG_LENGTH)
@@ -406,8 +408,8 @@ void chassis_task(void const *pvParameters)
             }
 
             //设定关节电机输出扭矩
-            MotorSetTorque(&left_joint[0], -leftJointTorque[0]);
-            MotorSetTorque(&left_joint[1], -leftJointTorque[1]);
+            MotorSetTorque(&left_joint[0], leftJointTorque[0]);
+            MotorSetTorque(&left_joint[1], leftJointTorque[1]);
             MotorSetTorque(&right_joint[0], -rightJointTorque[0]);
             MotorSetTorque(&right_joint[1], -rightJointTorque[1]);
 
