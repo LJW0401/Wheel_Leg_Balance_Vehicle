@@ -210,7 +210,7 @@ void chassis_task(void const *pvParameters)
             float target_length = 0.18f;
             target_length -= rc_ctrl->rc.ch[1]/16500.0f;
             float target_angle = M_PI_2;
-            target_angle -= rc_ctrl->rc.ch[0]/1320.0f;
+            target_angle -= rc_ctrl->rc.ch[0]/2000.0f;
             float feedback;
 
             //左腿
