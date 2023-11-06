@@ -1,6 +1,8 @@
 #ifndef STRUCT_TYPEDEF_H
 #define STRUCT_TYPEDEF_H
 
+#define true 1
+#define false 0
 
 typedef signed char int8_t;
 typedef signed short int int16_t;
@@ -15,11 +17,6 @@ typedef unsigned long long uint64_t;
 typedef unsigned char bool_t;
 typedef float fp32;
 typedef double fp64;
-
-typedef enum {
-    false = 0,
-    true  = 1
-}boolean;
 
 #endif
 

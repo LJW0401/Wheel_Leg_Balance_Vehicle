@@ -23,8 +23,6 @@
 
 #include "struct_typedef.h"
 
-// #define CHASSIS_CAN hcan1
-#define WHEEL_CAN hcan2
 
 /* CAN send and receive ID */
 typedef enum
@@ -53,13 +51,7 @@ typedef struct
     int16_t last_ecd;
 } motor_measure_t;
 
-void SendChassisCmd();
-void CANCmdWheel(int16_t left_wheel, int16_t right_wheel);
-void CANCmdLeftJoint(void);
-void CANCmdRightJoint(void);
-void CANCmdJointLocation(void);
-void CANCmdLeftJointLocation(void);
-void CANCmdRightJointLocation(void);
+
 
 
 #endif

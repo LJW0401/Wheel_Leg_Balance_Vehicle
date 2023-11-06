@@ -71,116 +71,43 @@ void chassis_task(void const *pvParameters)
     //空闲一段时间
     vTaskDelay(CHASSIS_TASK_INIT_TIME);
     //chassis init
-    //底盘初始化
-    // chassis_init();
 
-    HAL_Delay(1000);
-    MotorInitAll();//初始化所有电机
-    // MI_motor_Enable(&MI_Motor[1]);
-    // MI_motor_Enable(&MI_Motor[2]);
+    // HAL_Delay(1000);
 
-    // HAL_Delay(2);
-    // MI_motor_Enable(&MI_Motor[3]);
-    // MI_motor_Enable(&MI_Motor[4]);
+    InitBalanceControler();//初始化平衡控制器
 
-    PIDInit();
-
-    static uint32_t lastTouchTime = 0;
-
-    const float wheelRadius = 0.0425f; //m，车轮半径
-    const float legMass = 0.12368f; //kg，腿部质量
-
-    //手动为反馈矩阵和输出叠加一个系数，用于手动优化控制效果
-    float kRatio[2][6] = {{1.0f, 1.0f, 0.0f, 1.0f, 1.0f, 1.0f},
-                          {1.0f, 1.0f, 0.0f, 1.0f, 1.0f, 1.0f}};
-    float lqr_Tp_ratio = 1.0f/5;
-    float lqr_T_ratio = 1.0f/10;
-    float rotational_ratio = 1.0f/10;//旋转速度转换为力矩的系数
-
-    //设定初始目标值
-    target.roll_angle = 0.0f;
-    target.leg_length = 0.17f;
-    target.speed = 0.0f;
-    target.position = (left_wheel.angle + right_wheel.angle) / 2 * wheelRadius;
-    target.yaw_angle = 0.0f;
-
-    //腿部目标控制量
-    left_leg_pos_target.length = 0.17f;
-    left_leg_pos_target.angle = M_PI_2;
-    right_leg_pos_target.length = 0.17f;
-    right_leg_pos_target.angle = M_PI_2;
-
-
-    //VMC解算时用到的PID控制器
-    CascadePID float_length_pid;
-    PID_Init(&float_length_pid.inner,0.5,1,5,0.05,8);
-    PID_Init(&float_length_pid.outer,100,5,5,0.07,10);
-
-    PID float_angle_pid;
-    PID_Init(&float_angle_pid,3,1,5,0.03,1);
-
-    CascadePID float_leg_delta_angle_PID;
-    PID_Init(&float_leg_delta_angle_PID.inner,1,0,0,0.001,0.1);
-    PID_Init(&float_leg_delta_angle_PID.outer,1,0,0,0.001,0.1);
-
-    CascadePID float_leg_delta_length_PID;
-    PID_Init(&float_leg_delta_length_PID.inner,1,0,0,0.01,1);
-    PID_Init(&float_leg_delta_length_PID.outer,1,0,0,0.01,1);
-
-    // CascadePID left_length_pid;
-    // PID_Init(&left_length_pid.inner,0.5,1,5,0.05,8);
-    // PID_Init(&left_length_pid.outer,100,5,5,0.07,10);
-
-    // PID left_angle_pid;
-    // PID_Init(&left_angle_pid,3,1,5,0.03,1);
-
-    // CascadePID right_length_pid;
-    // PID_Init(&right_length_pid.inner,0.5,1,5,0.05,8);
-    // PID_Init(&right_length_pid.outer,100,5,5,0.07,10);
-
-    // PID right_angle_pid;
-    // PID_Init(&right_angle_pid,3,1,5,0.03,1);
-
-
-
+    Chassis_IMU_t chassis_IMU;//底盘IMU数据
 
     while (1)
     {
-        //1.更新腿部姿态信息
-        LegPosUpdate();
-        //2.更新底盘姿态信息
-        ChassisPostureUpdate();
-        //3.更新目标信息
-        CtrlTargetUpdate();
-        //4.进入控制状态
-        const RC_ctrl_t* rc_ctrl = get_remote_control_point();
+        chassis_IMU.yaw = get_INS_angle_point()[0];
+        chassis_IMU.pitch = get_INS_angle_point()[1];
+        chassis_IMU.roll = get_INS_angle_point()[2];
 
+        chassis_IMU.yawSpd = get_gyro_data_point()[0];
+        chassis_IMU.pitchSpd = get_gyro_data_point()[1];
+        chassis_IMU.rollSpd = get_gyro_data_point()[2];
 
-
-
-        //计算状态变量
-        state_var.phi = chassis_imu.pitch;
-        state_var.dPhi = chassis_imu.pitchSpd;
-        state_var.x = (left_wheel.angle + right_wheel.angle) / 2 * wheelRadius;
-        state_var.dx = (left_wheel.speed + right_wheel.speed) / 2 * wheelRadius;
-        state_var.theta = (left_leg_pos.angle + right_leg_pos.angle) / 2 - M_PI_2 - chassis_imu.pitch;
-        state_var.dTheta = (left_leg_pos.dAngle + right_leg_pos.dAngle) / 2 - chassis_imu.pitchSpd;
-        float leg_length = (left_leg_pos.length + right_leg_pos.length) / 2;
-        float dLegLength = (left_leg_pos.dLength + right_leg_pos.dLength) / 2;
+        chassis_IMU.xAccel = get_accel_data_point()[0];
+        chassis_IMU.yAccel = get_accel_data_point()[1];
+        chassis_IMU.zAccel = get_accel_data_point()[2];
         
-        //准备状态变量
-        float x[6] = {
-            state_var.theta, 
-            state_var.dTheta, 
-            state_var.x, 
-            state_var.dx, 
-            state_var.phi, 
-            state_var.dPhi
-            };
+        const RC_ctrl_t* rc_ctrl = get_remote_control_point();
+        DataUpdate(
+                &chassis_IMU,
+                rc_ctrl->rc.ch[1]/660.0f*0.4,
+                -rc_ctrl->rc.ch[2]/660.0f*0.005,
+                0,
+                0
+                );//更新数据
 
-        //计算LQR反馈矩阵
-        float kRes[12] = {0}, k[2][6] = {0};
-        LQR_K(leg_length, kRes);
+        //准备状态变量
+        float x[6];
+
+        StateVarCalc(x);//计算状态变量
+
+        float k[2][6];
+        SetLQR_K(state_var.leg_length,k);//计算LQR反馈矩阵
 
         if(rc_ctrl->rc.s[0] == 0x01){//GPS档急停
             MI_motor_Stop(left_joint[0].MI_Motor);
@@ -205,11 +132,8 @@ void chassis_task(void const *pvParameters)
                     if(right_joint[1].MI_Motor->motor_mode_state==RESET_MODE)
                         MI_motor_Enable(right_joint[1].MI_Motor);
                     
-                    buzzer_on(1000, 3000);
-                    // buzzer_off();
 
                     float torque = 0.5;
-                    // float torque = 0.0;
                     MotorSetTorque(&left_joint[0], torque);
                     MotorSetTorque(&left_joint[1], -torque);
                     MotorSetTorque(&right_joint[0], -torque);
@@ -218,96 +142,61 @@ void chassis_task(void const *pvParameters)
                     MotorSetTorque(&left_wheel, 0);
                     MotorSetTorque(&right_wheel, 0);
 
-                    if (rc_ctrl->rc.s[0] == 0x02){
+                    if (rc_ctrl->rc.s[0] == 0x02){//设置0位
+                        if (robot_state == RobotState_MotorZeroing) break;
                         buzzer_on(50, 3000);
                         MI_motor_SetMechPositionToZero(left_joint[0].MI_Motor);
                         MI_motor_SetMechPositionToZero(left_joint[1].MI_Motor);
                         MI_motor_SetMechPositionToZero(right_joint[0].MI_Motor);
                         MI_motor_SetMechPositionToZero(right_joint[1].MI_Motor);
+                    }else{
+                        buzzer_on(1000, 3000);
+                    }
+
+                    //判断是否完成零位设置
+                    if (left_leg_pos.length<0.11 && right_leg_pos.length<0.11)
+                    {
+                        robot_state = RobotState_MotorZeroing;
+                        buzzer_on(1000, 3000);
                     }
                     
                     break;
                 }
                 case 0x03://[CL档]腿部伸长
                 {
-                    // buzzer_off();
+                    if (robot_state < RobotState_MotorZeroing) break;
+                    robot_state = RobotState_LegExtension;
                     buzzer_on(500, 3000);
 
-                    //VMC解算
-                    //设置目标量
-                    float target_length = 0.18f;
-                    target_length -= rc_ctrl->rc.ch[1]/16500.0f;
-                    float target_angle = M_PI_2;
-                    target_angle -= rc_ctrl->rc.ch[0]/2000.0f;
-                    float feedback;
-
-                    //计算腿部角度和长度PID输出
-                    float legth_feedback = (left_leg_pos.length + right_leg_pos.length) / 2;
-                    float dLength_feedback = (left_leg_pos.dLength + right_leg_pos.dLength) / 2;
-                    float angle_feedback = (left_leg_pos.angle + right_leg_pos.angle) / 2;
-                    PID_CascadeCalc(&float_length_pid, 
-                            target_length, 
-                            legth_feedback, dLength_feedback
-                        );
-                    PID_SingleCalc(&float_angle_pid,  target_angle, angle_feedback);
-                    OutputData.data_6 = float_length_pid.output;
-                    OutputData.data_7 = float_angle_pid.output;
-
-                    PID_CascadeCalc(&float_leg_delta_length_PID, 0, left_leg_pos.length - right_leg_pos.length, left_leg_pos.dLength - right_leg_pos.dLength);
-                    float leftF = float_length_pid.output  + float_leg_delta_length_PID.output;
-                    float rightF = float_length_pid.output - float_leg_delta_length_PID.output;
-
-                    PID_CascadeCalc(&float_leg_delta_angle_PID, 0, left_leg_pos.angle - right_leg_pos.angle, left_leg_pos.dAngle - right_leg_pos.dAngle);
-                    OutputData.data_5 = float_leg_delta_angle_PID.output;
-                    float leftTp =  -(float_angle_pid.output + float_leg_delta_angle_PID.output);
-                    float rightTp = -(float_angle_pid.output - float_leg_delta_angle_PID.output);
+                    float joint_pos[2];
+                    float length = 0.18f + rc_ctrl->rc.ch[1]/16500.0f;
+                    float angle = M_PI_2 + rc_ctrl->rc.ch[0]/1350.0f;
 
 
+                    JointPos(length,angle,joint_pos);//计算关节摆角
+                    MotorSetTargetAngle(&left_joint[1],joint_pos[0]);
+                    MotorSetTargetAngle(&left_joint[0],joint_pos[1]);
 
-                    float left_joint_torque[2];
-                    float right_joint_torque[2];
-                    LegConv(leftF,  leftTp,  left_joint[1].angle,  left_joint[0].angle,  left_joint_torque);
-                    LegConv(rightF, rightTp, right_joint[1].angle, right_joint[0].angle, right_joint_torque);
+                    JointPos(length,angle,joint_pos);//计算关节摆角
+                    MotorSetTargetAngle(&right_joint[1],joint_pos[0]);
+                    MotorSetTargetAngle(&right_joint[0],joint_pos[1]);
 
-                    for (int i=0;i<2;i++){
-                        MotorSetTorque(&left_joint[i], left_joint_torque[i]);
 
-                        MotorSetTorque(&right_joint[i], -right_joint_torque[i]);//因为右腿电机方向相反，所以设置力矩需要加符号反向
-                    }
-                    
                     MotorSetTorque(&left_wheel, 0);
                     MotorSetTorque(&right_wheel, 0);
-
-
-
 
                     break;
                 }
                 case 0x02://[HL档]平衡控制
                 {
-                    if(ground_detector.is_touching_ground) //正常触地状态
-                    {
-                        for (int i = 0; i < 6; i++)
-                        {
-                            for (int j = 0; j < 2; j++)
-                                k[j][i] = kRes[i * 2 + j] * kRatio[j][i];
-                        }
-                    }
-                    else //腿部离地状态，手动修改反馈矩阵，仅保持腿部竖直
-                    {
-                        memset(k, 0, sizeof(k));
-                        k[1][0] = kRes[1] * -2;
-                        k[1][1] = kRes[3] * -10;
-                    }
+                    if (robot_state < RobotState_LegExtension) break;
+                    robot_state = RobotState_Balance;
 
-
-                    //与给定量作差
-                    x[2] -= target.position;
-                    x[3] -= target.speed;
-
-                    //矩阵相乘，计算LQR输出
-                    float lqr_out_T = k[0][0] * x[0] + k[0][1] * x[1] + k[0][2] * x[2] + k[0][3] * x[3] + k[0][4] * x[4] + k[0][5] * x[5];
-                    float lqr_out_Tp = k[1][0] * x[0] + k[1][1] * x[1] + k[1][2] * x[2] + k[1][3] * x[3] + k[1][4] * x[4] + k[1][5] * x[5];
+                    
+                    float res[2];
+                    LQRFeedbackCalc(k,x,res);//矩阵相乘，计算LQR输出
+                    float lqr_out_T = res[0];
+                    float lqr_out_Tp = res[1];
 
                     //计算yaw轴PID输出
                     PID_CascadeCalc(&yaw_PID, target.yaw_angle, chassis_imu.yaw, chassis_imu.yawSpd);
@@ -372,27 +261,7 @@ void chassis_task(void const *pvParameters)
                     float rightJointTorque[2]={0};
                     LegConv(rightForce, rightTp, right_joint[1].angle, right_joint[0].angle, rightJointTorque);
                     
-                    //保护腿部角度不超限
-                    // float leftTheta = left_leg_pos.angle - chassis_imu.pitch - M_PI_2;
-                    // float rightTheta = right_leg_pos.angle - chassis_imu.pitch - M_PI_2;
-                    // #define PROTECT_CONDITION (leftTheta < -M_PI_4 || leftTheta > M_PI_4 || \
-                    //                         rightTheta < -M_PI_4 || rightTheta > M_PI_4 || \
-                    //                         chassis_imu.pitch > M_PI_4 || chassis_imu.pitch < -M_PI_4) //腿部角度超限保护条件
-                    // if(PROTECT_CONDITION) //当前达到保护条件
-                    // {
-                    //     //关闭所有电机
-                    //     MotorSetTorque(&left_wheel, 0);
-                    //     MotorSetTorque(&right_wheel, 0);
-                    //     MotorSetTorque(&left_joint[0], 0);
-                    //     MotorSetTorque(&left_joint[1], 0);
-                    //     MotorSetTorque(&right_joint[0], 0);
-                    //     MotorSetTorque(&right_joint[1], 0);
 
-                    //     buzzer_on(50, 3000);
-
-                    // }else{
-                    //     buzzer_on(333, 3000);
-                    // }
                     buzzer_on(333, 3000);
 
                     //设定关节电机输出扭矩
@@ -418,7 +287,7 @@ void chassis_task(void const *pvParameters)
         }
 
         
-        SendChassisCmd();//发送底盘控制指令
+        ControlBalanceChassis(Location_Control);
         
         //os delay
         //系统延时
