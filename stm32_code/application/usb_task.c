@@ -30,6 +30,7 @@
 #include "gimbal_task.h"
 #include "chassis_task.h"
 #include "INS_task.h"
+#include "remote_control.h"
 // #include "SolveTrajectory.h"
 
 #include "referee.h"
@@ -139,28 +140,30 @@ void usb_task(void const * argument)
           
           OutputData.header = 0x6A;
           OutputData.length = sizeof(OutputData_s);
-          char_to_uint(OutputData.name_1,"l_length"); 
+          char_to_uint(OutputData.name_1,"l_angle"); 
           OutputData.type_1 = 1;
-          OutputData.data_1 = left_leg_pos.length;
+          OutputData.data_1 = left_leg_pos.angle;
 
-          char_to_uint(OutputData.name_2,"l_angle"); 
+          char_to_uint(OutputData.name_2,"r_angle"); 
           OutputData.type_2 = 1;
-          OutputData.data_2 = left_leg_pos.angle;
+          OutputData.data_2 = right_leg_pos.angle;
 
-          char_to_uint(OutputData.name_3,"l_An_pid"); 
+          char_to_uint(OutputData.name_3,"l_length"); 
           OutputData.type_3 = 1;
+          OutputData.data_3 = left_leg_pos.length;
 
-          // char_to_uint(OutputData.name_4,"l_L_pid_i");
-          // OutputData.type_4 = 1; 
+          char_to_uint(OutputData.name_4,"r_length");
+          OutputData.type_4 = 1;
+          OutputData.data_4 = right_leg_pos.length;
 
-          // char_to_uint(OutputData.name_5,"l_L_pid_o"); 
-          // OutputData.type_5 = 1;
+          char_to_uint(OutputData.name_5,"d_Ang_pid"); 
+          OutputData.type_5 = 1;
           
-          // char_to_uint(OutputData.name_6,"l_Ang_pid"); 
-          // OutputData.type_6 = 1;
+          char_to_uint(OutputData.name_6,"Tp"); 
+          OutputData.type_6 = 1;
           
-          // char_to_uint(OutputData.name_7,"r_len_pid"); 
-          // OutputData.type_7 = 1;
+          char_to_uint(OutputData.name_7,"F"); 
+          OutputData.type_7 = 1;
 
           usb_send_outputPC();
 

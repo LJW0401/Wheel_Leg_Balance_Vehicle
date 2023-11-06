@@ -58,9 +58,10 @@
 #define M_LOG2_E        _M_LN2
 #define M_INVLN2        1.4426950408889633870E0  /* 1 / log(2) */
 
-#define REDUCTION_RATIO_2006 0.027777777777777776 /*2006减速比(1:36)*/
-#define MAX_LEG_LENGTH 0.25 /*最大腿长*/
-
+#define REDUCTION_RATIO_2006 0.027777777777777776 //2006减速比(1:36)
+#define MAX_LEG_LENGTH 0.25 //m，最大腿长
+#define WHEEL_RADIUS 0.0425 //m，车轮半径
+#define LEG_MASS 0.12368    //kg，腿部质量
 
 /** @brief      底盘IMU数据结构体
   * @note       
@@ -160,6 +161,7 @@ typedef struct
 {
   float left_support_force, right_support_force;
   boolean is_touching_ground, is_cuchioning;
+  uint32_t last_touching_ground_time;
 } Ground_Detector_s;
 
 
@@ -199,8 +201,8 @@ extern void MotorSetTorque(Motor_s *motor, float torque);
 extern void MotorSetTargetAngle(Motor_s *motor, float target_angle);
 
 extern void ChassisPostureUpdate();
-extern void CtrlTargetUpdateTask();
-extern void LegPosUpdateTask();
+extern void CtrlTargetUpdate();
+extern void LegPosUpdate();
 
 extern int16_t MotorTorqueToCurrentValue_2006(float torque);
 

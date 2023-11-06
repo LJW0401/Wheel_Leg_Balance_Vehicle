@@ -324,7 +324,7 @@ void SendChassisCmd(void)
 {
 /*安全保护措施*/
     /*进行关节力矩限制,输出力矩不得超过限制范围*/
-    float limit_torque = 0.5;//N*m
+    float limit_torque = 1.0;//N*m
     for (int i=0;i<2;i++){
         if(left_joint[i].torque > limit_torque) left_joint[i].torque = limit_torque;
         else if(left_joint[i].torque < -limit_torque) left_joint[i].torque = -limit_torque;
