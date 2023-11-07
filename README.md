@@ -23,6 +23,10 @@ doc文件夹中为说明文档，请阅读
 3. 将机器人竖直放置
 4. 开始平衡，遥控器左端拨杆置于`HL`档，此时差不多能平衡了。
 
+如何控制这只小平衡：
+- 右摇杆控制速度和旋转。
+- 左摇杆控制腿长和roll角。
+
 ## 参考
 - [RoboMaster平衡步兵机器人控制系统设计](https://zhuanlan.zhihu.com/p/563048952)
 - [无刷轮腿平衡机器人开源GitHub仓库](https://github.com/Skythinker616/foc-wheel-legged-robot/tree/master)
