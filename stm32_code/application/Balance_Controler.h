@@ -130,13 +130,12 @@ typedef struct
     float speed_cmd; // m/s 期望达到的目标前进速度
     float speed;     // m/s 实际控制的目标前进速度（加入积分项消除静差）
     float speed_integral; // m/s 速度积分项
-    float yaw_speed_cmd; // rad/s
-    float yaw_speed; // rad/s 目标转动速度
-    float yaw;	 // rad
-    float pitch; // rad
-    float roll;  // rad
-    float leg_length; // m
-    float leg_angle;  // rad
+    float rotation_torque; // N*m 旋转力矩
+    float yaw;	 // rad 期望达到的目标航向角
+    float pitch; // rad 期望达到的目标俯仰角
+    float roll;  // rad 期望达到的目标横滚角
+    float leg_length; // m  期望达到的目标腿长
+    float leg_angle;  // rad 期望达到的目标腿角
 } Target_s;
 
 
@@ -206,7 +205,7 @@ const State_Var_s *GetStateVarPoint();
 void InitBalanceControler();
 void DataUpdate(
         Chassis_IMU_t* p_chassis_IMU,
-        float speed, float yaw_delta, float pitch_delta, float roll_delta, float length_delta
+        float speed, float yaw_delta, float pitch_delta, float roll_delta, float length, float rotation_torque
         );
 void ControlBalanceChassis(CyberGear_Control_State_e CyberGear_control_state);
 void BalanceControlerCalc();

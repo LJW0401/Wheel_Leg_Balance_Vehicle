@@ -96,10 +96,11 @@ void chassis_task(void const *pvParameters)
         DataUpdate(
                 &chassis_IMU,
                 rc_ctrl->rc.ch[1]/660.0f*0.4,
-                -rc_ctrl->rc.ch[2]/660.0f*0.005,
                 0,
                 0,
-                0.185 + rc_ctrl->rc.ch[3]/660.0f*0.05
+                0,
+                0.185 + rc_ctrl->rc.ch[3]/660.0f*0.05,
+                rc_ctrl->rc.ch[0]/660.0f*0.03
                 );//更新数据
 
         Robot_State_e robot_state;

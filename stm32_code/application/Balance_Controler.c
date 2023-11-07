@@ -57,7 +57,7 @@ static Target_s target;
 /*比例系数，用于手动优化控制效果*/
 static float kRatio[2][6] = {{1.0f, 1.0f, 0.0f, 1.0f, 1.0f, 1.0f},//手动为反馈矩阵和输出叠加一个系数，用于手动优化控制效果
                              {1.0f, 1.0f, 0.0f, 1.0f, 1.0f, 1.0f}};
-static float LQR_Tp_ratio = 1.0f/100;
+static float LQR_Tp_ratio = 1.0f;
 static float LQR_T_ratio = 1.0f/8;
 
 
@@ -186,17 +186,18 @@ static void CalcJointAngle(Motor_s* left_joint, Motor_s* right_joint)
 
 /**
   * @brief          更新目标值
-  * @param[in]      speed        速度值
-  * @param[in]      yaw_delta    yaw角度增量
-  * @param[in]      pitch_delta  pitch角度增量
-  * @param[in]      roll_delta   roll角度增量
-  * @param[in]      length 腿长
+  * @param[in]      speed           速度值
+  * @param[in]      yaw_delta       yaw角度增量
+  * @param[in]      pitch_delta     pitch角度增量
+  * @param[in]      roll_delta      roll角度增量
+  * @param[in]      length          腿长
+  * @param[in]      rotation_torque 旋转力矩
   * @return         none
   */
-static void CtrlTargetUpdate(float speed, float yaw_delta, float pitch_delta, float roll_delta, float length)
+static void CtrlTargetUpdate(float speed, float yaw_delta, float pitch_delta, float roll_delta, float length, float rotation_torque)
 {
     float speed_ki = 0.2;
-    float speed_integral_max = 0.26;
+    float speed_integral_max = 0.01;
     // float speed_ki = 0;
     // float speed_integral_max = 0.01;
     //设置前进速度
@@ -225,6 +226,9 @@ static void CtrlTargetUpdate(float speed, float yaw_delta, float pitch_delta, fl
     target.leg_length = length;
     if (target.leg_length<limit_value.leg_length_min) target.leg_length = limit_value.leg_length_min;
     else if (target.leg_length>limit_value.leg_length_max) target.leg_length = limit_value.leg_length_max;
+
+    //设置旋转力矩
+    target.rotation_torque = rotation_torque;
 }
 
 
@@ -289,8 +293,8 @@ static void LegPosUpdate()
 static void PIDInit()
 {
     //yaw轴角度PID
-    PID_Init(&yaw_PID.inner, 0.1, 0, 0, 0, 0.1);
-    PID_Init(&yaw_PID.outer, 0.05, 0, 0.4, 0, 0.1);
+    PID_Init(&yaw_PID.inner, 1, 0, 0, 0, 0.5);
+    PID_Init(&yaw_PID.outer, 0.1, 0, 1, 0.001, 0.5);
 
     //roll轴角度PID
     PID_Init(&roll_PID.inner, 1, 0, 5, 0, 5);
@@ -733,11 +737,11 @@ void InitBalanceControler()
   */
 void DataUpdate(
         Chassis_IMU_t* p_chassis_IMU,
-        float speed, float yaw_delta, float pitch_delta, float roll_delta, float length
+        float speed, float yaw_delta, float pitch_delta, float roll_delta, float length, float rotation_torque
         )
 {
     ChassisPostureUpdate(p_chassis_IMU);
-    CtrlTargetUpdate(speed, yaw_delta, pitch_delta, roll_delta, length);
+    CtrlTargetUpdate(speed, yaw_delta, pitch_delta, roll_delta, length, rotation_torque);
     LegPosUpdate();
 }
 
@@ -795,25 +799,12 @@ void BalanceControlerCalc()
     float LQR_out_T = res[0];
     float LQR_out_Tp = res[1];
 
-    //计算yaw轴PID输出，跟踪yaw轴目标角度
-    //TODO:优化yaw过0跟踪效果
-    float yaw_feedback;
-    yaw_feedback = target.yaw - chassis_imu.yaw;
-    if (yaw_feedback>M_PI)       yaw_feedback = yaw_feedback - M_PI*2;
-    else if (yaw_feedback<-M_PI) yaw_feedback = yaw_feedback + M_PI*2;
-    PID_CascadeCalc(&yaw_PID, 0, yaw_feedback, chassis_imu.yawSpd);
-
-
-
-
-
-
     //驱动轮扭矩设置
     if(ground_detector.is_touching_ground) //正常接地状态
     {
         //设定车轮电机输出扭矩，为LQR和yaw轴PID输出的叠加
-        MotorSetTorque(&left_wheel , -LQR_out_T * LQR_T_ratio - yaw_PID.output);
-        MotorSetTorque(&right_wheel,  LQR_out_T * LQR_T_ratio - yaw_PID.output);
+        MotorSetTorque(&left_wheel , -LQR_out_T * LQR_T_ratio + target.rotation_torque);
+        MotorSetTorque(&right_wheel,  LQR_out_T * LQR_T_ratio + target.rotation_torque);
     }
     else //腿部离地状态，关闭车轮电机
     {
