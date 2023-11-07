@@ -37,18 +37,18 @@ static uint8_t              wheel_can_send_data[8];
 
 /*电机变量*/
 MI_Motor_s MI_Motor[5];//小米电机结构体
-static MI_Motor_s MI_Motor_None;
-static Motor_s left_joint[2], right_joint[2], left_wheel, right_wheel; //六个电机对象
+MI_Motor_s MI_Motor_None;
+Motor_s left_joint[2], right_joint[2], left_wheel, right_wheel; //六个电机对象
 
 /*状态反馈*/
 static Leg_Pos_t left_leg_pos, right_leg_pos; //左右腿部反馈姿态
 static Chassis_IMU_t chassis_imu; //底盘IMU数据
 static State_Var_s state_var;
 static Ground_Detector_s ground_detector = {10, 10, true, false, 0};
-Robot_State_e robot_state = RobotState_OFF;
+static Robot_State_e robot_state = RobotState_OFF;
 
 /*PID*/
-static CascadePID yaw_PID, roll_PID; //机身yaw和roll控制PID
+static CascadePID yaw_PID, pitch_PID, roll_PID; //机身yaw, pitch和roll控制PID
 
 /*目标与限制*/
 static Limit_Value_t limit_value;
@@ -57,8 +57,8 @@ static Target_s target;
 /*比例系数，用于手动优化控制效果*/
 static float kRatio[2][6] = {{1.0f, 1.0f, 0.0f, 1.0f, 1.0f, 1.0f},//手动为反馈矩阵和输出叠加一个系数，用于手动优化控制效果
                              {1.0f, 1.0f, 0.0f, 1.0f, 1.0f, 1.0f}};
-static float LQR_Tp_ratio = 1.0f/5;
-static float LQR_T_ratio = 1.0f/10;
+static float LQR_Tp_ratio = 1.0f/100;
+static float LQR_T_ratio = 1.0f/6;
 
 
 /**************************** 通用函数 ****************************/
@@ -140,7 +140,7 @@ static int16_t MotorTorqueToCurrentValue_2006(float torque)
 }
 
 
-/**************************** 底盘姿态模块 ****************************/
+/**************************** 状态设置 ****************************/
 
 /**
   * @brief      底盘姿态更新
@@ -152,6 +152,19 @@ static void ChassisPostureUpdate(Chassis_IMU_t* p_chassis_IMU)
 {
     chassis_imu = *p_chassis_IMU;
 }
+
+
+/**
+  * @brief       设置机器人状态
+  * @param[out]  state 机器人状态
+  * @return      none
+  * @note       
+  */
+void SetRobotState(Robot_State_e state)
+{
+    robot_state = state;
+}
+
 
 
 /**************************** 运动控制模块 ****************************/
@@ -173,19 +186,25 @@ static void CalcJointAngle(Motor_s* left_joint, Motor_s* right_joint)
 
 /**
   * @brief          更新目标值
-  * @param[in]      speed_delta  速度增量
+  * @param[in]      speed        速度值
   * @param[in]      yaw_delta    yaw角度增量
   * @param[in]      pitch_delta  pitch角度增量
   * @param[in]      roll_delta   roll角度增量
   * @param[in]      length_delta 腿长增量
   * @return         none
   */
-static void CtrlTargetUpdate(float speed_delta, float yaw_delta, float pitch_delta, float roll_delta, float length_delta)
+static void CtrlTargetUpdate(float speed, float yaw_delta, float pitch_delta, float roll_delta, float length_delta)
 {
+    float speed_ki = 0.2;
+    float speed_integral_max = 0.26;
+    // float speed_ki = 0;
+    // float speed_integral_max = 0.01;
     //设置前进速度
-    target.speed_cmd = 0.1 + speed_delta;
-    // target.speed_cmd = 0.25f + rc_ctrl->rc.ch[1]/660.0f*0.4;//其中第一个量为速度修正量，因为重心问题在初始状态下并不能稳定站在原地。
-    target.speed = target.speed_cmd;
+    target.speed_cmd = speed;
+    target.speed_integral = target.speed_integral + (target.speed_cmd - state_var.dx)*speed_ki;
+    if (target.speed_integral>speed_integral_max)       target.speed_integral = speed_integral_max;
+    else if (target.speed_integral<-speed_integral_max) target.speed_integral = -speed_integral_max;
+    target.speed = target.speed_cmd + target.speed_integral;
 
     //设置yaw方位角
     target.yaw = target.yaw + yaw_delta;
@@ -263,30 +282,23 @@ static void LegPosUpdate()
 /**************************** 初始化模块 ****************************/
 
 /**
-  * @brief          PID部分初始化
+  * @brief          初始化各个PID参数
   * @param[in]      none
   * @return         none
   */
 static void PIDInit()
 {
-    //初始化各个PID参数
     //yaw轴角度PID
-    PID_Init(&yaw_PID.inner, 0.05, 0.0, 0.4, 0, 1.5);
-    PID_Init(&yaw_PID.outer, 0.05, 0.0, 0.4, 0, 1.5);
+    PID_Init(&yaw_PID.inner, 0.1, 0, 0, 0, 0.1);
+    PID_Init(&yaw_PID.outer, 0.05, 0, 0.4, 0, 0.1);
 
     //roll轴角度PID
     PID_Init(&roll_PID.inner, 1, 0, 5, 0, 5);
-    PID_SetErrLpfRatio(&roll_PID.inner, 0.1f);
     PID_Init(&roll_PID.outer, 20, 0, 0, 0, 3);
 
     //腿部角度差PID
-    PID_Init(&leg_delta_angle_PID.inner, 1, 0, 0, 0, 5);
-    PID_Init(&leg_delta_angle_PID.outer, 20, 1, 5, 0.02, 5);
-
-    //腿部长度PID
-    PID_Init(&leg_length_PID.inner, 1, 0, 0, 0.5, 25);
-    PID_SetErrLpfRatio(&leg_length_PID.inner, 0.5f);
-    PID_Init(&leg_length_PID.outer, 500, 700, 200, 0.5, 25);
+    // PID_Init(&leg_delta_angle_PID.inner, 1, 0, 0, 0, 5);
+    // PID_Init(&leg_delta_angle_PID.outer, 20, 1, 5, 0.02, 5);
 }
 
 
@@ -370,14 +382,14 @@ static void CANCmdWheel(int16_t left_wheel, int16_t right_wheel)
     if (right_wheel > 10000) right_wheel = 10000;
     else if (right_wheel < -10000) right_wheel = -10000;
 
-    wheel_tx_message.StdId = CAN_GIMBAL_ALL_ID;
+    wheel_tx_message.StdId = 0x1FF;
     wheel_tx_message.IDE = CAN_ID_STD;
     wheel_tx_message.RTR = CAN_RTR_DATA;
     wheel_tx_message.DLC = 0x08;
-    wheel_can_send_data[0] = 0;
-    wheel_can_send_data[1] = 0;
-    wheel_can_send_data[2] = 0;
-    wheel_can_send_data[3] = 0;
+    wheel_can_send_data[0] = (left_wheel >> 8);
+    wheel_can_send_data[1] = left_wheel;
+    wheel_can_send_data[2] = (right_wheel >> 8);
+    wheel_can_send_data[3] = right_wheel;
     wheel_can_send_data[4] = (left_wheel >> 8);
     wheel_can_send_data[5] = left_wheel;
     wheel_can_send_data[6] = (right_wheel >> 8);
@@ -458,9 +470,36 @@ static void CANCmdJointTorque(float limit_torque)
 static void CANCmdJointEmergencyStop()
 {
     MI_motor_Stop(left_joint[0].MI_Motor);
+    for (int i=0;i<1;i++) MI_motor_ReadParam(left_joint[0].MI_Motor,0X302d);
+
     MI_motor_Stop(left_joint[1].MI_Motor);
+    for (int i=0;i<1;i++) MI_motor_ReadParam(left_joint[1].MI_Motor,0X302d);
+
     MI_motor_Stop(right_joint[0].MI_Motor);
+    for (int i=0;i<1;i++) MI_motor_ReadParam(right_joint[0].MI_Motor,0X302d);
+    
     MI_motor_Stop(right_joint[1].MI_Motor);
+    for (int i=0;i<1;i++) MI_motor_ReadParam(right_joint[1].MI_Motor,0X302d);
+}
+
+/**
+  * @brief          设置小米电机零点
+  * @param[in]      none
+  * @return         none
+  */
+void SetCyberGearMechPositionToZero()
+{
+    MI_motor_SetMechPositionToZero(left_joint[0].MI_Motor);
+    for (int i=0;i<1;i++) MI_motor_ReadParam(left_joint[0].MI_Motor,0X302d);
+
+    MI_motor_SetMechPositionToZero(left_joint[1].MI_Motor);
+    for (int i=0;i<1;i++) MI_motor_ReadParam(left_joint[1].MI_Motor,0X302d);
+
+    MI_motor_SetMechPositionToZero(right_joint[0].MI_Motor);
+    for (int i=0;i<1;i++) MI_motor_ReadParam(right_joint[0].MI_Motor,0X302d);
+    
+    MI_motor_SetMechPositionToZero(right_joint[1].MI_Motor);
+    for (int i=0;i<1;i++) MI_motor_ReadParam(right_joint[1].MI_Motor,0X302d);
 }
 
 
@@ -495,7 +534,7 @@ static void StateVarCalc(float x[6])
   * @param[out]    k 返回的反馈矩阵指针
   * @return        none 
   */
-static void SetLQR_K(float leg_length, float** k)
+static void SetLQR_K(float leg_length, float k[2][6])
 {
     float kRes[12] = {0};
     LQR_K(leg_length, kRes);
@@ -526,7 +565,7 @@ static void SetLQR_K(float leg_length, float** k)
   * @return        none 
   * @note T为res[0],Tp为res[1]
   */
-static void LQRFeedbackCalc(float** k, float* x, float res[2])
+static void LQRFeedbackCalc(float k[2][6], float x[6], float res[2])
 {
     res[0] = k[0][0] * x[0] + k[0][1] * x[1] + k[0][2] * x[2] + k[0][3] * x[3] + k[0][4] * x[4] + k[0][5] * x[5];
     res[1] = k[1][0] * x[0] + k[1][1] * x[1] + k[1][2] * x[2] + k[1][3] * x[3] + k[1][4] * x[4] + k[1][5] * x[5];
@@ -548,17 +587,17 @@ static void GroundTouchingDetect(float left_force, float right_force, float leg_
     ground_detector.right_support_force = left_force + LEG_MASS * 9.8f - LEG_MASS * (right_leg_pos.ddLength - chassis_imu.zAccel);
     //更新离地检测器数据
     bool_t is_touching_ground = ground_detector.left_support_force > 3 && ground_detector.right_support_force > 3; //判断当前瞬间是否接地
-    if(!is_touching_ground && GetMillis() - ground_detector.last_touching_ground_time < interval) //若上次触地时间距离现在不超过interval ms，则认为当前瞬间接地，避免弹跳导致误判
-        is_touching_ground = true;
-    if(!ground_detector.is_touching_ground && is_touching_ground) //判断转为接地状态，标记进入缓冲状态
-    {
-        target.position = state_var.x;
-        ground_detector.is_cuchioning = true;
-        ground_detector.last_touching_ground_time = GetMillis();
-    }
-    if(ground_detector.is_cuchioning && leg_length < target.leg_length) //缓冲状态直到腿长压缩到目标腿长结束
-        ground_detector.is_cuchioning = false;
-    ground_detector.is_touching_ground = is_touching_ground;
+    // if(!is_touching_ground && GetMillis() - ground_detector.last_touching_ground_time < interval) //若上次触地时间距离现在不超过interval ms，则认为当前瞬间接地，避免弹跳导致误判
+    //     is_touching_ground = true;
+    // if(!ground_detector.is_touching_ground && is_touching_ground) //判断转为接地状态，标记进入缓冲状态
+    // {
+    //     target.position = state_var.x;
+    //     ground_detector.is_cuchioning = true;
+    //     ground_detector.last_touching_ground_time = GetMillis();
+    // }
+    // if(ground_detector.is_cuchioning && leg_length < target.leg_length) //缓冲状态直到腿长压缩到目标腿长结束
+    //     ground_detector.is_cuchioning = false;
+    // ground_detector.is_touching_ground = is_touching_ground;
 }
 
 
@@ -580,11 +619,70 @@ void JointPosCalc(Leg_Pos_t* left_leg,Leg_Pos_t* right_leg)
     MotorSetTargetAngle(&right_joint[0],joint_pos[1]);
 }
 
+/**************************** 获取控制器数据 ****************************/
+
+/** @brief      获取底盘IMU数据
+  * @param[in]  none
+  * @note        ！！！不可以修改数据内容！！！
+  * @return     底盘IMU数据指针
+  */
+const Chassis_IMU_t* GetChassisIMUPoint()
+{
+    return &chassis_imu;
+}
 
 
+/** @brief      获取目标值
+  * @param[in]  none
+  * @note        ！！！不可以修改数据内容！！！
+  * @return     目标值指针
+  */
+const Target_s* GetTargetPoint()
+ {
+     return &target;
+ }
 
 
+/** @brief       获取腿部姿态数据
+  * @param[out]  leg  腿的编号(0-left,1-right)，默认返回左腿
+  * @note        ！！！不可以修改数据内容！！！
+  * @return      none
+  */
+const Leg_Pos_t *GetLegPosPoint(uint8_t leg)
+{
+    switch (leg)
+    {
+    case 0:
+        return &left_leg_pos;
+        break;
+    case 1:
+        return &right_leg_pos;
+        break;
+    default:
+        return &left_leg_pos;
+        break;
+    }
+}
 
+
+/** @brief       获取机器人状态
+  * @param[in]   none
+  * @return      机器人状态
+  */
+Robot_State_e GetRobotState()
+{
+    return robot_state;
+}
+
+
+/** @brief       获取机器人状态数据
+  * @param[in]   none
+  * @return      机器人状态数据
+  */
+const State_Var_s *GetStateVarPoint()
+{
+    return &state_var;
+}
 
 
 
@@ -635,11 +733,11 @@ void InitBalanceControler()
   */
 void DataUpdate(
         Chassis_IMU_t* p_chassis_IMU,
-        float speed_delta, float yaw_delta, float pitch_delta, float roll_delta, float length_delta
+        float speed, float yaw_delta, float pitch_delta, float roll_delta, float length_delta
         )
 {
     ChassisPostureUpdate(p_chassis_IMU);
-    CtrlTargetUpdate(speed_delta, yaw_delta, pitch_delta, roll_delta, length_delta);
+    CtrlTargetUpdate(speed, yaw_delta, pitch_delta, roll_delta, length_delta);
     LegPosUpdate();
 }
 
@@ -657,7 +755,7 @@ void ControlBalanceChassis(CyberGear_Control_State_e CyberGear_control_state)
     {
         case Location_Control://发送关节控制位置
         {
-            CANCmdJointLocation(5, 0.5);
+            CANCmdJointLocation(10, 0.5);
             break;
         }
         case Torque_Control://发送关节控制力矩
@@ -687,9 +785,9 @@ void ControlBalanceChassis(CyberGear_Control_State_e CyberGear_control_state)
   */
 void BalanceControlerCalc()
 {
-    float x[6];
+    float x[6];//状态变量
     StateVarCalc(x);
-    float k[2][6];
+    float k[2][6];//LQR反馈矩阵
     SetLQR_K(state_var.leg_length,k);
     float res[2];
     LQRFeedbackCalc(k,x,res);
@@ -697,16 +795,25 @@ void BalanceControlerCalc()
     float LQR_out_T = res[0];
     float LQR_out_Tp = res[1];
 
-    //计算yaw轴PID输出
+    //计算yaw轴PID输出，跟踪yaw轴目标角度
     //TODO:优化yaw过0跟踪效果
-    PID_CascadeCalc(&yaw_PID, target.yaw_angle, chassis_imu.yaw, chassis_imu.yawSpd);
-    
+    float yaw_feedback;
+    yaw_feedback = target.yaw - chassis_imu.yaw;
+    if (yaw_feedback>M_PI)       yaw_feedback = yaw_feedback - M_PI*2;
+    else if (yaw_feedback<-M_PI) yaw_feedback = yaw_feedback + M_PI*2;
+    PID_CascadeCalc(&yaw_PID, 0, yaw_feedback, chassis_imu.yawSpd);
+
+
+
+
+
+
     //驱动轮扭矩设置
     if(ground_detector.is_touching_ground) //正常接地状态
     {
         //设定车轮电机输出扭矩，为LQR和yaw轴PID输出的叠加
-        MotorSetTorque(&left_wheel ,  LQR_out_T * LQR_T_ratio - yaw_PID.output);
-        MotorSetTorque(&right_wheel, -LQR_out_T * LQR_T_ratio - yaw_PID.output);
+        MotorSetTorque(&left_wheel , -LQR_out_T * LQR_T_ratio - yaw_PID.output);
+        MotorSetTorque(&right_wheel,  LQR_out_T * LQR_T_ratio - yaw_PID.output);
     }
     else //腿部离地状态，关闭车轮电机
     {
@@ -734,7 +841,7 @@ void BalanceControlerCalc()
 
         left_leg_target.angle = target.leg_angle;
         right_leg_target.angle = target.leg_angle;
-        JointPosCalc(Leg_Pos_t* left_leg_target,Leg_Pos_t* right_leg_target)
+        JointPosCalc(&left_leg_target,&right_leg_target);
     }
     else //设定双腿...
     {

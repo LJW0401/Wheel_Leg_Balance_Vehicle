@@ -138,29 +138,41 @@ void usb_task(void const * argument)
           gimbal_INT_gyro_angle_point = get_INS_angle_point();//获取欧拉角, 0:yaw, 1:pitch, 2:roll 单位 rad
           // buzzer_on(500, 30000);
           
+          
+          
+          
+          const Leg_Pos_t *left_leg_pos = GetLegPosPoint(0);
+          const Leg_Pos_t *right_leg_pos = GetLegPosPoint(1);
+          const Chassis_IMU_t *chassis_imu = GetChassisIMUPoint();
+          const Target_s *target = GetTargetPoint();
+          const State_Var_s *state_var = GetStateVarPoint();
+
+
           OutputData.header = 0x6A;
           OutputData.length = sizeof(OutputData_s);
-          char_to_uint(OutputData.name_1,"l_angle"); 
+          char_to_uint(OutputData.name_1,"speed"); 
           OutputData.type_1 = 1;
-          OutputData.data_1 = left_leg_pos.angle;
+          OutputData.data_1 = target->speed;
 
-          char_to_uint(OutputData.name_2,"r_angle"); 
+          char_to_uint(OutputData.name_2,"speedCmd"); 
           OutputData.type_2 = 1;
-          OutputData.data_2 = right_leg_pos.angle;
+          OutputData.data_2 = target->speed_cmd;
 
-          char_to_uint(OutputData.name_3,"l_length"); 
+          char_to_uint(OutputData.name_3,"rollSpd"); 
           OutputData.type_3 = 1;
-          OutputData.data_3 = left_leg_pos.length;
+          OutputData.data_3 = state_var->dx;
 
-          char_to_uint(OutputData.name_4,"r_length");
+          char_to_uint(OutputData.name_4,"xAccel");
           OutputData.type_4 = 1;
-          OutputData.data_4 = right_leg_pos.length;
+          OutputData.data_4 = chassis_imu->xAccel;
 
-          char_to_uint(OutputData.name_5,"d_Ang_pid"); 
+          char_to_uint(OutputData.name_5,"yAccel"); 
           OutputData.type_5 = 1;
+          OutputData.data_5 = chassis_imu->yAccel;
           
-          char_to_uint(OutputData.name_6,"Tp"); 
+          char_to_uint(OutputData.name_6,"zAccel"); 
           OutputData.type_6 = 1;
+          OutputData.data_6 = chassis_imu->zAccel;
           
           char_to_uint(OutputData.name_7,"F"); 
           OutputData.type_7 = 1;

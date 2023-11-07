@@ -23,6 +23,7 @@
 #define BALANCE_CONTROLER_H
 
 #include "struct_typedef.h"
+#include "./Drives/MI_motor_drive.h"
 //导入轮腿模型
 #include "./leg_model/JointPos.h"
 #include "./leg_model/LegConv.h"
@@ -30,7 +31,6 @@
 #include "./leg_model/LegSpd.h"
 #include "./leg_model/LQR_K.h"
 #include "./leg_model/PID.h"
-#include "./Drives/MI_motor_drive.h"
 
 
 /* Useful constants.  */
@@ -94,7 +94,7 @@ typedef struct
     float voltage, max_voltage; // V
     float torque, torque_ratio; // Nm, voltage = torque / torque_ratio
     float dir;				   // 1 or -1
-    float (*calcRevVolt)(float speed); // 指向反电动势计算函数
+    float rx_torque;  // Nm 反馈力矩
 }Motor_s;
 
 
@@ -127,8 +127,9 @@ typedef struct
 typedef struct 
 {
     float position;	 // m
-    float speed_cmd;	 // m/s
-    float speed;    // m/s 目标前进速度
+    float speed_cmd; // m/s 期望达到的目标前进速度
+    float speed;     // m/s 实际控制的目标前进速度（加入积分项消除静差）
+    float speed_integral; // m/s 速度积分项
     float yaw_speed_cmd; // rad/s
     float yaw_speed; // rad/s 目标转动速度
     float yaw;	 // rad
@@ -181,20 +182,31 @@ typedef enum
   */
 typedef enum 
 {
-    None_Control,
+    No_Control,
     Location_Control,
     Torque_Control,
 } CyberGear_Control_State_e;
 
 //外用变量
 extern MI_Motor_s MI_Motor[5];
-extern Robot_State_e robot_state;
+extern Motor_s left_joint[2], right_joint[2], left_wheel, right_wheel; //六个电机对象
 
 //外用函数
+void SetRobotState(Robot_State_e state);
+void SetCyberGearMechPositionToZero();
+
+
+const Chassis_IMU_t* GetChassisIMUPoint();
+const Target_s* GetTargetPoint();
+const Leg_Pos_t *GetLegPosPoint(uint8_t leg);
+Robot_State_e GetRobotState();
+const State_Var_s *GetStateVarPoint();
+
+
 void InitBalanceControler();
 void DataUpdate(
         Chassis_IMU_t* p_chassis_IMU,
-        float speed_delta, float yaw_delta, float pitch_delta, float roll_delta, float length_delta
+        float speed, float yaw_delta, float pitch_delta, float roll_delta, float length_delta
         );
 void ControlBalanceChassis(CyberGear_Control_State_e CyberGear_control_state);
 void BalanceControlerCalc();

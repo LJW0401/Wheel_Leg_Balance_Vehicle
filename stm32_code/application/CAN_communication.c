@@ -165,6 +165,11 @@ static void CANRxDecode(CAN_RxHeaderTypeDef rx_header,uint8_t rx_data[8])
             memcpy(&RxCAN_info_type_17,&rx_header.ExtId,4);//将扩展标识符的内容解码成通信类型17的对应内容
             memcpy(&RxCAN_info_type_17.index,&rx_data[0],2);//获取查找的参数索引码
             memcpy(&RxCAN_info_type_17.param,&rx_data[4],4);//获取查找的参数信息
+            
+            if (RxCAN_info_type_17.motor_id == 1) left_joint[0].rx_torque = RxCAN_info_type_17.param;
+            if (RxCAN_info_type_17.motor_id == 2) left_joint[1].rx_torque = RxCAN_info_type_17.param;
+            if (RxCAN_info_type_17.motor_id == 3) right_joint[0].rx_torque = RxCAN_info_type_17.param;
+            if (RxCAN_info_type_17.motor_id == 4) right_joint[1].rx_torque = RxCAN_info_type_17.param;
         }
 
 
