@@ -13,7 +13,10 @@ max = acos(((l3+l4)^2-l0^2-(l5/2)^2)/(-l0*l5));
 
 % 求得腿部姿态 [min; max] = PhiLimit(l0)
 limit=[min; max];
-matlabFunction(limit,'File','PhiLimit');
+matlabFunction(limit,'File','LegAngleLimit');
 
 
 disp("角度限幅函数生成完毕");
+
+l0_range = linspace(0.13, 0.24, 50);
+z  = LegAngleLimit(l0_range);

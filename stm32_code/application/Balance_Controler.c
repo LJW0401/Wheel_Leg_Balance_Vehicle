@@ -48,7 +48,8 @@ static Ground_Detector_s ground_detector = {10, 10, true, false, 0};
 static Robot_State_e robot_state = RobotState_OFF;
 
 /*PID*/
-static CascadePID yaw_PID, pitch_PID, roll_PID; //机身yaw, pitch和roll控制PID
+static CascadePID yaw_PID, roll_PID; //机身角度控制PID
+static PID pitch_PID;
 
 /*目标与限制*/
 static Limit_Value_t limit_value;
@@ -295,6 +296,9 @@ static void PIDInit()
     //yaw轴角度PID
     PID_Init(&yaw_PID.inner, 1, 0, 0, 0, 0.5);
     PID_Init(&yaw_PID.outer, 0.1, 0, 1, 0.001, 0.5);
+
+    //pitch轴角度PID
+    PID_Init(&pitch_PID, 2.3, 0, 1, 0, 0.9);
 
     //roll轴角度PID
     PID_Init(&roll_PID.inner, 1, 0, 5, 0, 5);
@@ -820,7 +824,11 @@ void BalanceControlerCalc()
     3.离地检测
     4.打滑检测
     */
-
+    
+    PID_SingleCalc(&pitch_PID, target.pitch, chassis_imu.pitch);
+    target.leg_angle = M_PI_2 + pitch_PID.output;
+    if (target.leg_angle>limit_value.leg_angle_max)      target.leg_angle = limit_value.leg_angle_max;
+    else if (target.leg_angle<limit_value.leg_angle_min) target.leg_angle = limit_value.leg_angle_min;
 
     //关节位置设置
     Leg_Pos_t left_leg_target;
