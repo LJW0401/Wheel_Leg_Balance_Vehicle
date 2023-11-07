@@ -190,10 +190,10 @@ static void CalcJointAngle(Motor_s* left_joint, Motor_s* right_joint)
   * @param[in]      yaw_delta    yaw角度增量
   * @param[in]      pitch_delta  pitch角度增量
   * @param[in]      roll_delta   roll角度增量
-  * @param[in]      length_delta 腿长增量
+  * @param[in]      length 腿长
   * @return         none
   */
-static void CtrlTargetUpdate(float speed, float yaw_delta, float pitch_delta, float roll_delta, float length_delta)
+static void CtrlTargetUpdate(float speed, float yaw_delta, float pitch_delta, float roll_delta, float length)
 {
     float speed_ki = 0.2;
     float speed_integral_max = 0.26;
@@ -222,7 +222,7 @@ static void CtrlTargetUpdate(float speed, float yaw_delta, float pitch_delta, fl
     else if (target.roll>limit_value.roll_max) target.roll = limit_value.roll_max;
 
     //设置左右腿目标长度
-    target.leg_length = target.leg_length + length_delta;
+    target.leg_length = length;
     if (target.leg_length<limit_value.leg_length_min) target.leg_length = limit_value.leg_length_min;
     else if (target.leg_length>limit_value.leg_length_max) target.leg_length = limit_value.leg_length_max;
 }
@@ -733,11 +733,11 @@ void InitBalanceControler()
   */
 void DataUpdate(
         Chassis_IMU_t* p_chassis_IMU,
-        float speed, float yaw_delta, float pitch_delta, float roll_delta, float length_delta
+        float speed, float yaw_delta, float pitch_delta, float roll_delta, float length
         )
 {
     ChassisPostureUpdate(p_chassis_IMU);
-    CtrlTargetUpdate(speed, yaw_delta, pitch_delta, roll_delta, length_delta);
+    CtrlTargetUpdate(speed, yaw_delta, pitch_delta, roll_delta, length);
     LegPosUpdate();
 }
 

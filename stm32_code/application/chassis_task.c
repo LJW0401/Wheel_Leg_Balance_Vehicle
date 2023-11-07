@@ -99,7 +99,7 @@ void chassis_task(void const *pvParameters)
                 -rc_ctrl->rc.ch[2]/660.0f*0.005,
                 0,
                 0,
-                0
+                0.185 + rc_ctrl->rc.ch[3]/660.0f*0.05
                 );//更新数据
 
         Robot_State_e robot_state;
