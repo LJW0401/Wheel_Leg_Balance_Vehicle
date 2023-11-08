@@ -48,8 +48,8 @@ static Ground_Detector_s ground_detector = {10, 10, true, false, 0};
 static Robot_State_e robot_state = RobotState_OFF;
 
 /*PID*/
-static CascadePID yaw_PID, roll_PID; //机身角度控制PID
-static PID pitch_PID;
+static CascadePID yaw_PID; //机身角度控制PID
+static PID pitch_PID, roll_PID;
 
 /*目标与限制*/
 static Limit_Value_t limit_value;
@@ -186,50 +186,86 @@ static void CalcJointAngle(Motor_s* left_joint, Motor_s* right_joint)
 
 
 /**
+  * @brief          目标值限幅
+  * @param[in]      none
+  * @return         none
+  * @note           防止目标值超限导致的控制问题
+  */
+static void CtrlTargetLimit()
+{
+    //限制前进速度
+    if (target.speed_cmd>limit_value.speed_cmd_max)       target.speed_cmd = limit_value.speed_cmd_max;
+    else if (target.speed_cmd<-limit_value.speed_cmd_max) target.speed_cmd = -limit_value.speed_cmd_max;
+    
+    if (target.speed_integral>limit_value.speed_integral_max)       target.speed_integral = limit_value.speed_integral_max;
+    else if (target.speed_integral<-limit_value.speed_integral_max) target.speed_integral = -limit_value.speed_integral_max;
+    
+    //限制yaw角
+    if(target.yaw>M_PI)        target.yaw = target.yaw - M_PI*2;
+    else if (target.yaw<-M_PI) target.yaw = target.yaw + M_PI*2;
+    
+    //限制pitch角
+    if (target.pitch<-limit_value.pitch_max)     target.pitch = -limit_value.pitch_max;
+    else if (target.pitch>limit_value.pitch_max) target.pitch = limit_value.pitch_max;
+    
+    //限制roll角
+    if (target.roll<-limit_value.roll_max)     target.roll = -limit_value.roll_max;
+    else if (target.roll>limit_value.roll_max) target.roll = limit_value.roll_max;
+
+    //限制腿长
+    if (target.leg_length<limit_value.leg_length_min) target.leg_length = limit_value.leg_length_min;
+    else if (target.leg_length>limit_value.leg_length_max) target.leg_length = limit_value.leg_length_max;
+
+    if (target.left_length<limit_value.leg_length_min) target.left_length = limit_value.leg_length_min;
+    else if (target.left_length>limit_value.leg_length_max) target.left_length = limit_value.leg_length_max;
+
+    if (target.right_length<limit_value.leg_length_min) target.right_length = limit_value.leg_length_min;
+    else if (target.right_length>limit_value.leg_length_max) target.right_length = limit_value.leg_length_max;
+
+    //限制旋转力矩
+    if (target.rotation_torque>limit_value.rotation_torque_max)       target.rotation_torque = limit_value.rotation_torque_max;
+    else if (target.rotation_torque<-limit_value.rotation_torque_max) target.rotation_torque = -limit_value.rotation_torque_max;
+
+    //限制腿部角度
+    if (target.leg_angle>M_PI_2+limit_value.leg_angle_max)      target.leg_angle = M_PI_2+limit_value.leg_angle_max;
+    else if (target.leg_angle<M_PI_2-limit_value.leg_angle_max) target.leg_angle = M_PI_2-limit_value.leg_angle_max;
+}
+
+
+/**
   * @brief          更新目标值
   * @param[in]      speed           速度值
   * @param[in]      yaw_delta       yaw角度增量
-  * @param[in]      pitch_delta     pitch角度增量
-  * @param[in]      roll_delta      roll角度增量
+  * @param[in]      pitch           pitch角度
+  * @param[in]      roll            roll角度
   * @param[in]      length          腿长
   * @param[in]      rotation_torque 旋转力矩
   * @return         none
   */
-static void CtrlTargetUpdate(float speed, float yaw_delta, float pitch_delta, float roll_delta, float length, float rotation_torque)
+static void CtrlTargetUpdate(float speed, float yaw_delta, float pitch, float roll, float length, float rotation_torque)
 {
     float speed_ki = 0.2;
-    float speed_integral_max = 0.01;
-    // float speed_ki = 0;
-    // float speed_integral_max = 0.01;
     //设置前进速度
     target.speed_cmd = speed;
     target.speed_integral = target.speed_integral + (target.speed_cmd - state_var.dx)*speed_ki;
-    if (target.speed_integral>speed_integral_max)       target.speed_integral = speed_integral_max;
-    else if (target.speed_integral<-speed_integral_max) target.speed_integral = -speed_integral_max;
-    target.speed = target.speed_cmd + target.speed_integral;
 
     //设置yaw方位角
     target.yaw = target.yaw + yaw_delta;
-    if(target.yaw>M_PI)        target.yaw = target.yaw - M_PI*2;
-    else if (target.yaw<-M_PI) target.yaw = target.yaw + M_PI*2;
 
     //设置pitch角
-    target.pitch = target.pitch + pitch_delta;
-    if (target.pitch<-limit_value.pitch_max)     target.pitch = -limit_value.pitch_max;
-    else if (target.pitch>limit_value.pitch_max) target.pitch = limit_value.pitch_max;
+    target.pitch = pitch;
 
     //设置roll角
-    target.roll = target.roll + roll_delta;
-    if (target.roll<-limit_value.roll_max)     target.roll = -limit_value.roll_max;
-    else if (target.roll>limit_value.roll_max) target.roll = limit_value.roll_max;
+    target.roll = roll;
 
-    //设置左右腿目标长度
+    //设置目标长度
     target.leg_length = length;
-    if (target.leg_length<limit_value.leg_length_min) target.leg_length = limit_value.leg_length_min;
-    else if (target.leg_length>limit_value.leg_length_max) target.leg_length = limit_value.leg_length_max;
 
     //设置旋转力矩
     target.rotation_torque = rotation_torque;
+
+    CtrlTargetLimit();
+    target.speed = target.speed_cmd + target.speed_integral;
 }
 
 
@@ -301,12 +337,7 @@ static void PIDInit()
     PID_Init(&pitch_PID, 2.3, 0, 1, 0, 0.9);
 
     //roll轴角度PID
-    PID_Init(&roll_PID.inner, 1, 0, 5, 0, 5);
-    PID_Init(&roll_PID.outer, 20, 0, 0, 0, 3);
-
-    //腿部角度差PID
-    // PID_Init(&leg_delta_angle_PID.inner, 1, 0, 0, 0, 5);
-    // PID_Init(&leg_delta_angle_PID.outer, 20, 1, 5, 0.02, 5);
+    PID_Init(&roll_PID, 1, 0, 0, 0, 0.3);
 }
 
 
@@ -723,12 +754,14 @@ void InitBalanceControler()
     target.leg_angle = M_PI_2;
 
     //设定各种限额
-    limit_value.leg_angle_min = 0.61;
-    limit_value.leg_angle_max = 2.40;
+    limit_value.leg_angle_max = M_PI/6;
     limit_value.leg_length_min = 0.13f;
     limit_value.leg_length_max = 0.24f;
     limit_value.pitch_max = M_PI/6;
-    limit_value.roll_max =  M_PI/6;
+    limit_value.roll_max =  M_PI/20;
+    limit_value.speed_cmd_max = 0.5f;
+    limit_value.rotation_torque_max = 0.5f;
+    limit_value.speed_integral_max = 0.01f;
 
     //设定机器人状态
     robot_state = RobotState_OFF;
@@ -741,11 +774,11 @@ void InitBalanceControler()
   */
 void DataUpdate(
         Chassis_IMU_t* p_chassis_IMU,
-        float speed, float yaw_delta, float pitch_delta, float roll_delta, float length, float rotation_torque
+        float speed, float yaw_delta, float pitch, float roll, float length, float rotation_torque
         )
 {
     ChassisPostureUpdate(p_chassis_IMU);
-    CtrlTargetUpdate(speed, yaw_delta, pitch_delta, roll_delta, length, rotation_torque);
+    CtrlTargetUpdate(speed, yaw_delta, pitch, roll, length, rotation_torque);
     LegPosUpdate();
 }
 
@@ -757,8 +790,6 @@ void DataUpdate(
   */
 void ControlBalanceChassis(CyberGear_Control_State_e CyberGear_control_state)
 {
-
-
     switch (CyberGear_control_state)
     {
         case Location_Control://发送关节控制位置
@@ -819,7 +850,6 @@ void BalanceControlerCalc()
 
     /*TODO:
     新增控制项：
-    1.pitch角控制
     2.roll角控制
     3.离地检测
     4.打滑检测
@@ -827,16 +857,21 @@ void BalanceControlerCalc()
     
     PID_SingleCalc(&pitch_PID, target.pitch, chassis_imu.pitch);
     target.leg_angle = M_PI_2 + pitch_PID.output;
-    if (target.leg_angle>limit_value.leg_angle_max)      target.leg_angle = limit_value.leg_angle_max;
-    else if (target.leg_angle<limit_value.leg_angle_min) target.leg_angle = limit_value.leg_angle_min;
+
+    PID_SingleCalc(&roll_PID, target.roll, chassis_imu.roll);
+    target.left_length = target.leg_length + roll_PID.output;
+    target.right_length = target.leg_length - roll_PID.output;
+
+    CtrlTargetLimit();
 
     //关节位置设置
     Leg_Pos_t left_leg_target;
     Leg_Pos_t right_leg_target;
     if(ground_detector.is_touching_ground) //正常接地状态
     {
-        left_leg_target.length = target.leg_length;
-        right_leg_target.length = target.leg_length;
+        //腿长为目标腿长和roll_PID输出叠加
+        left_leg_target.length = target.left_length;
+        right_leg_target.length = target.right_length;
 
         left_leg_target.angle = target.leg_angle;
         right_leg_target.angle = target.leg_angle;
@@ -849,6 +884,7 @@ void BalanceControlerCalc()
 
         left_leg_target.angle =  M_PI_2;
         right_leg_target.angle = M_PI_2;
+        JointPosCalc(&left_leg_target,&right_leg_target);
     }
 
 }

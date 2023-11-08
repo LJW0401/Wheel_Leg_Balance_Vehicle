@@ -135,8 +135,25 @@ typedef struct
     float pitch; // rad 期望达到的目标俯仰角
     float roll;  // rad 期望达到的目标横滚角
     float leg_length; // m  期望达到的目标腿长
+    float left_length,right_length; // m  期望达到的目标腿长
     float leg_angle;  // rad 期望达到的目标腿角
 } Target_s;
+
+
+/** @brief      限制量结构体
+  * @note       无
+  */
+typedef struct 
+{
+    float leg_angle_max;
+    float leg_length_min;
+    float leg_length_max;
+    float pitch_max;
+    float roll_max;
+    float speed_cmd_max;
+    float speed_integral_max;
+    float rotation_torque_max;
+} Limit_Value_t;
 
 
 /** @brief      触地检测数据结构体
@@ -148,20 +165,6 @@ typedef struct
     bool_t is_touching_ground, is_slipping;
     uint32_t last_touching_ground_time;
 } Ground_Detector_s;
-
-
-/** @brief      限制量结构体
-  * @note       无
-  */
-typedef struct 
-{
-    float leg_angle_min;
-    float leg_angle_max;
-    float leg_length_min;
-    float leg_length_max;
-    float pitch_max;
-    float roll_max;
-} Limit_Value_t;
 
 
 /** @brief      机器人状态枚举量
@@ -205,7 +208,7 @@ const State_Var_s *GetStateVarPoint();
 void InitBalanceControler();
 void DataUpdate(
         Chassis_IMU_t* p_chassis_IMU,
-        float speed, float yaw_delta, float pitch_delta, float roll_delta, float length, float rotation_torque
+        float speed, float yaw_delta, float pitch, float roll, float length, float rotation_torque
         );
 void ControlBalanceChassis(CyberGear_Control_State_e CyberGear_control_state);
 void BalanceControlerCalc();

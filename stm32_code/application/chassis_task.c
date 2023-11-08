@@ -98,7 +98,7 @@ void chassis_task(void const *pvParameters)
                 rc_ctrl->rc.ch[1]/660.0f*0.4,
                 0,
                 0,
-                0,
+                rc_ctrl->rc.ch[2]/660.0f*0.5,
                 0.185 + rc_ctrl->rc.ch[3]/660.0f*0.05,
                 rc_ctrl->rc.ch[0]/660.0f*0.03
                 );//更新数据
