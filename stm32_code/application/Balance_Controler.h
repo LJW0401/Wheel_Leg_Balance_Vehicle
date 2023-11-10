@@ -168,17 +168,6 @@ typedef struct
     uint32_t last_touching_ground_time;
 } Ground_Detector_s;
 
-/** 
- * @brief      机器人状态枚举量
- * @note       无
- */
-typedef enum
-{
-    RobotState_OFF,
-    RobotState_MotorZeroing,
-    RobotState_LegExtension,
-    RobotState_Balance,
-} Robot_State_e;
 
 /** 
  * @brief      控制模式
@@ -196,7 +185,6 @@ extern MI_Motor_s MI_Motor[5];
 extern Motor_s left_joint[2], right_joint[2], left_wheel, right_wheel; // 六个电机对象
 
 // 外用函数
-void SetRobotState(Robot_State_e state);
 void SetCyberGearMechPositionToZero();
 
 const Chassis_IMU_t *GetChassisIMUPoint();

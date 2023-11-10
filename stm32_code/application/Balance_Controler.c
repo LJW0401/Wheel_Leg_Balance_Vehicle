@@ -45,7 +45,6 @@ static Leg_Pos_t left_leg_pos, right_leg_pos; // 左右腿部反馈姿态
 static Chassis_IMU_t chassis_imu;             // 底盘IMU数据
 static State_Var_s state_var;
 static Ground_Detector_s ground_detector = {10, 10, true, false, 0};
-static Robot_State_e robot_state = RobotState_OFF;
 
 /*PID*/
 static CascadePID yaw_PID; // 机身角度控制PID
@@ -150,16 +149,6 @@ static void ChassisPostureUpdate(Chassis_IMU_t *p_chassis_IMU)
     chassis_imu = *p_chassis_IMU;
 }
 
-/**
- * @brief       设置机器人状态
- * @param[out]  state 机器人状态
- * @return      none
- * @note
- */
-void SetRobotState(Robot_State_e state)
-{
-    robot_state = state;
-}
 
 /**************************** 运动控制模块 ****************************/
 
@@ -731,15 +720,6 @@ const Leg_Pos_t *GetLegPosPoint(uint8_t leg)
     }
 }
 
-/**
- * @brief       获取机器人状态
- * @param[in]   none
- * @return      机器人状态
- */
-Robot_State_e GetRobotState()
-{
-    return robot_state;
-}
 
 /**
  * @brief       获取机器人状态数据
@@ -784,9 +764,6 @@ void InitBalanceControler()
     limit_value.speed_cmd_max = 0.5f;
     limit_value.rotation_torque_max = 0.5f;
     limit_value.speed_integral_max = 0.01f;
-
-    // 设定机器人状态
-    robot_state = RobotState_OFF;
 }
 
 /**

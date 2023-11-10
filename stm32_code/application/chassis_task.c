@@ -77,6 +77,7 @@ void chassis_task(void const *pvParameters)
     InitBalanceControler();//初始化平衡控制器
 
     Chassis_IMU_t chassis_IMU;//底盘IMU数据
+    static Robot_State_e robot_state = RobotState_OFF;
 
     while (1)
     {
@@ -102,9 +103,6 @@ void chassis_task(void const *pvParameters)
                 0.185 + rc_ctrl->rc.ch[3]/660.0f*0.05,
                 rc_ctrl->rc.ch[0]/660.0f*0.03
                 );//更新数据
-
-        Robot_State_e robot_state;
-        robot_state = GetRobotState();//获取机器人状态
 
         if(rc_ctrl->rc.s[0] == 0x01){//GPS档急停
             left_wheel.torque = 0;
@@ -145,7 +143,7 @@ void chassis_task(void const *pvParameters)
                     //判断是否完成零位设置
                     if (left_leg_pos->length<0.11 && right_leg_pos->length<0.11)
                     {
-                        SetRobotState(RobotState_MotorZeroing);
+                        robot_state = RobotState_MotorZeroing;
                     }
 
                     ControlBalanceChassis(Torque_Control);
@@ -155,7 +153,7 @@ void chassis_task(void const *pvParameters)
                 case 0x03://[CL档]腿部伸长
                 {
                     if (robot_state < RobotState_MotorZeroing) break;
-                    SetRobotState(RobotState_LegExtension);
+                    robot_state = RobotState_LegExtension;
                     buzzer_on(500, 3000);
 
                     float joint_pos[2];
@@ -181,7 +179,7 @@ void chassis_task(void const *pvParameters)
                 case 0x02://[HL档]平衡控制
                 {
                     if (robot_state < RobotState_LegExtension) break;
-                    SetRobotState(RobotState_Balance);
+                    robot_state = RobotState_Balance;
 
                     BalanceControlerCalc();
 

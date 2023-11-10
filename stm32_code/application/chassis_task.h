@@ -215,4 +215,17 @@ extern void chassis_task(void const *pvParameters);
 //   */
 // extern void chassis_rc_to_control_vector(fp32 *vx_set, fp32 *vy_set, chassis_move_t *chassis_move_rc_to_vector);
 
+
+/** 
+ * @brief      机器人状态枚举量
+ * @note       无
+ */
+typedef enum
+{
+    RobotState_OFF,
+    RobotState_MotorZeroing,
+    RobotState_LegExtension,
+    RobotState_Balance,
+} Robot_State_e;
+
 #endif
