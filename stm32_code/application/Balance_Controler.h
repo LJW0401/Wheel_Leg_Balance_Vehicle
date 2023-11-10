@@ -190,7 +190,6 @@ void SetCyberGearMechPositionToZero();
 const Chassis_IMU_t *GetChassisIMUPoint();
 const Target_s *GetTargetPoint();
 const Leg_Pos_t *GetLegPosPoint(uint8_t leg);
-Robot_State_e GetRobotState();
 const State_Var_s *GetStateVarPoint();
 
 void InitBalanceControler();

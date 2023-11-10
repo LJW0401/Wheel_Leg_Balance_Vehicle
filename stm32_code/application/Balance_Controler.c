@@ -86,7 +86,10 @@ static uint32_t GetMillis()
  * @param[in]      dir
  * @return         none
  */
-static void MotorInit(Motor_s *motor, MI_Motor_s *MI_Motor, CAN_HandleTypeDef *hcan, uint8_t motor_id, float initial_angle, float vertical_angle, float horizontal_angle, float upper_limit_angle, float lower_limit_angle, float max_voltage, float torque_ratio, float dir) //, float (*calcRevVolt)(float speed))
+static void MotorInit(
+    Motor_s *motor, MI_Motor_s *MI_Motor, CAN_HandleTypeDef *hcan, uint8_t motor_id,
+    float initial_angle, float vertical_angle, float horizontal_angle, float upper_limit_angle, float lower_limit_angle,
+    float max_voltage, float torque_ratio, float dir)
 {
     motor->MI_Motor = MI_Motor;
     MI_motor_Init(MI_Motor, hcan, motor_id);
@@ -148,7 +151,6 @@ static void ChassisPostureUpdate(Chassis_IMU_t *p_chassis_IMU)
 {
     chassis_imu = *p_chassis_IMU;
 }
-
 
 /**************************** 运动控制模块 ****************************/
 
@@ -453,22 +455,22 @@ static void CANCmdJointLocation(float kp, float kd)
     send_angle[0] = left_joint[0].horizontal_angle - left_joint[0].target_angle;
     MI_motor_LocationControl(left_joint[0].MI_Motor, send_angle[0], kp, kd);
     for (int i = 0; i < 1; i++)
-        MI_motor_ReadParam(left_joint[0].MI_Motor, 0X302d);
+        MI_motor_ReadParam(left_joint[0].MI_Motor, 0X302d); // 添加后可以有效缓解小米电机反馈数据丢包问题（原理未知）
 
     send_angle[1] = left_joint[1].horizontal_angle - left_joint[1].target_angle;
     MI_motor_LocationControl(left_joint[1].MI_Motor, send_angle[1], kp, kd);
     for (int i = 0; i < 1; i++)
-        MI_motor_ReadParam(left_joint[1].MI_Motor, 0X302d);
+        MI_motor_ReadParam(left_joint[1].MI_Motor, 0X302d); // 添加后可以有效缓解小米电机反馈数据丢包问题（原理未知）
 
     send_angle[2] = right_joint[0].horizontal_angle + right_joint[0].target_angle;
     MI_motor_LocationControl(right_joint[0].MI_Motor, send_angle[2], kp, kd);
     for (int i = 0; i < 1; i++)
-        MI_motor_ReadParam(right_joint[0].MI_Motor, 0X302d);
+        MI_motor_ReadParam(right_joint[0].MI_Motor, 0X302d); // 添加后可以有效缓解小米电机反馈数据丢包问题（原理未知）
 
     send_angle[3] = right_joint[1].horizontal_angle + right_joint[1].target_angle;
     MI_motor_LocationControl(right_joint[1].MI_Motor, send_angle[3], kp, kd);
     for (int i = 0; i < 1; i++)
-        MI_motor_ReadParam(right_joint[1].MI_Motor, 0X302d);
+        MI_motor_ReadParam(right_joint[1].MI_Motor, 0X302d); // 添加后可以有效缓解小米电机反馈数据丢包问题（原理未知）
 }
 
 /**
@@ -495,19 +497,19 @@ static void CANCmdJointTorque(float limit_torque)
 
     MI_motor_TorqueControl(left_joint[0].MI_Motor, left_joint[0].torque);
     for (int i = 0; i < 1; i++)
-        MI_motor_ReadParam(left_joint[0].MI_Motor, 0X302d);
+        MI_motor_ReadParam(left_joint[0].MI_Motor, 0X302d); // 添加后可以有效缓解小米电机反馈数据丢包问题（原理未知）
 
     MI_motor_TorqueControl(left_joint[1].MI_Motor, left_joint[1].torque);
     for (int i = 0; i < 1; i++)
-        MI_motor_ReadParam(left_joint[1].MI_Motor, 0X302d);
+        MI_motor_ReadParam(left_joint[1].MI_Motor, 0X302d); // 添加后可以有效缓解小米电机反馈数据丢包问题（原理未知）
 
     MI_motor_TorqueControl(right_joint[0].MI_Motor, right_joint[0].torque);
     for (int i = 0; i < 1; i++)
-        MI_motor_ReadParam(right_joint[0].MI_Motor, 0X302d);
+        MI_motor_ReadParam(right_joint[0].MI_Motor, 0X302d); // 添加后可以有效缓解小米电机反馈数据丢包问题（原理未知）
 
     MI_motor_TorqueControl(right_joint[1].MI_Motor, right_joint[1].torque);
     for (int i = 0; i < 1; i++)
-        MI_motor_ReadParam(right_joint[1].MI_Motor, 0X302d);
+        MI_motor_ReadParam(right_joint[1].MI_Motor, 0X302d); // 添加后可以有效缓解小米电机反馈数据丢包问题（原理未知）
 }
 
 /**
@@ -519,19 +521,19 @@ static void CANCmdJointEmergencyStop()
 {
     MI_motor_Stop(left_joint[0].MI_Motor);
     for (int i = 0; i < 1; i++)
-        MI_motor_ReadParam(left_joint[0].MI_Motor, 0X302d);
+        MI_motor_ReadParam(left_joint[0].MI_Motor, 0X302d); // 添加后可以有效缓解小米电机反馈数据丢包问题（原理未知）
 
     MI_motor_Stop(left_joint[1].MI_Motor);
     for (int i = 0; i < 1; i++)
-        MI_motor_ReadParam(left_joint[1].MI_Motor, 0X302d);
+        MI_motor_ReadParam(left_joint[1].MI_Motor, 0X302d); // 添加后可以有效缓解小米电机反馈数据丢包问题（原理未知）
 
     MI_motor_Stop(right_joint[0].MI_Motor);
     for (int i = 0; i < 1; i++)
-        MI_motor_ReadParam(right_joint[0].MI_Motor, 0X302d);
+        MI_motor_ReadParam(right_joint[0].MI_Motor, 0X302d); // 添加后可以有效缓解小米电机反馈数据丢包问题（原理未知）
 
     MI_motor_Stop(right_joint[1].MI_Motor);
     for (int i = 0; i < 1; i++)
-        MI_motor_ReadParam(right_joint[1].MI_Motor, 0X302d);
+        MI_motor_ReadParam(right_joint[1].MI_Motor, 0X302d); // 添加后可以有效缓解小米电机反馈数据丢包问题（原理未知）
 }
 
 /**
@@ -543,19 +545,19 @@ void SetCyberGearMechPositionToZero()
 {
     MI_motor_SetMechPositionToZero(left_joint[0].MI_Motor);
     for (int i = 0; i < 1; i++)
-        MI_motor_ReadParam(left_joint[0].MI_Motor, 0X302d);
+        MI_motor_ReadParam(left_joint[0].MI_Motor, 0X302d); // 添加后可以有效缓解小米电机反馈数据丢包问题（原理未知）
 
     MI_motor_SetMechPositionToZero(left_joint[1].MI_Motor);
     for (int i = 0; i < 1; i++)
-        MI_motor_ReadParam(left_joint[1].MI_Motor, 0X302d);
+        MI_motor_ReadParam(left_joint[1].MI_Motor, 0X302d); // 添加后可以有效缓解小米电机反馈数据丢包问题（原理未知）
 
     MI_motor_SetMechPositionToZero(right_joint[0].MI_Motor);
     for (int i = 0; i < 1; i++)
-        MI_motor_ReadParam(right_joint[0].MI_Motor, 0X302d);
+        MI_motor_ReadParam(right_joint[0].MI_Motor, 0X302d); // 添加后可以有效缓解小米电机反馈数据丢包问题（原理未知）
 
     MI_motor_SetMechPositionToZero(right_joint[1].MI_Motor);
     for (int i = 0; i < 1; i++)
-        MI_motor_ReadParam(right_joint[1].MI_Motor, 0X302d);
+        MI_motor_ReadParam(right_joint[1].MI_Motor, 0X302d); // 添加后可以有效缓解小米电机反馈数据丢包问题（原理未知）
 }
 
 /**************************** 反馈与计算 ****************************/
@@ -609,8 +611,8 @@ static void SetLQR_K(float leg_length, float k[2][6])
         k[1][1] = kRes[3] * -10;
     }
 
-    k[0][2] = 0.0;
-    k[1][2] = 0.0;
+    k[0][2] = 0.0; // 因为用不到距离反馈，所以置零
+    k[1][2] = 0.0; // 因为用不到距离反馈，所以置零
 }
 
 /**
@@ -665,11 +667,11 @@ static void GroundTouchingDetect(float left_force, float right_force, float leg_
 void JointPosCalc(Leg_Pos_t *left_leg, Leg_Pos_t *right_leg)
 {
     float joint_pos[2];
-    JointPos(left_leg->length, left_leg->angle, joint_pos); // 计算关节摆角
+    JointPos(left_leg->length, left_leg->angle, joint_pos); // 计算左关节摆角
     MotorSetTargetAngle(&left_joint[1], joint_pos[0]);
     MotorSetTargetAngle(&left_joint[0], joint_pos[1]);
 
-    JointPos(right_leg->length, right_leg->angle, joint_pos); // 计算关节摆角
+    JointPos(right_leg->length, right_leg->angle, joint_pos); // 计算右关节摆角
     MotorSetTargetAngle(&right_joint[1], joint_pos[0]);
     MotorSetTargetAngle(&right_joint[0], joint_pos[1]);
 }
@@ -719,7 +721,6 @@ const Leg_Pos_t *GetLegPosPoint(uint8_t leg)
         break;
     }
 }
-
 
 /**
  * @brief       获取机器人状态数据
