@@ -42,14 +42,14 @@
 #define M_LOG10E 0.43429448190325182765
 #define M_LN2 _M_LN2
 #define M_LN10 2.30258509299404568402
-#define M_PI 3.14159265358979323846 //PI
+#define M_PI 3.14159265358979323846 // PI
 #define M_TWOPI (M_PI * 2.0)
-#define M_PI_2 1.57079632679489661923 //PI/2
-#define M_PI_4 0.78539816339744830962 //PI/4
-#define M_3PI_4 2.3561944901923448370E0 //PI*3/4
+#define M_PI_2 1.57079632679489661923   // PI/2
+#define M_PI_4 0.78539816339744830962   // PI/4
+#define M_3PI_4 2.3561944901923448370E0 // PI*3/4
 #define M_SQRTPI 1.77245385090551602792981
-#define M_1_PI 0.31830988618379067154 //0.1 PI
-#define M_2_PI 0.63661977236758134308 //0.2 PI
+#define M_1_PI 0.31830988618379067154 // 0.1 PI
+#define M_2_PI 0.63661977236758134308 // 0.2 PI
 #define M_2_SQRTPI 1.12837916709551257390
 #define M_SQRT2 1.41421356237309504880
 #define M_SQRT1_2 0.70710678118654752440
@@ -66,7 +66,7 @@
 
 #define WHEEL_CAN hcan2
 
-/** 
+/**
  * @brief      底盘IMU数据结构体
  * @note
  */
@@ -77,7 +77,7 @@ typedef struct
     float xAccel, yAccel, zAccel;    // m/s^2
 } Chassis_IMU_t;
 
-/** 
+/**
  * @brief      电机结构体
  * @note       leftJoint[0]:左前关节电机, leftJoint[1]:左后关节电机, leftWheel:左车轮电机
  *             rightJoint[0]:右前关节电机, rightJoint[1]:右后关节电机, rightWheel:右车轮电机
@@ -99,7 +99,7 @@ typedef struct
     float rx_torque;                            // Nm 反馈力矩
 } Motor_s;
 
-/** 
+/**
  * @brief      腿部姿态结构体
  * @note       无
  */
@@ -110,7 +110,7 @@ typedef struct
     float ddLength;        // m/s^2
 } Leg_Pos_t;
 
-/** 
+/**
  * @brief      状态变量结构体
  * @note       无
  */
@@ -122,7 +122,7 @@ typedef struct
     float leg_length, dLegLength;
 } State_Var_s;
 
-/** 
+/**
  * @brief      目标量结构体
  * @note       无
  */
@@ -141,23 +141,23 @@ typedef struct
     float leg_angle;                 // rad 期望达到的目标腿角
 } Target_s;
 
-/** 
+/**
  * @brief      限制量结构体
  * @note       无
  */
 typedef struct
 {
-    float leg_angle_max;
-    float leg_length_min;
-    float leg_length_max;
-    float pitch_max;
-    float roll_max;
-    float speed_cmd_max;
-    float speed_integral_max;
-    float rotation_torque_max;
+    float leg_angle_max;       // 腿角最大摆幅（以PI/2为中心）
+    float leg_length_min;      // 最短腿长
+    float leg_length_max;      // 最长腿长
+    float pitch_max;           // 最大pitch倾角
+    float roll_max;            // 最大roll倾角
+    float speed_cmd_max;       // 最大速度
+    float speed_integral_max;  // 最大速度积分值
+    float rotation_torque_max; // 最大旋转力矩
 } Limit_Value_t;
 
-/** 
+/**
  * @brief      触地检测数据结构体
  * @note       无
  */
@@ -168,8 +168,7 @@ typedef struct
     uint32_t last_touching_ground_time;
 } Ground_Detector_s;
 
-
-/** 
+/**
  * @brief      控制模式
  * @note       无
  */

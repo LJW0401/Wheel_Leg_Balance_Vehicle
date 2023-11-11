@@ -757,10 +757,10 @@ void InitBalanceControler()
     target.leg_angle = M_PI_2;
 
     // 设定各种限额
-    limit_value.leg_angle_max = M_PI / 6;
+    limit_value.leg_angle_max = M_PI / 7;
     limit_value.leg_length_min = 0.13f;
     limit_value.leg_length_max = 0.24f;
-    limit_value.pitch_max = M_PI / 6;
+    limit_value.pitch_max = M_PI / 10;
     limit_value.roll_max = M_PI / 20;
     limit_value.speed_cmd_max = 0.5f;
     limit_value.rotation_torque_max = 0.5f;
@@ -833,7 +833,7 @@ void BalanceControlerCalc()
     // 驱动轮扭矩设置
     if (ground_detector.is_touching_ground) // 正常接地状态
     {
-        // 设定车轮电机输出扭矩，为LQR和yaw轴PID输出的叠加
+        // 设定车轮电机输出扭矩，为LQR和旋转力矩的叠加
         MotorSetTorque(&left_wheel, -LQR_out_T * LQR_T_ratio + target.rotation_torque);
         MotorSetTorque(&right_wheel, LQR_out_T * LQR_T_ratio + target.rotation_torque);
     }
