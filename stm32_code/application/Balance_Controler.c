@@ -850,8 +850,8 @@ void BalanceControlerCalc()
     target.leg_angle = M_PI_2 + pitch_PID.output;
 
     PID_SingleCalc(&roll_PID, target.roll, chassis_imu.roll);
-    target.left_length = target.leg_length + roll_PID.output;
-    target.right_length = target.leg_length - roll_PID.output;
+    target.left_length = target.leg_length - roll_PID.output;
+    target.right_length = target.leg_length + roll_PID.output;
 
     CtrlTargetLimit();
 
