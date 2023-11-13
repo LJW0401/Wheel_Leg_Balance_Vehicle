@@ -336,7 +336,7 @@ static void PIDInit()
     PID_Init(&pitch_PID, 2.3, 0, 1, 0, 0.9);
 
     // roll轴角度PID
-    PID_Init(&roll_PID, 1, 0, 0, 0, 0.3);
+    PID_Init(&roll_PID, 0.1, 0, 0, 0, 0.3);
 }
 
 /**
@@ -749,7 +749,7 @@ void InitBalanceControler()
     target.speed = 0.0f;
     target.position = (left_wheel.angle + right_wheel.angle) / 2 * WHEEL_RADIUS;
     target.yaw = 0.0f;
-    target.leg_length = 0.20f;
+    target.leg_length = 0.16f;
     target.leg_angle = M_PI_2;
 
     // 设定各种限额
