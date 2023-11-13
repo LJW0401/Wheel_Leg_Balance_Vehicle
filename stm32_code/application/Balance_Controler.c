@@ -346,20 +346,18 @@ static void PIDInit()
  */
 static void MotorInitAll()
 {
-    HAL_Delay(10);
     MotorInit(&left_joint[0], &MI_Motor[1], &MI_CAN_1, 1,
-              -0.00019175051420461386f,
-              -1.9656345844268799f,
-              -1.9656345844268799f + M_PI_2,
+              -0.00019175051420461386f,    // initial angle
+              -0.446586936712265 - M_PI_2, // vertical angle
+              -0.446586936712265,          // horizontal angle
               2.184230089187622,
               -0.14477163553237915,
               7, 0.0316f, -1);
 
-    HAL_Delay(10);
     MotorInit(&left_joint[1], &MI_Motor[2], &MI_CAN_1, 2,
-              -0.00019175051420461386f,
-              1.6960333585739136f,
-              1.6960333585739136f + M_PI_2,
+              -0.00019175051420461386f,    // initial angle
+              0.4772670269012451 + M_PI_2, // vertical angle
+              0.4772670269012451 + M_PI,   // horizontal angle
               2.7893948554992676,
               0.5413116812705994,
               7, 0.0317f, 1);
@@ -372,18 +370,16 @@ static void MotorInitAll()
               0,
               4.0f, 0.0096f, 1);
 
-    HAL_Delay(10);
     MotorInit(&right_joint[0], &MI_Motor[3], &MI_CAN_1, 3,
-              -0.00019175051420461386f,
+              -0.00019175051420461386f, // initial angle
               1.8908518552780151f,
               1.8908518552780151f - M_PI_2,
               -2.181162118911743,
               -4.348710060119629,
               7, 0.0299f, -1);
 
-    HAL_Delay(10);
     MotorInit(&right_joint[1], &MI_Motor[4], &MI_CAN_1, 4,
-              -0.00019175051420461386f,
+              -0.00019175051420461386f, // initial angle
               -1.6588337421417236f,
               -1.6588337421417236f - M_PI_2,
               -0.9044871926307678,
