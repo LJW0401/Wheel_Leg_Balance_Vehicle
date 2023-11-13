@@ -158,7 +158,7 @@ void chassis_task(void const *pvParameters)
 
                     float joint_pos[2];
                     float length = (0.24+0.13)/2 + rc_ctrl->rc.ch[1]/660.0*(0.24-0.13)/2;
-                    float angle = M_PI_2 + rc_ctrl->rc.ch[0]/660.0*(M_PI/6);
+                    float angle = M_PI_2 + rc_ctrl->rc.ch[0]/660.0*(M_PI/4);
 
 
                     JointPos(length,angle,joint_pos);//计算关节摆角
