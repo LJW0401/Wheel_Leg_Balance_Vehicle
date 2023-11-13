@@ -371,17 +371,17 @@ static void MotorInitAll()
               4.0f, 0.0096f, 1);
 
     MotorInit(&right_joint[0], &MI_Motor[3], &MI_CAN_1, 3,
-              -0.00019175051420461386f, // initial angle
-              1.8908518552780151f,
-              1.8908518552780151f - M_PI_2,
+              -0.00019175051420461386f,     // initial angle
+              0.45195597410202026 + M_PI_2, // vertical angle
+              0.45195597410202026,          // horizontal angle
               -2.181162118911743,
               -4.348710060119629,
               7, 0.0299f, -1);
 
     MotorInit(&right_joint[1], &MI_Motor[4], &MI_CAN_1, 4,
-              -0.00019175051420461386f, // initial angle
-              -1.6588337421417236f,
-              -1.6588337421417236f - M_PI_2,
+              -0.00019175051420461386f,     // initial angle
+              -0.4101543426513672 - M_PI_2, // vertical angle
+              -0.4101543426513672 - M_PI,   // horizontal angle
               -0.9044871926307678,
               -3.201658248901367,
               7, 0.0321f, -1);
