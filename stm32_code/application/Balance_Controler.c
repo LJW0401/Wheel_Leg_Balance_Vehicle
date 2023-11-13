@@ -58,7 +58,7 @@ static Target_s target;
 static float kRatio[2][6] = {{1.0f, 1.0f, 0.0f, 1.0f, 1.0f, 1.0f}, // 手动为反馈矩阵和输出叠加一个系数，用于手动优化控制效果
                              {1.0f, 1.0f, 0.0f, 1.0f, 1.0f, 1.0f}};
 static float LQR_Tp_ratio = 1.0f;
-static float LQR_T_ratio = 1.0f / 10;
+static float LQR_T_ratio = 1.0f / 5;
 
 /**************************** 通用函数 ****************************/
 
