@@ -347,17 +347,17 @@ static void PIDInit()
 static void MotorInitAll()
 {
     MotorInit(&left_joint[0], &MI_Motor[1], &MI_CAN_1, 1,
-              -0.00019175051420461386f,    // initial angle
-              -0.446586936712265 - M_PI_2, // vertical angle
-              -0.446586936712265,          // horizontal angle
+              -0.00019175051420461386f,     // initial angle
+              -0.2901185154914856 - M_PI_2, // vertical angle
+              -0.2901185154914856,          // horizontal angle
               2.184230089187622,
               -0.14477163553237915,
               7, 0.0316f, -1);
 
     MotorInit(&left_joint[1], &MI_Motor[2], &MI_CAN_1, 2,
               -0.00019175051420461386f,    // initial angle
-              0.4772670269012451 + M_PI_2, // vertical angle
-              0.4772670269012451 + M_PI,   // horizontal angle
+              0.3315366506576538 + M_PI_2, // vertical angle
+              0.3315366506576538 + M_PI,   // horizontal angle
               2.7893948554992676,
               0.5413116812705994,
               7, 0.0317f, 1);
@@ -372,16 +372,16 @@ static void MotorInitAll()
 
     MotorInit(&right_joint[0], &MI_Motor[3], &MI_CAN_1, 3,
               -0.00019175051420461386f,     // initial angle
-              0.45195597410202026 + M_PI_2, // vertical angle
-              0.45195597410202026,          // horizontal angle
+              0.33613866567611694 + M_PI_2, // vertical angle
+              0.33613866567611694,          // horizontal angle
               -2.181162118911743,
               -4.348710060119629,
               7, 0.0299f, -1);
 
     MotorInit(&right_joint[1], &MI_Motor[4], &MI_CAN_1, 4,
-              -0.00019175051420461386f,     // initial angle
-              -0.4101543426513672 - M_PI_2, // vertical angle
-              -0.4101543426513672 - M_PI,   // horizontal angle
+              -0.00019175051420461386f,      // initial angle
+              -0.23911289870738983 - M_PI_2, // vertical angle
+              -0.23911289870738983 - M_PI,   // horizontal angle
               -0.9044871926307678,
               -3.201658248901367,
               7, 0.0321f, -1);

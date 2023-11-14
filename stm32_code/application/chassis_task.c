@@ -119,7 +119,7 @@ void chassis_task(void const *pvParameters)
                     for (i=1;i<5;i++)
                         if(MI_Motor[i].motor_mode_state==RESET_MODE) MI_motor_Enable(&MI_Motor[i]);
                     
-                    float torque = 0.5;
+                    float torque = 1.0;
                     (&left_joint[0])->torque = torque;
                     (&left_joint[1])->torque = -torque;
                     (&right_joint[0])->torque = -torque;
