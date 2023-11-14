@@ -61,6 +61,8 @@
 #define M_INVLN2 1.4426950408889633870E0 /* 1 / log(2) */
 
 #define REDUCTION_RATIO_2006 0.027777777777777776 // 2006减速比(1:36)
+#define K_2006 0.18518518518518517                // 2006电机转速系数
+#define START_TORQUE_2006 0.04767676784346501     // 2006电机起动力矩
 #define WHEEL_RADIUS 0.0425                       // m，车轮半径
 #define LEG_MASS 0.12368                          // kg，腿部质量
 

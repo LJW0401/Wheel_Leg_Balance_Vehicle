@@ -58,7 +58,7 @@ static Target_s target;
 static float kRatio[2][6] = {{1.0f, 1.0f, 0.0f, 1.0f, 1.0f, 1.0f}, // 手动为反馈矩阵和输出叠加一个系数，用于手动优化控制效果
                              {1.0f, 1.0f, 0.0f, 1.0f, 1.0f, 1.0f}};
 static float LQR_Tp_ratio = 1.0f;
-static float LQR_T_ratio = 1.0f / 1;
+static float LQR_T_ratio = 1.0f / 5;
 
 /**************************** 通用函数 ****************************/
 
@@ -127,12 +127,20 @@ static void MotorSetTargetAngle(Motor_s *motor, float target_angle)
 /**
  * @brief          2006电机力矩到电流值的映射
  * @note
- * @param[in]      torque 力矩大小
+ * @param[in]      torque 力矩大小(N*m)
+ * @param[in]      k 转矩常数(N*m/A)
+ * @param[in]      start_torque 启动力矩大小(N*m)
  * @return         send_velue 电流值大小
  */
-static int16_t MotorTorqueToCurrentValue_2006(float torque)
+static int16_t MotorTorqueToCurrentValue_2006(float torque, float k, float start_torque)
 {
-    float k = 0.18f; // N*m/A
+    // float k = 0.18f; // N*m/A
+    float _torque = torque;
+    if (torque > 0)
+        _torque = torque + start_torque;
+    else if (torque < 0)
+        _torque = torque - start_torque;
+
     float current;   // A
     current = torque / k;
     int16_t send_velue = (int16_t)(1000 * current);
@@ -248,7 +256,7 @@ static void CtrlTargetUpdate(float speed, float yaw_delta, float pitch, float ro
 {
     float speed_ki = 0.2;
     // 设置前进速度
-    target.speed_cmd = speed;
+    target.speed_cmd = 0.1 + speed;
     target.speed_integral = target.speed_integral + (target.speed_cmd - state_var.dx) * speed_ki;
 
     // 设置yaw方位角
@@ -758,7 +766,7 @@ void InitBalanceControler()
     limit_value.leg_length_max = 0.24f;
     limit_value.pitch_max = M_PI / 10;
     limit_value.roll_max = M_PI / 20;
-    limit_value.speed_cmd_max = 0.5f;
+    limit_value.speed_cmd_max = 0.2f;
     limit_value.rotation_torque_max = 0.5f;
     limit_value.speed_integral_max = 0.01f;
 }
@@ -805,8 +813,8 @@ void ControlBalanceChassis(CyberGear_Control_State_e CyberGear_control_state)
 
     // 发送车轮控制力矩
     CANCmdWheel(
-        MotorTorqueToCurrentValue_2006(left_wheel.torque),
-        MotorTorqueToCurrentValue_2006(right_wheel.torque));
+        MotorTorqueToCurrentValue_2006(left_wheel.torque,K_2006,START_TORQUE_2006),
+        MotorTorqueToCurrentValue_2006(right_wheel.torque,K_2006,START_TORQUE_2006));
 }
 
 /**
@@ -860,7 +868,6 @@ void BalanceControlerCalc()
     Leg_Pos_t right_leg_target;
     if (ground_detector.is_touching_ground) // 正常接地状态
     {
-        // 腿长为目标腿长和roll_PID输出叠加
         left_leg_target.length = target.left_length;
         right_leg_target.length = target.right_length;
 
