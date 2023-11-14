@@ -10,12 +10,12 @@
   @verbatim
   ==============================================================================
     如何使用：
-    1. 
+    1.
   ==============================================================================
   @endverbatim
   ****************************(C) COPYRIGHT 2023 POLARBEAR****************************
   */
- 
+
 #include "EKF.h"
 
 /**
@@ -32,26 +32,6 @@ void InitEKF(EKF_s *ekf, float Q, float R)
     ekf->Q = Q;
     ekf->R = R;
 }
-
-// /**
-//  *卡尔曼滤波器
-//  *@param ekf *ekf 卡尔曼结构体参数
-//  *   float input 需要滤波的参数的测量值（即传感器的采集值）
-//  *@return 滤波后的参数（最优值）
-//  */
-// float kalmanFilter(EKF_s *ekf, float input)
-// {
-//     // 预测协方差方程：k时刻系统估算协方差 = k-1时刻的系统协方差 + 过程噪声协方差
-//     ekf->Now_P = ekf->LastP + ekf->Q;
-//     // 卡尔曼增益方程：卡尔曼增益 = k时刻系统估算协方差 / （k时刻系统估算协方差 + 观测噪声协方差）
-//     ekf->Kg = ekf->Now_P / (ekf->Now_P + ekf->R);
-//     // 更新最优值方程：k时刻状态变量的最优值 = 状态变量的预测值 + 卡尔曼增益 * （测量值 - 状态变量的预测值）
-//     ekf->out = ekf->out + ekf->Kg * (input - ekf->out); // 因为这一次的预测值就是上一次的输出值
-//     // 更新协方差方程: 本次的系统协方差付给 ekf->LastP 威下一次运算准备。
-//     ekf->LastP = (1 - ekf->Kg) * ekf->Now_P;
-//     return ekf->out;
-// }
-
 
 /**
  * @brief      扩展卡尔曼滤波器
@@ -77,4 +57,3 @@ float ExtendedKalmanFilterCalc(EKF_s *ekf, float input1, float input2)
     ekf->LastP = (1 - k_gain[0] * jacobian[0][0]) * p_predict;
     return ekf->out;
 }
-
