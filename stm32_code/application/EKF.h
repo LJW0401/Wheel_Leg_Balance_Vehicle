@@ -19,6 +19,8 @@ typedef struct
     float R;     // 观测噪声协方差
 } KF_s;          // Kalman Filter parameter
 
+void InitKF(KF_s *kf, float Q, float R);
+
 void InitEKF(EKF_s *ekf, float Q, float R);
 
 float KalmanFilterCalc(KF_s *kfp, float input);

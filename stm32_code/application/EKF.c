@@ -19,18 +19,20 @@
 #include "EKF.h"
 
 /**
- * @brief      初始化扩展卡尔曼滤波器
- * @param[in]  ekf *ekf 卡尔曼结构体参数
+ * @brief      初始化卡尔曼滤波器
+ * @param[in]  kf 卡尔曼结构体参数
  * @param[in]  Q 噪声协方差矩阵
  * @param[in]  R 测量噪声协方差矩阵
- * @return 滤波后的参数（最优值）
+ * @return     none
  */
-void InitEKF(EKF_s *ekf, float Q, float R)
+void InitKF(KF_s *kf, float Q, float R)
 {
-    ekf->LastP = 0;
-    ekf->out = 0;
-    ekf->Q = Q;
-    ekf->R = R;
+    kf->LastP = 0;
+    kf->Now_P = 0;
+    kf->out = 0;
+    kf->Kg = 0;
+    kf->Q = Q;
+    kf->R = R;
 }
 
 /**
@@ -51,6 +53,22 @@ float KalmanFilterCalc(KF_s *kfp, float input)
     kfp->LastP = (1 - kfp->Kg) * kfp->Now_P;
     return kfp->out;
 }
+
+/**
+ * @brief      初始化扩展卡尔曼滤波器
+ * @param[in]  ekf *ekf 卡尔曼结构体参数
+ * @param[in]  Q 噪声协方差矩阵
+ * @param[in]  R 测量噪声协方差矩阵
+ * @return     none
+ */
+void InitEKF(EKF_s *ekf, float Q, float R)
+{
+    ekf->LastP = 0;
+    ekf->out = 0;
+    ekf->Q = Q;
+    ekf->R = R;
+}
+
 
 /**
  * @brief      扩展卡尔曼滤波器
