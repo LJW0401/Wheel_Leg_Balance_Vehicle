@@ -19,4 +19,9 @@ typedef struct
 //     float R;//观测噪声协方差 初始化值为0.543
 // }KFP;//Kalman Filter parameter
 
+void InitEKF(EKF_s *ekf, float Q, float R);
+
+float ExtendedKalmanFilterCalc(EKF_s *ekf, float input1, float input2);
+
+
 #endif // EKF_H

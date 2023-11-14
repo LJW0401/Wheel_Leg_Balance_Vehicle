@@ -60,7 +60,7 @@ void InitEKF(EKF_s *ekf, float Q, float R)
  * @param[in]  float input2 需要滤波的参数2的测量值（即传感器的采集值）
  * @return 滤波后的参数（最优值）
  */
-float extendedKalmanFilter(EKF_s *ekf, float input1, float input2)
+float ExtendedKalmanFilterCalc(EKF_s *ekf, float input1, float input2)
 {
     // 预测状态方程：x(k) = f(x(k-1), u(k))
     float x_predict = ekf->out + input1 * cos(ekf->out) + input2 * sin(ekf->out);
