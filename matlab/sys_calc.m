@@ -43,7 +43,7 @@ for step=1:length(L0s)
     [G,H]=c2d(eval(A),eval(B),0.005);
     
     % 定义权重矩阵Q, R
-    Q=diag([10 10 10 500 100 10]);
+    Q=diag([1 10 100 20 1000 1]);
     R=diag([1 1]);
 
     % 求解反馈矩阵K
