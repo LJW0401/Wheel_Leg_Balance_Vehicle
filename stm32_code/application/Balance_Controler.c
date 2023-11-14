@@ -58,7 +58,7 @@ static Target_s target;
 static float kRatio[2][6] = {{1.0f, 1.0f, 0.0f, 1.0f, 1.0f, 1.0f}, // 手动为反馈矩阵和输出叠加一个系数，用于手动优化控制效果
                              {1.0f, 1.0f, 0.0f, 1.0f, 1.0f, 1.0f}};
 static float LQR_Tp_ratio = 1.0f;
-static float LQR_T_ratio = 1.0f / 5;
+static float LQR_T_ratio = 1.0f / 1;
 
 /**************************** 通用函数 ****************************/
 
@@ -753,7 +753,7 @@ void InitBalanceControler()
     target.leg_angle = M_PI_2;
 
     // 设定各种限额
-    limit_value.leg_angle_max = M_PI / 4;
+    limit_value.leg_angle_max = M_PI / 5;
     limit_value.leg_length_min = 0.13f;
     limit_value.leg_length_max = 0.24f;
     limit_value.pitch_max = M_PI / 10;

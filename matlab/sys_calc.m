@@ -4,7 +4,7 @@
 
 clear;
 
-L0s=0.01:0.01:0.3; % L0变化范围
+L0s=0.11:0.01:0.27; % L0变化范围
 Ks=zeros(2,6,length(L0s)); % 存放不同L0对应的K
 
 for step=1:length(L0s)
@@ -43,7 +43,7 @@ for step=1:length(L0s)
     [G,H]=c2d(eval(A),eval(B),0.005);
     
     % 定义权重矩阵Q, R
-    Q=diag([10 10 1000 20 5000 1]);
+    Q=diag([10 10 10 500 100 10]);
     R=diag([1 1]);
 
     % 求解反馈矩阵K
