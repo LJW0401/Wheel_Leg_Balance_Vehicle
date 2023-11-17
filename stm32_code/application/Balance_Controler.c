@@ -55,10 +55,11 @@ static Limit_Value_t limit_value;
 static Target_s target;
 
 /*比例系数，用于手动优化控制效果*/
-static float kRatio[2][6] = {{1.0f, 1.0f, 0.0f, 1.0f, 1.0f, 1.0f}, // 手动为反馈矩阵和输出叠加一个系数，用于手动优化控制效果
-                             {1.0f, 1.0f, 0.0f, 1.0f, 1.0f, 1.0f}};
-static float LQR_Tp_ratio = 1.0f;
-static float LQR_T_ratio = 1.0f / 5;
+Ratio_t ratio;
+// static float kRatio[2][6] = {{1.0f, 1.0f, 0.0f, 1.0f, 1.0f, 1.0f}, // 手动为反馈矩阵和输出叠加一个系数，用于手动优化控制效果
+//                              {1.0f, 1.0f, 0.0f, 1.0f, 1.0f, 1.0f}};
+// static float LQR_Tp_ratio = 1.0f;
+// static float LQR_T_ratio = 1.0f / 5;
 
 /**************************** 通用函数 ****************************/
 
@@ -429,10 +430,10 @@ static void CANCmdWheel(int16_t left_wheel, int16_t right_wheel)
     wheel_tx_message.IDE = CAN_ID_STD;
     wheel_tx_message.RTR = CAN_RTR_DATA;
     wheel_tx_message.DLC = 0x08;
-    wheel_can_send_data[0] = (left_wheel >> 8);
-    wheel_can_send_data[1] = left_wheel;
-    wheel_can_send_data[2] = (right_wheel >> 8);
-    wheel_can_send_data[3] = right_wheel;
+    wheel_can_send_data[0] = ((int16_t)0 >> 8);
+    wheel_can_send_data[1] = (int16_t)0;
+    wheel_can_send_data[2] = ((int16_t)0 >> 8);
+    wheel_can_send_data[3] = (int16_t)0;
     wheel_can_send_data[4] = (left_wheel >> 8);
     wheel_can_send_data[5] = left_wheel;
     wheel_can_send_data[6] = (right_wheel >> 8);
@@ -605,7 +606,8 @@ static void SetLQR_K(float leg_length, float k[2][6])
         for (int i = 0; i < 6; i++)
         {
             for (int j = 0; j < 2; j++)
-                k[j][i] = kRes[i * 2 + j] * kRatio[j][i];
+                k[j][i] = kRes[i * 2 + j] * ratio.kRatio[j][i];
+                // k[j][i] = kRes[i * 2 + j] * kRatio[j][i];
         }
     }
     else // 腿部离地状态，手动修改反馈矩阵，仅保持腿部竖直
@@ -752,12 +754,24 @@ void InitBalanceControler()
     ground_detector.is_touching_ground = true;
     ground_detector.is_slipping = false;
 
+    // 设置比例系数
+    ratio.kRatio[0][0] = ratio.kRatio[1][0] = 1.0f;
+    ratio.kRatio[0][1] = ratio.kRatio[1][1] = 1.0f;
+    ratio.kRatio[0][2] = ratio.kRatio[1][2] = 0.0f;
+    ratio.kRatio[0][3] = ratio.kRatio[1][3] = 1.0f;
+    ratio.kRatio[0][4] = ratio.kRatio[1][4] = 1.0f;
+    ratio.kRatio[0][5] = ratio.kRatio[1][5] = 1.0f;
+    ratio.LQR_T_ratio = 1.0 / 3.5;
+    ratio.LQR_Tp_ratio = 1.0;
+    ratio.length_ratio = 1.2;
+
+
     // 设定初始目标值
     target.roll = 0.0f;
     target.speed = 0.0f;
     target.position = (left_wheel.angle + right_wheel.angle) / 2 * WHEEL_RADIUS;
     target.yaw = 0.0f;
-    target.leg_length = 0.16f;
+    target.leg_length = 0.185f;
     target.leg_angle = M_PI_2;
 
     // 设定各种限额
@@ -766,7 +780,7 @@ void InitBalanceControler()
     limit_value.leg_length_max = 0.24f;
     limit_value.pitch_max = M_PI / 10;
     limit_value.roll_max = M_PI / 20;
-    limit_value.speed_cmd_max = 0.2f;
+    limit_value.speed_cmd_max = 0.4f;
     limit_value.rotation_torque_max = 0.5f;
     limit_value.speed_integral_max = 0.01f;
 }
@@ -838,8 +852,8 @@ void BalanceControlerCalc()
     if (ground_detector.is_touching_ground) // 正常接地状态
     {
         // 设定车轮电机输出扭矩，为LQR和旋转力矩的叠加
-        MotorSetTorque(&left_wheel, -LQR_out_T * LQR_T_ratio + target.rotation_torque);
-        MotorSetTorque(&right_wheel, LQR_out_T * LQR_T_ratio + target.rotation_torque);
+        MotorSetTorque(&left_wheel, -LQR_out_T * ratio.LQR_T_ratio + target.rotation_torque);
+        MotorSetTorque(&right_wheel, LQR_out_T * ratio.LQR_T_ratio + target.rotation_torque);
     }
     else // 腿部离地状态，关闭车轮电机
     {
@@ -855,11 +869,13 @@ void BalanceControlerCalc()
     */
 
     PID_SingleCalc(&pitch_PID, target.pitch, chassis_imu.pitch);
-    target.leg_angle = M_PI_2 + pitch_PID.output;
+    // target.leg_angle = M_PI_2 + pitch_PID.output;
 
     PID_SingleCalc(&roll_PID, target.roll, chassis_imu.roll);
-    target.left_length = target.leg_length - roll_PID.output;
-    target.right_length = target.leg_length + roll_PID.output;
+    target.left_length = target.leg_length;
+    target.right_length = target.leg_length;
+    // target.left_length = target.leg_length - roll_PID.output;
+    // target.right_length = target.leg_length + roll_PID.output;
 
     CtrlTargetLimit();
 

@@ -949,6 +949,11 @@
               <FileType>1</FileType>
               <FilePath>..\application\leg_model\JointPos.c</FilePath>
             </File>
+            <File>
+              <FileName>EKF.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\application\EKF.c</FilePath>
+            </File>
           </Files>
         </Group>
         <Group>
