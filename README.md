@@ -30,10 +30,9 @@ doc文件夹中为说明文档，请阅读
 ## 参考
 - [RoboMaster平衡步兵机器人控制系统设计](https://zhuanlan.zhihu.com/p/563048952)
 - [无刷轮腿平衡机器人开源GitHub仓库](https://github.com/Skythinker616/foc-wheel-legged-robot/tree/master)
+- [2023 EC basic-framework](https://gitee.com/hnuyuelurm/balance_chassis)
 
 详见 [reference](./doc/reference.md)
 
 ## 开发方向
-- 加入速度控制和方向控制。
-- 实现丝滑的VMC解算效果
 - 添加离地检测和打滑检测
