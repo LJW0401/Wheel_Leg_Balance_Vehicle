@@ -94,13 +94,17 @@ void chassis_task(void const *pvParameters)
         chassis_IMU.zAccel = get_accel_data_point()[2];
         
         const RC_ctrl_t* rc_ctrl = get_remote_control_point();
+
+        float length = 0.185 + rc_ctrl->rc.ch[3]/660.0f*0.05;
+        if (rc_ctrl->rc.ch[4] < -600) length = 0.24;
+        else if(rc_ctrl->rc.ch[4] < -300) length = 0.13;//跳跃值控制
         DataUpdate(
                 &chassis_IMU,
                 rc_ctrl->rc.ch[1]/660.0f*0.4,
                 0,
                 0,
                 rc_ctrl->rc.ch[2]/660.0f*0.5,
-                0.185 + rc_ctrl->rc.ch[3]/660.0f*0.05,
+                length,
                 rc_ctrl->rc.ch[0]/660.0f*0.03
                 );//更新数据
 

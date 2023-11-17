@@ -142,7 +142,7 @@ static int16_t MotorTorqueToCurrentValue_2006(float torque, float k, float start
     else if (torque < 0)
         _torque = torque - start_torque;
 
-    float current;   // A
+    float current; // A
     current = torque / k;
     int16_t send_velue = (int16_t)(1000 * current);
     return send_velue;
@@ -161,6 +161,20 @@ static void ChassisPostureUpdate(Chassis_IMU_t *p_chassis_IMU)
     chassis_imu = *p_chassis_IMU;
 }
 
+/**
+ * @brief     计算比例系数
+ * @note      基于速度计算LQR_T的比例系数，当差值大的时候系数变大，差值小的时候系数变小
+ */
+static void RatioCalc()
+{
+    ratio.LQR_T_ratio = fabs(target.speed - state_var.dx) / (limit_value.speed_cmd_max) * 2;
+    if (ratio.LQR_T_ratio < 1.0 / 4)
+        ratio.LQR_T_ratio = 1.0 / 4;
+    if (ratio.LQR_T_ratio > 1.0)
+        ratio.LQR_T_ratio = 1.0;
+
+    ratio.LQR_T_ratio = 1.0 / 5;
+}
 /**************************** 运动控制模块 ****************************/
 
 /**
@@ -607,7 +621,7 @@ static void SetLQR_K(float leg_length, float k[2][6])
         {
             for (int j = 0; j < 2; j++)
                 k[j][i] = kRes[i * 2 + j] * ratio.kRatio[j][i];
-                // k[j][i] = kRes[i * 2 + j] * kRatio[j][i];
+            // k[j][i] = kRes[i * 2 + j] * kRatio[j][i];
         }
     }
     else // 腿部离地状态，手动修改反馈矩阵，仅保持腿部竖直
@@ -765,7 +779,6 @@ void InitBalanceControler()
     ratio.LQR_Tp_ratio = 1.0;
     ratio.length_ratio = 1.2;
 
-
     // 设定初始目标值
     target.roll = 0.0f;
     target.speed = 0.0f;
@@ -780,7 +793,7 @@ void InitBalanceControler()
     limit_value.leg_length_max = 0.24f;
     limit_value.pitch_max = M_PI / 10;
     limit_value.roll_max = M_PI / 20;
-    limit_value.speed_cmd_max = 0.4f;
+    limit_value.speed_cmd_max = 0.6f;
     limit_value.rotation_torque_max = 0.5f;
     limit_value.speed_integral_max = 0.01f;
 }
@@ -827,8 +840,8 @@ void ControlBalanceChassis(CyberGear_Control_State_e CyberGear_control_state)
 
     // 发送车轮控制力矩
     CANCmdWheel(
-        MotorTorqueToCurrentValue_2006(left_wheel.torque,K_2006,START_TORQUE_2006),
-        MotorTorqueToCurrentValue_2006(right_wheel.torque,K_2006,START_TORQUE_2006));
+        MotorTorqueToCurrentValue_2006(left_wheel.torque, K_2006, START_TORQUE_2006),
+        MotorTorqueToCurrentValue_2006(right_wheel.torque, K_2006, START_TORQUE_2006));
 }
 
 /**
@@ -848,6 +861,8 @@ void BalanceControlerCalc()
     float LQR_out_T = res[0];
     float LQR_out_Tp = res[1];
 
+    RatioCalc();
+
     // 驱动轮扭矩设置
     if (ground_detector.is_touching_ground) // 正常接地状态
     {
@@ -863,19 +878,16 @@ void BalanceControlerCalc()
 
     /*TODO:
     新增控制项：
-    2.roll角控制
     3.离地检测
     4.打滑检测
     */
 
     PID_SingleCalc(&pitch_PID, target.pitch, chassis_imu.pitch);
-    // target.leg_angle = M_PI_2 + pitch_PID.output;
+    target.leg_angle = M_PI_2 + pitch_PID.output;
 
     PID_SingleCalc(&roll_PID, target.roll, chassis_imu.roll);
-    target.left_length = target.leg_length;
-    target.right_length = target.leg_length;
-    // target.left_length = target.leg_length - roll_PID.output;
-    // target.right_length = target.leg_length + roll_PID.output;
+    target.left_length = target.leg_length - roll_PID.output;
+    target.right_length = target.leg_length + roll_PID.output;
 
     CtrlTargetLimit();
 
