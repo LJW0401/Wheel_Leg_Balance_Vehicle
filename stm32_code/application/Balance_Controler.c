@@ -56,10 +56,7 @@ static Target_s target;
 
 /*比例系数，用于手动优化控制效果*/
 Ratio_t ratio;
-// static float kRatio[2][6] = {{1.0f, 1.0f, 0.0f, 1.0f, 1.0f, 1.0f}, // 手动为反馈矩阵和输出叠加一个系数，用于手动优化控制效果
-//                              {1.0f, 1.0f, 0.0f, 1.0f, 1.0f, 1.0f}};
-// static float LQR_Tp_ratio = 1.0f;
-// static float LQR_T_ratio = 1.0f / 5;
+
 
 /**************************** 通用函数 ****************************/
 
@@ -356,7 +353,7 @@ static void PIDInit()
     PID_Init(&yaw_PID.outer, 0.1, 0, 1, 0.001, 0.5);
 
     // pitch轴角度PID
-    PID_Init(&pitch_PID, 2, 0, 1, 0, M_PI_4);
+    PID_Init(&pitch_PID, 1.4, 0, 1, 0, M_PI_4);
 
     // roll轴角度PID
     PID_Init(&roll_PID, 0.1, 0, 0, 0, 0.3);
@@ -823,7 +820,7 @@ void ControlBalanceChassis(CyberGear_Control_State_e CyberGear_control_state)
     {
     case Location_Control: // 发送关节控制位置
     {
-        CANCmdJointLocation(10, 0.5);
+        CANCmdJointLocation(7, 0.5);
         break;
     }
     case Torque_Control: // 发送关节控制力矩
