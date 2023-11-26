@@ -38,6 +38,22 @@
 - 右摇杆控制速度和旋转。
 - 左摇杆控制腿长和roll角。
 
+## 文件与代码
+- `doc`文件夹为本项目的一些文档。
+- `matlab`文件夹为本项目的核心算法部分以及仿真部分
+- `stm32_code`文件夹为本项目的嵌入式工程项目
+
+
+控制部分的主要文件在`stm32_code/application`文件夹中
+
+其中 
+- [Balance_Controler.c](stm32_code\application\Balance_Controler.c) 为平衡控制器的文件
+- [chassis_task.c](stm32_code\application\chassis_task.c) 为平衡底盘的控制任务
+- [Drives/MI_motor_drive.c](stm32_code\application\Drives\MI_motor_drive.c) 为小米电机的驱动
+- [leg_model/*](stm32_code\application\leg_model\README.md) 为五连杆的腿部相关模型
+
+
+
 ## 参考
 - [RoboMaster平衡步兵机器人控制系统设计](https://zhuanlan.zhihu.com/p/563048952)
 - [无刷轮腿平衡机器人开源GitHub仓库](https://github.com/Skythinker616/foc-wheel-legged-robot/tree/master)
