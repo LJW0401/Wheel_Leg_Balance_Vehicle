@@ -140,7 +140,7 @@ static int16_t MotorTorqueToCurrentValue_2006(float torque, float k, float start
         _torque = torque - start_torque;
 
     float current; // A
-    current = torque / k;
+    current = _torque / k;
     int16_t send_velue = (int16_t)(1000 * current);
     return send_velue;
 }
@@ -789,7 +789,7 @@ void InitBalanceControler()
     limit_value.leg_length_min = 0.13f;
     limit_value.leg_length_max = 0.24f;
     limit_value.pitch_max = M_PI / 10;
-    limit_value.roll_max = M_PI / 20;
+    limit_value.roll_max = M_PI / 10;
     limit_value.speed_cmd_max = 0.6f;
     limit_value.rotation_torque_max = 0.5f;
     limit_value.speed_integral_max = 0.01f;
