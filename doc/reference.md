@@ -14,3 +14,7 @@
 为了实现对小米电机的控制，我们参考了2个开源的驱动程序：
 - [小米微电机STM32 HAL库驱动教程](https://blog.csdn.net/m0_53802226/article/details/132941275)
 - [小米电机CyberGear STM32HAL 使用指南](https://blog.csdn.net/zdYukino/article/details/133505453)
+
+查阅西工大参考文献：
+- [Ascento: A Two-Wheeled Jumping Robot](https://ieeexplore.ieee.org/document/8793792)
+- [LQR-Assisted Whole-Body Control of a Wheeled Bipedal Robot With Kinematic Loops](https://ieeexplore.ieee.org/document/9028180)

@@ -62,7 +62,7 @@
 
 #define REDUCTION_RATIO_2006 0.027777777777777776 // 2006减速比(1:36)
 #define K_2006 0.18518518518518517                // 2006电机转速系数
-#define START_TORQUE_2006 0.025     // 2006电机起动力矩
+#define START_TORQUE_2006 0.025                   // 2006电机起动力矩
 #define WHEEL_RADIUS 0.0425                       // m，车轮半径
 #define LEG_MASS 0.12368                          // kg，腿部质量
 
@@ -180,7 +180,7 @@ typedef struct
     float LQR_Tp_ratio;
     float LQR_T_ratio;
     float length_ratio;
-}Ratio_t;
+} Ratio_t;
 
 /**
  * @brief      控制模式
@@ -192,6 +192,14 @@ typedef enum
     Location_Control,
     Torque_Control,
 } CyberGear_Control_State_e;
+
+typedef enum
+{
+    OFF,     // 关闭
+    STAND,   // 站立
+    MOVING,  // 移动
+    JUMPING, // 跳跃
+} BalanceChassis_State_e;
 
 // 外用变量
 extern MI_Motor_s MI_Motor[5];

@@ -3,7 +3,7 @@
   * @file       chassis.c/h
   * @brief      chassis control task,
   *             底盘控制任务
-  * @note       
+  * @note
   * @history
   *  Version    Date            Author          Modification
   *  V1.0.0     Dec-26-2018     RM              1. 完成
@@ -29,7 +29,7 @@
 // //任务开始空闲一段时间
 #define CHASSIS_TASK_INIT_TIME 357
 
-// //the channel num of controlling vertial speed 
+// //the channel num of controlling vertial speed
 // //前后的遥控器通道号码
 // #define CHASSIS_X_CHANNEL 1
 // //the channel num of controlling horizontal speed
@@ -43,13 +43,13 @@
 // //the channel of choosing chassis mode,
 // //选择底盘状态 开关通道号
 // #define CHASSIS_MODE_CHANNEL 0
-// //rocker value (max 660) change to vertial speed (m/s) 
+// //rocker value (max 660) change to vertial speed (m/s)
 // //遥控器前进摇杆（max 660）转化成车体前进速度（m/s）的比例
 // #define CHASSIS_VX_RC_SEN 0.006f
 // //rocker value (max 660) change to horizontal speed (m/s)
 // //遥控器左右摇杆（max 660）转化成车体左右速度（m/s）的比例
 // #define CHASSIS_VY_RC_SEN 0.005f
-// //in following yaw angle mode, rocker value add to angle 
+// //in following yaw angle mode, rocker value add to angle
 // //跟随底盘yaw模式下，遥控器的yaw遥杆（max 660）增加到车体角度的比例
 // #define CHASSIS_ANGLE_Z_RC_SEN 0.000002f
 // //in not following yaw angle mode, rocker value change to rotation speed
@@ -66,7 +66,6 @@
 // #define MOTOR_SPEED_TO_CHASSIS_SPEED_VX 0.25f
 // #define MOTOR_SPEED_TO_CHASSIS_SPEED_VY 0.25f
 // #define MOTOR_SPEED_TO_CHASSIS_SPEED_WZ 0.25f
-
 
 // #define MOTOR_DISTANCE_TO_CENTER 0.2f
 
@@ -173,7 +172,7 @@
 //   fp32 wz_set;                      //chassis set rotation speed,positive means counterclockwise,unit rad/s.底盘设定旋转角速度，逆时针为正 单位 rad/s
 //   fp32 chassis_relative_angle;      //the relative angle between chassis and gimbal.底盘与云台的相对角度，单位 rad
 //   fp32 chassis_relative_angle_set;  //the set relative angle.设置相对云台控制角度
-//   fp32 chassis_yaw_set;             
+//   fp32 chassis_yaw_set;
 
 //   fp32 vx_max_speed;  //max forward speed, unit m/s.前进方向最大速度 单位m/s
 //   fp32 vx_min_speed;  //max backward speed, unit m/s.后退方向最大速度 单位m/s
@@ -186,7 +185,7 @@
 // } chassis_move_t;
 
 // /**
-//   * @brief          chassis task, osDelay CHASSIS_CONTROL_TIME_MS (2ms) 
+//   * @brief          chassis task, osDelay CHASSIS_CONTROL_TIME_MS (2ms)
 //   * @param[in]      pvParameters: null
 //   * @retval         none
 //   */
@@ -199,7 +198,7 @@ extern void chassis_task(void const *pvParameters);
 
 // /**
 //   * @brief          accroding to the channel value of remote control, calculate chassis vertical and horizontal speed set-point
-//   *                 
+//   *
 //   * @param[out]     vx_set: vertical speed set-point
 //   * @param[out]     vy_set: horizontal speed set-point
 //   * @param[out]     chassis_move_rc_to_vector: "chassis_move" valiable point
@@ -207,7 +206,7 @@ extern void chassis_task(void const *pvParameters);
 //   */
 // /**
 //   * @brief          根据遥控器通道值，计算纵向和横移速度
-//   *                 
+//   *
 //   * @param[out]     vx_set: 纵向速度指针
 //   * @param[out]     vy_set: 横向速度指针
 //   * @param[out]     chassis_move_rc_to_vector: "chassis_move" 变量指针
@@ -215,17 +214,19 @@ extern void chassis_task(void const *pvParameters);
 //   */
 // extern void chassis_rc_to_control_vector(fp32 *vx_set, fp32 *vy_set, chassis_move_t *chassis_move_rc_to_vector);
 
-
-/** 
+/**
  * @brief      机器人状态枚举量
  * @note       无
  */
 typedef enum
 {
-    RobotState_OFF,
-    RobotState_MotorZeroing,
-    RobotState_LegExtension,
+    RobotState_OFF,          // 机器人关闭
+    RobotState_MotorZeroing, // 电机零位校准
+    RobotState_LegExtension, // 腿部伸展
     RobotState_Balance,
+    RobotState_Stand,   // 站立
+    RobotState_Moving,  // 移动
+    RobotState_Jumping, // 跳跃
 } Robot_State_e;
 
 #endif
