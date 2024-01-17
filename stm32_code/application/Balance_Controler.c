@@ -57,6 +57,8 @@ static Target_s target;
 /*比例系数，用于手动优化控制效果*/
 Ratio_t ratio;
 
+/*底盘状态*/
+static Balance_Chassis_State_e chassis_state = OFF;
 
 /**************************** 通用函数 ****************************/
 
@@ -172,6 +174,16 @@ static void RatioCalc()
 
     ratio.LQR_T_ratio = 1.0 / 5;
 }
+
+/**
+ * @brief 更新平衡底盘状态
+ * @param state 平衡底盘状态
+ */
+void BalanceChassisStateUpdate(Balance_Chassis_State_e state)
+{
+    chassis_state = state;
+}
+
 /**************************** 运动控制模块 ****************************/
 
 /**
@@ -749,6 +761,15 @@ const State_Var_s *GetStateVarPoint()
     return &state_var;
 }
 
+/**
+ * @brief 获取平衡底盘状态
+ * @return 平衡底盘状态
+ */
+Balance_Chassis_State_e GetBalanceChassisState()
+{
+    return chassis_state;
+}
+
 /**************************** 抽象与封装 ****************************/
 
 /**
@@ -772,7 +793,7 @@ void InitBalanceControler()
     ratio.kRatio[0][3] = ratio.kRatio[1][3] = 1.0f;
     ratio.kRatio[0][4] = ratio.kRatio[1][4] = 1.0f;
     ratio.kRatio[0][5] = ratio.kRatio[1][5] = 1.0f;
-    ratio.LQR_T_ratio = 1.0 / 3.5;
+    ratio.LQR_T_ratio = 1.0 / 5.0;
     ratio.LQR_Tp_ratio = 1.0;
     ratio.length_ratio = 1.2;
 
@@ -858,26 +879,9 @@ void BalanceControlerCalc()
     float LQR_out_T = res[0];
     float LQR_out_Tp = res[1];
 
-    RatioCalc();
-
-    // 驱动轮扭矩设置
-    if (ground_detector.is_touching_ground) // 正常接地状态
-    {
-        // 设定车轮电机输出扭矩，为LQR和旋转力矩的叠加
-        MotorSetTorque(&left_wheel, -LQR_out_T * ratio.LQR_T_ratio + target.rotation_torque);
-        MotorSetTorque(&right_wheel, LQR_out_T * ratio.LQR_T_ratio + target.rotation_torque);
-    }
-    else // 腿部离地状态，关闭车轮电机
-    {
-        MotorSetTorque(&left_wheel, 0);
-        MotorSetTorque(&right_wheel, 0);
-    }
-
-    /*TODO:
-    新增控制项：
-    3.离地检测
-    4.打滑检测
-    */
+    // 设定车轮电机输出扭矩，为LQR和旋转力矩的叠加
+    float left_wheel_torque = -LQR_out_T * ratio.LQR_T_ratio + target.rotation_torque;
+    float right_wheel_torque = LQR_out_T * ratio.LQR_T_ratio + target.rotation_torque;
 
     PID_SingleCalc(&pitch_PID, target.pitch, chassis_imu.pitch);
     target.leg_angle = M_PI_2 + pitch_PID.output;
@@ -888,25 +892,89 @@ void BalanceControlerCalc()
 
     CtrlTargetLimit();
 
-    // 关节位置设置
-    Leg_Pos_t left_leg_target;
-    Leg_Pos_t right_leg_target;
-    if (ground_detector.is_touching_ground) // 正常接地状态
+    // 根据底盘状态进行控制
+    switch (chassis_state)
     {
+    case OFF: // 底盘关闭状态
+        MotorSetTorque(&left_wheel, 0);
+        MotorSetTorque(&right_wheel, 0);
+        MotorSetTorque(&left_joint[0], 0);
+        MotorSetTorque(&left_joint[1], 0);
+        MotorSetTorque(&right_joint[0], 0);
+        MotorSetTorque(&right_joint[1], 0);
+        ControlBalanceChassis(Torque_Control);
+        break;
+    case STAND:  // 原地站立状态
+                 // 添加站立时的速度补偿量
+    case MOVING: // 移动状态
+        Leg_Pos_t left_leg_target;
+        Leg_Pos_t right_leg_target;
         left_leg_target.length = target.left_length;
         right_leg_target.length = target.right_length;
-
         left_leg_target.angle = target.leg_angle;
         right_leg_target.angle = target.leg_angle;
         JointPosCalc(&left_leg_target, &right_leg_target);
-    }
-    else // 设定双腿...
-    {
-        left_leg_target.length = limit_value.leg_length_max;
-        right_leg_target.length = limit_value.leg_length_max;
+
+        MotorSetTorque(&left_wheel, left_wheel_torque);
+        MotorSetTorque(&right_wheel, right_wheel_torque);
+        ControlBalanceChassis(Location_Control);
+        break;
+    case JUMPING: // 跳跃状态
+        float explosive_torque = 2.0;
+        MotorSetTorque(&left_joint[0], -explosive_torque);
+        MotorSetTorque(&left_joint[1], explosive_torque);
+        MotorSetTorque(&right_joint[0], explosive_torque);
+        MotorSetTorque(&right_joint[1], -explosive_torque);
+        MotorSetTorque(&left_wheel, left_wheel_torque);
+        MotorSetTorque(&right_wheel, right_wheel_torque);
+        ControlBalanceChassis(Torque_Control);
+        break;
+    case FLOATING: // 浮空状态
+        // 关节位置设置
+        Leg_Pos_t left_leg_target;
+        Leg_Pos_t right_leg_target;
+        left_leg_target.length = limit_value.leg_length_min;
+        right_leg_target.length = limit_value.leg_length_min;
 
         left_leg_target.angle = M_PI_2;
         right_leg_target.angle = M_PI_2;
         JointPosCalc(&left_leg_target, &right_leg_target);
+
+        MotorSetTorque(&left_wheel, 0);
+        MotorSetTorque(&right_wheel, 0);
+
+        ControlBalanceChassis(Location_Control);
+        break;
+    case LEG_ONLY: // 仅控制腿
+        Leg_Pos_t left_leg_target;
+        Leg_Pos_t right_leg_target;
+        left_leg_target.length = target.left_length;
+        right_leg_target.length = target.right_length;
+        left_leg_target.angle = target.leg_angle;
+        right_leg_target.angle = target.leg_angle;
+        JointPosCalc(&left_leg_target, &right_leg_target);
+
+        MotorSetTorque(&left_wheel, 0);
+        MotorSetTorque(&right_wheel, 0);
+
+        ControlBalanceChassis(Location_Control);
+        break;
+    default:
+        MotorSetTorque(&left_wheel, 0);
+        MotorSetTorque(&right_wheel, 0);
+        MotorSetTorque(&left_joint[0], 0);
+        MotorSetTorque(&left_joint[1], 0);
+        MotorSetTorque(&right_joint[0], 0);
+        MotorSetTorque(&right_joint[1], 0);
+        ControlBalanceChassis(Torque_Control);
+        break;
     }
+
+    // 更新底盘状态
+    if (chassis_state == JUMPING && (left_leg_pos.length > limit_value.leg_length_max ||
+                                     right_leg_pos.length > limit_value.leg_length_max))
+    {
+        chassis_state = FLOATING;
+    }
+    //TODO:更新底盘状态
 }

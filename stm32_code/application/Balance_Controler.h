@@ -195,11 +195,13 @@ typedef enum
 
 typedef enum
 {
-    OFF,     // 关闭
-    STAND,   // 站立
-    MOVING,  // 移动
-    JUMPING, // 跳跃
-} BalanceChassis_State_e;
+    OFF,      // 关闭
+    STAND,    // 站立
+    MOVING,   // 移动
+    JUMPING,  // 跳跃
+    FLOATING, // 悬空
+    LEG_ONLY, // 仅控制关节电机
+} Balance_Chassis_State_e;
 
 // 外用变量
 extern MI_Motor_s MI_Motor[5];
