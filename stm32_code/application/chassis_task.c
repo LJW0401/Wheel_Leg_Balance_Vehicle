@@ -91,26 +91,31 @@ void chassis_task(void const *pvParameters)
 
         const RC_ctrl_t *rc_ctrl = get_remote_control_point();
 
-        float length = 0.185 + rc_ctrl->rc.ch[3] / 660.0f * 0.05;
-        if (rc_ctrl->rc.ch[4] < -600)
-            length = 0.24;
-        else if (rc_ctrl->rc.ch[4] < -300)
-            length = 0.13; // 跳跃值控制
+        float speed_target = rc_ctrl->rc.ch[1] / 660.0f * 0.4;
+        float yaw_delta_target = 0;
+        float pitch_target = 0;
+        float roll_target = rc_ctrl->rc.ch[2] / 660.0f * 0.5;
+        float length_target = 0.135 + rc_ctrl->rc.ch[3] / 660.0f * 0.1;
+        float rotation_torque_target = rc_ctrl->rc.ch[0] / 660.0f * 0.03;
+
         DataUpdate(
             &chassis_IMU,
-            rc_ctrl->rc.ch[1] / 660.0f * 0.4,
-            0,
-            0,
-            rc_ctrl->rc.ch[2] / 660.0f * 0.5,
-            length,
-            rc_ctrl->rc.ch[0] / 660.0f * 0.03); // 更新数据
+            speed_target,
+            yaw_delta_target,
+            pitch_target,
+            roll_target,
+            length_target,
+            rotation_torque_target); // 更新数据
 
         if (rc_ctrl->rc.s[0] == 0x01)
         { // GPS档急停
             left_wheel.torque = 0;
             right_wheel.torque = 0;
-
-            ControlBalanceChassis(No_Control);
+            (&left_joint[0])->torque = 0;
+            (&left_joint[1])->torque = 0;
+            (&right_joint[0])->torque = 0;
+            (&right_joint[1])->torque = 0;
+            ControlBalanceChassis(Torque_Control);
         }
         else
         {
@@ -133,9 +138,9 @@ void chassis_task(void const *pvParameters)
                 left_wheel.torque = 0;
                 right_wheel.torque = 0;
 
-                if (rc_ctrl->rc.s[0] == 0x02)
-                { // 设置0位
-                    if (robot_state != RobotState_MotorZeroing)
+                if (rc_ctrl->rc.s[0] == 0x02) // ATTI 2
+                {
+                    if (robot_state != RobotState_MotorZeroing) // 设置0位
                         buzzer_on(50, 3000);
                     else
                         buzzer_on(1000, 3000);
@@ -192,86 +197,22 @@ void chassis_task(void const *pvParameters)
                     break;
                 robot_state = RobotState_Balance;
 
+                if (rc_ctrl->rc.ch[4] < -500)
+                {
+                    BalanceChassisStateUpdate(JUMPING);
+                }
+                else if (abs(speed_target) < 0.001)
+                {
+                    BalanceChassisStateUpdate(STAND);
+                }
+                else
+                {
+                    BalanceChassisStateUpdate(MOVING);
+                }
+
                 BalanceControlerCalc();
 
-                ControlBalanceChassis(Location_Control);
-
                 buzzer_on(300, 3000);
-
-                break;
-
-                // float res[2];
-                // LQRFeedbackCalc(k,x,res);//矩阵相乘，计算LQR输出
-                // float lqr_out_T = res[0];
-                // float lqr_out_Tp = res[1];
-
-                // //计算yaw轴PID输出
-                // PID_CascadeCalc(&yaw_PID, target.yaw_angle, chassis_imu.yaw, chassis_imu.yawSpd);
-
-                // if(ground_detector.is_touching_ground) //正常接地状态
-                // {
-                //     //设定车轮电机输出扭矩，为LQR和yaw轴PID输出的叠加
-                //     MotorSetTorque(&left_wheel ,  lqr_out_T * lqr_T_ratio - yaw_PID.output);
-                //     MotorSetTorque(&right_wheel, -lqr_out_T * lqr_T_ratio - yaw_PID.output);
-                // }
-                // else //腿部离地状态，关闭车轮电机
-                // {
-                //     MotorSetTorque(&left_wheel, 0);
-                //     MotorSetTorque(&right_wheel, 0);
-                // }
-
-                // //根据离地状态修改目标腿长，并计算腿长PID输出
-                // PID_CascadeCalc(&leg_length_PID,
-                //         (ground_detector.is_touching_ground && !ground_detector.is_cuchioning) ? target.leg_length : MAX_LEG_LENGTH,
-                //         leg_length, dLegLength
-                //     );
-                // //计算roll轴PID输出
-                // PID_CascadeCalc(&roll_PID, target.roll_angle, chassis_imu.roll, chassis_imu.rollSpd);
-                // //根据离地状态计算左右腿推力，若离地则不考虑roll轴PID输出和前馈量
-                // float leftForce = leg_length_PID.output  + ((ground_detector.is_touching_ground && !ground_detector.is_cuchioning) ? +roll_PID.output : 0);
-                // float rightForce = leg_length_PID.output + ((ground_detector.is_touching_ground && !ground_detector.is_cuchioning) ? -roll_PID.output : 0);
-
-                // if(left_leg_pos.length > MAX_LEG_LENGTH) //保护腿部不能伸太长
-                //     leftForce -= (left_leg_pos.length - MAX_LEG_LENGTH) * 100;
-                // if(right_leg_pos.length > MAX_LEG_LENGTH)
-                //     rightForce -= (right_leg_pos.length - MAX_LEG_LENGTH) * 100;
-
-                // //计算左右腿的地面支持力
-                // ground_detector.left_support_force = leftForce + legMass * 9.8f - legMass * (left_leg_pos.ddLength - chassis_imu.zAccel);
-                // ground_detector.right_support_force = rightForce + legMass * 9.8f - legMass * (right_leg_pos.ddLength - chassis_imu.zAccel);
-                // //更新离地检测器数据
-                // static uint32_t lastTouchTime = 0;
-                // boolean is_touching_ground = ground_detector.left_support_force > 3 && ground_detector.right_support_force > 3; //判断当前瞬间是否接地
-                // if(!is_touching_ground && GetMillis() - lastTouchTime < 1000) //若上次触地时间距离现在不超过1s，则认为当前瞬间接地，避免弹跳导致误判
-                //     is_touching_ground = true;
-                // if(!ground_detector.is_touching_ground && is_touching_ground) //判断转为接地状态，标记进入缓冲状态
-                // {
-                //     target.position = state_var.x;
-                //     ground_detector.is_cuchioning = true;
-                //     lastTouchTime = GetMillis();
-                // }
-                // if(ground_detector.is_cuchioning && leg_length < target.leg_length) //缓冲状态直到腿长压缩到目标腿长结束
-                //     ground_detector.is_cuchioning = false;
-                // ground_detector.is_touching_ground = is_touching_ground;
-
-                // //计算左右腿角度差PID输出
-                // PID_CascadeCalc(&leg_delta_angle_PID, 0, left_leg_pos.angle - right_leg_pos.angle, left_leg_pos.dAngle - right_leg_pos.dAngle);
-
-                // //计算髋关节扭矩输出，为LQR输出和左右腿角度差PID输出的叠加
-                // float delta_angle_ratio = 1.0f;
-                // float leftTp = lqr_out_Tp * lqr_Tp_ratio  + leg_delta_angle_PID.output * delta_angle_ratio;
-                // float rightTp = lqr_out_Tp * lqr_Tp_ratio - leg_delta_angle_PID.output * delta_angle_ratio;
-
-                // //使用VMC计算各关节电机输出扭矩
-                // float leftJointTorque[2]={0};
-                // LegConv(leftForce, leftTp, left_joint[1].angle, left_joint[0].angle, leftJointTorque);
-                // float rightJointTorque[2]={0};
-                // LegConv(rightForce, rightTp, right_joint[1].angle, right_joint[0].angle, rightJointTorque);
-
-                // buzzer_on(333, 3000);
-
-                // //设定关节电机输出扭矩
-                // Motorque(&right_joint[1], -rightJointTorque[1]);
 
                 break;
             }

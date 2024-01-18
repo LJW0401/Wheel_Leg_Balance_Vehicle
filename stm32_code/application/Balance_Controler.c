@@ -945,20 +945,20 @@ void BalanceControlerCalc()
 
         ControlBalanceChassis(Location_Control);
         break;
-    case LEG_ONLY: // 仅控制腿
-        Leg_Pos_t left_leg_target;
-        Leg_Pos_t right_leg_target;
-        left_leg_target.length = target.left_length;
-        right_leg_target.length = target.right_length;
-        left_leg_target.angle = target.leg_angle;
-        right_leg_target.angle = target.leg_angle;
-        JointPosCalc(&left_leg_target, &right_leg_target);
+    // case LEG_ONLY: // 仅控制腿
+    //     Leg_Pos_t left_leg_target;
+    //     Leg_Pos_t right_leg_target;
+    //     left_leg_target.length = target.left_length;
+    //     right_leg_target.length = target.right_length;
+    //     left_leg_target.angle = target.leg_angle;
+    //     right_leg_target.angle = target.leg_angle;
+    //     JointPosCalc(&left_leg_target, &right_leg_target);
 
-        MotorSetTorque(&left_wheel, 0);
-        MotorSetTorque(&right_wheel, 0);
+    //     MotorSetTorque(&left_wheel, 0);
+    //     MotorSetTorque(&right_wheel, 0);
 
-        ControlBalanceChassis(Location_Control);
-        break;
+    //     ControlBalanceChassis(Location_Control);
+    //     break;
     default:
         MotorSetTorque(&left_wheel, 0);
         MotorSetTorque(&right_wheel, 0);
