@@ -893,6 +893,8 @@ void BalanceControlerCalc()
     CtrlTargetLimit();
 
     // 根据底盘状态进行控制
+    Leg_Pos_t left_leg_target;
+    Leg_Pos_t right_leg_target;
     switch (chassis_state)
     {
     case OFF: // 底盘关闭状态
@@ -905,10 +907,8 @@ void BalanceControlerCalc()
         ControlBalanceChassis(Torque_Control);
         break;
     case STAND:  // 原地站立状态
-                 // 添加站立时的速度补偿量
+        ;        // 添加站立时的速度补偿量
     case MOVING: // 移动状态
-        Leg_Pos_t left_leg_target;
-        Leg_Pos_t right_leg_target;
         left_leg_target.length = target.left_length;
         right_leg_target.length = target.right_length;
         left_leg_target.angle = target.leg_angle;
@@ -931,8 +931,7 @@ void BalanceControlerCalc()
         break;
     case FLOATING: // 浮空状态
         // 关节位置设置
-        Leg_Pos_t left_leg_target;
-        Leg_Pos_t right_leg_target;
+
         left_leg_target.length = limit_value.leg_length_min;
         right_leg_target.length = limit_value.leg_length_min;
 
@@ -971,8 +970,8 @@ void BalanceControlerCalc()
     }
 
     // 更新底盘状态
-    if (chassis_state == JUMPING && (left_leg_pos.length > limit_value.leg_length_max ||
-                                     right_leg_pos.length > limit_value.leg_length_max))
+    if (chassis_state == JUMPING && (left_leg_pos.length > limit_value.leg_length_max - 0.01 ||
+                                     right_leg_pos.length > limit_value.leg_length_max - 0.01))
     {
         chassis_state = FLOATING;
     }
