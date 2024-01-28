@@ -204,10 +204,12 @@ typedef enum
 } Balance_Chassis_State_e;
 
 // 外用变量
+
 extern MI_Motor_s MI_Motor[5];
 extern Motor_s left_joint[2], right_joint[2], left_wheel, right_wheel; // 六个电机对象
 
 // 外用函数
+
 void SetCyberGearMechPositionToZero();
 
 const Chassis_IMU_t *GetChassisIMUPoint();

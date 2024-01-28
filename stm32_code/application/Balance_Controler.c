@@ -793,7 +793,7 @@ void InitBalanceControler()
     ratio.kRatio[0][3] = ratio.kRatio[1][3] = 1.0f;
     ratio.kRatio[0][4] = ratio.kRatio[1][4] = 1.0f;
     ratio.kRatio[0][5] = ratio.kRatio[1][5] = 1.0f;
-    ratio.LQR_T_ratio = 1.0 / 5.0;
+    ratio.LQR_T_ratio = 1.0;
     ratio.LQR_Tp_ratio = 1.0;
     ratio.length_ratio = 1.2;
 
@@ -883,12 +883,12 @@ void BalanceControlerCalc()
     float left_wheel_torque = -LQR_out_T * ratio.LQR_T_ratio + target.rotation_torque;
     float right_wheel_torque = LQR_out_T * ratio.LQR_T_ratio + target.rotation_torque;
 
-    PID_SingleCalc(&pitch_PID, target.pitch, chassis_imu.pitch);
-    target.leg_angle = M_PI_2 + pitch_PID.output;
+    // PID_SingleCalc(&pitch_PID, target.pitch, chassis_imu.pitch);
+    // target.leg_angle = M_PI_2 + pitch_PID.output;
 
-    PID_SingleCalc(&roll_PID, target.roll, chassis_imu.roll);
-    target.left_length = target.leg_length - roll_PID.output;
-    target.right_length = target.leg_length + roll_PID.output;
+    // PID_SingleCalc(&roll_PID, target.roll, chassis_imu.roll);
+    // target.left_length = target.leg_length - roll_PID.output;
+    // target.right_length = target.leg_length + roll_PID.output;
 
     CtrlTargetLimit();
 

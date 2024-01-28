@@ -89,6 +89,8 @@ void chassis_task(void const *pvParameters)
         chassis_IMU.yAccel = get_accel_data_point()[1];
         chassis_IMU.zAccel = get_accel_data_point()[2];
 
+        ChassisPostureUpdate(&chassis_IMU); // 更新底盘姿态
+
         const RC_ctrl_t *rc_ctrl = get_remote_control_point();
 
         float speed_target = rc_ctrl->rc.ch[1] / 660.0f * 0.4;

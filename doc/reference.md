@@ -2,6 +2,8 @@
 ## 控制系统
 控制系统设计参考了[RoboMaster平衡步兵机器人控制系统设计](https://zhuanlan.zhihu.com/p/563048952)
 
+五连杆运动学解算与VMC参考了[五连杆运动学解算与VMC](https://zhuanlan.zhihu.com/p/613007726)
+
 ## 工程代码
 工程代码则参考了[无刷轮腿平衡机器人开源GitHub仓库](https://github.com/Skythinker616/foc-wheel-legged-robot/tree/master)，并借鉴其中的仿真功能在上车之前先测试效果。
 
