@@ -4,7 +4,7 @@
 
 clear;
 
-L0s=0.11:0.01:0.27; % L0变化范围
+L0s=0.13:0.01:0.24; % L0变化范围
 Ks=zeros(2,6,length(L0s)); % 存放不同L0对应的K
 
 for step=1:length(L0s)
@@ -40,7 +40,7 @@ for step=1:length(L0s)
     B=vpa(subs(Jb,[theta theta1 x x1  phi phi1],[0 0 0 0 0 0]));
     
     % 离散化
-    [G,H]=c2d(eval(A),eval(B),0.005);
+    [G,H]=c2d(eval(A),eval(B),0.002);%最后一个参数是离散化的步长(s)
     
     % 定义权重矩阵Q, R
     Q=diag([1 10 100 20 1000 1]);
