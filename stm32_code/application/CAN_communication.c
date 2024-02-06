@@ -130,9 +130,9 @@ static void CANRxDecode(CAN_RxHeaderTypeDef rx_header,uint8_t rx_data[8])
 
                 //这里还要改改，将2006电机数据获取后改为驱动轮电机的数据
                 left_wheel.angle = motor_chassis[6].ecd/8191.0f*M_PI*2;
-                left_wheel.speed = -motor_chassis[6].speed_rpm*M_PI/30*REDUCTION_RATIO_2006;//反馈的是转子速度，乘减速比得到轮子转速
+                left_wheel.speed = motor_chassis[6].speed_rpm*M_PI/30*REDUCTION_RATIO_2006;//反馈的是转子速度，乘减速比得到轮子转速
                 right_wheel.angle = motor_chassis[7].ecd/8191.0f*M_PI*2;
-                right_wheel.speed = motor_chassis[7].speed_rpm*M_PI/30*REDUCTION_RATIO_2006;
+                right_wheel.speed = -motor_chassis[7].speed_rpm*M_PI/30*REDUCTION_RATIO_2006;
                 break;
             }
 
@@ -151,7 +151,7 @@ static void CANRxDecode(CAN_RxHeaderTypeDef rx_header,uint8_t rx_data[8])
             RxCAN_info_type_0_s RxCAN_info_type_0;
             memcpy(&RxCAN_info_type_0,&rx_header.ExtId,4);//将扩展标识符的内容解码成通信类型0的对应内容
             memcpy(&RxCAN_info_type_0.MCU_id,rx_data,8);//获取MCU标识符
-            OutputData.data_3 = RxCAN_info_type_0.motor_id;
+            // OutputData.data_3 = RxCAN_info_type_0.motor_id;
         }else if(RxCAN_info.communication_type == 2){//通信类型2的反馈帧解码
             RxCAN_info_type_2_s RxCAN_info_type_2;
             memcpy(&RxCAN_info_type_2,&rx_header.ExtId,4);//将扩展标识符的内容解码成通信类型2的对应内容

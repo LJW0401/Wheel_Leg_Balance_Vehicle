@@ -151,29 +151,29 @@ void usb_task(void const *argument)
                 // OutputData.type_2 = 1;
                 // OutputData.data_2 = left_joint[1].angle;
 
-                // char_to_uint(OutputData.name_3,"m3-angle");
+                // char_to_uint(OutputData.name_3,"L_F_T");
                 // OutputData.type_3 = 1;
-                // OutputData.data_3 = right_joint[0].angle;
 
-                // char_to_uint(OutputData.name_4,"m4-angle");
+                // char_to_uint(OutputData.name_4,"L_B_T");
                 // OutputData.type_4 = 1;
-                // OutputData.data_4 = right_joint[1].angle;
 
-                // char_to_uint(OutputData.name_5,"m1-RxAng");
+                // char_to_uint(OutputData.name_5,"R_F_T");
                 // OutputData.type_5 = 1;
-                // OutputData.data_5 = left_joint[0].MI_Motor->RxCAN_info.angle;
 
-                // char_to_uint(OutputData.name_6,"m2-RxAng");
+                // char_to_uint(OutputData.name_6,"R_B_T");
                 // OutputData.type_6 = 1;
-                // OutputData.data_6 = left_joint[1].MI_Motor->RxCAN_info.angle;
 
-                // char_to_uint(OutputData.name_7,"m3-RxAng");
-                // OutputData.type_7 = 1;
-                // OutputData.data_7 = right_joint[0].MI_Motor->RxCAN_info.angle;
+                char_to_uint(OutputData.name_7,"yaw_spd");
+                OutputData.type_7 = 1;
 
-                // char_to_uint(OutputData.name_8,"m4-RxAng");
-                // OutputData.type_8 = 1;
-                // OutputData.data_8 = right_joint[1].MI_Motor->RxCAN_info.angle;
+                char_to_uint(OutputData.name_8,"yaw");
+                OutputData.type_8 = 1;
+
+                char_to_uint(OutputData.name_9,"tar_yaw");
+                OutputData.type_9 = 1;
+
+                // char_to_uint(OutputData.name_10,"R_B_A");
+                // OutputData.type_10 = 1;
 
                 usb_send_outputPC();
             }
