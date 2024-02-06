@@ -22,6 +22,7 @@
 #include "remote_control.h"
 #include "usb_task.h"
 #include "INS_task.h"
+#include "detect_task.h"
 #include "bsp_buzzer.h"
 
 // #include "chassis_behaviour.h"
@@ -75,6 +76,8 @@ void chassis_task(void const *pvParameters)
     Chassis_IMU_t chassis_IMU; // 底盘IMU数据
     static Robot_State_e robot_state = RobotState_OFF;
 
+    const RC_ctrl_t *rc_ctrl = get_remote_control_point();
+
     while (1)
     {
         chassis_IMU.yaw = get_INS_angle_point()[0];
@@ -89,15 +92,21 @@ void chassis_task(void const *pvParameters)
         chassis_IMU.yAccel = get_accel_data_point()[1];
         chassis_IMU.zAccel = get_accel_data_point()[2];
 
-        ChassisPostureUpdate(&chassis_IMU); // 更新底盘姿态
-
-        const RC_ctrl_t *rc_ctrl = get_remote_control_point();
+        OutputData.data_3 = left_joint[0].MI_Motor->RxCAN_info.torque;
+        OutputData.data_4 = left_joint[1].MI_Motor->RxCAN_info.torque;
+        OutputData.data_5 = right_joint[0].MI_Motor->RxCAN_info.torque;
+        OutputData.data_6 = right_joint[1].MI_Motor->RxCAN_info.torque;
+        
+        OutputData.data_7 = left_joint[0].MI_Motor->RxCAN_info.angle;
+        OutputData.data_8 = left_joint[1].MI_Motor->RxCAN_info.angle;
+        OutputData.data_9 = right_joint[0].MI_Motor->RxCAN_info.angle;
+        OutputData.data_10 = right_joint[1].MI_Motor->RxCAN_info.angle;
 
         float speed_target = rc_ctrl->rc.ch[1] / 660.0f * 0.4;
         float yaw_delta_target = 0;
         float pitch_target = 0;
         float roll_target = rc_ctrl->rc.ch[2] / 660.0f * 0.5;
-        float length_target = 0.135 + rc_ctrl->rc.ch[3] / 660.0f * 0.1;
+        float length_target = 0.12 + rc_ctrl->rc.ch[3] / 660.0f * 0.12;
         float rotation_torque_target = rc_ctrl->rc.ch[0] / 660.0f * 0.03;
 
         DataUpdate(
@@ -109,8 +118,8 @@ void chassis_task(void const *pvParameters)
             length_target,
             rotation_torque_target); // 更新数据
 
-        if (rc_ctrl->rc.s[0] == 0x01)
-        { // GPS档急停
+        if (toe_is_error(DBUS_TOE) || (rc_ctrl->rc.s[0] == 0x01))
+        { // 遥控器信号丢失 或 GPS裆 急停
             left_wheel.torque = 0;
             right_wheel.torque = 0;
             (&left_joint[0])->torque = 0;

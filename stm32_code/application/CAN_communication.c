@@ -151,7 +151,7 @@ static void CANRxDecode(CAN_RxHeaderTypeDef rx_header,uint8_t rx_data[8])
             RxCAN_info_type_0_s RxCAN_info_type_0;
             memcpy(&RxCAN_info_type_0,&rx_header.ExtId,4);//将扩展标识符的内容解码成通信类型0的对应内容
             memcpy(&RxCAN_info_type_0.MCU_id,rx_data,8);//获取MCU标识符
-            OutputData.data_3 = RxCAN_info_type_0.motor_id;
+            // OutputData.data_3 = RxCAN_info_type_0.motor_id;
         }else if(RxCAN_info.communication_type == 2){//通信类型2的反馈帧解码
             RxCAN_info_type_2_s RxCAN_info_type_2;
             memcpy(&RxCAN_info_type_2,&rx_header.ExtId,4);//将扩展标识符的内容解码成通信类型2的对应内容

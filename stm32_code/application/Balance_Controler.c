@@ -299,7 +299,7 @@ static void CtrlTargetUpdate(float speed, float yaw_delta, float pitch, float ro
     target.rotation_torque = rotation_torque;
 
     CtrlTargetLimit();
-    target.speed = target.speed_cmd + target.speed_integral;
+    target.speed = target.speed_cmd;
 }
 
 /**
@@ -640,8 +640,8 @@ static void SetLQR_K(float leg_length, float k[2][6])
         k[1][1] = kRes[3] * -10;
     }
 
-    k[0][2] = 0.0; // 因为用不到距离反馈，所以置零
-    k[1][2] = 0.0; // 因为用不到距离反馈，所以置零
+    // k[0][2] = 0.0; // 因为用不到距离反馈，所以置零
+    // k[1][2] = 0.0; // 因为用不到距离反馈，所以置零
 }
 
 /**
@@ -793,7 +793,7 @@ void InitBalanceControler()
     ratio.kRatio[0][3] = ratio.kRatio[1][3] = 1.0f;
     ratio.kRatio[0][4] = ratio.kRatio[1][4] = 1.0f;
     ratio.kRatio[0][5] = ratio.kRatio[1][5] = 1.0f;
-    ratio.LQR_T_ratio = 1.0;
+    ratio.LQR_T_ratio = 0.2;
     ratio.LQR_Tp_ratio = 1.0;
     ratio.length_ratio = 1.2;
 
@@ -807,13 +807,13 @@ void InitBalanceControler()
 
     // 设定各种限额
     limit_value.leg_angle_max = M_PI / 5;
-    limit_value.leg_length_min = 0.13f;
+    limit_value.leg_length_min = 0.115f;
     limit_value.leg_length_max = 0.24f;
     limit_value.pitch_max = M_PI / 10;
     limit_value.roll_max = M_PI / 10;
     limit_value.speed_cmd_max = 0.6f;
     limit_value.rotation_torque_max = 0.5f;
-    limit_value.speed_integral_max = 0.01f;
+    limit_value.speed_integral_max = 0.2f;
 }
 
 /**
@@ -869,19 +869,6 @@ void ControlBalanceChassis(CyberGear_Control_State_e CyberGear_control_state)
  */
 void BalanceControlerCalc()
 {
-    float x[6]; // 状态变量
-    StateVarCalc(x);
-    float k[2][6]; // LQR反馈矩阵
-    SetLQR_K(state_var.leg_length, k);
-    float res[2];
-    LQRFeedbackCalc(k, x, res);
-
-    float LQR_out_T = res[0];
-    float LQR_out_Tp = res[1];
-
-    // 设定车轮电机输出扭矩，为LQR和旋转力矩的叠加
-    float left_wheel_torque = -LQR_out_T * ratio.LQR_T_ratio + target.rotation_torque;
-    float right_wheel_torque = LQR_out_T * ratio.LQR_T_ratio + target.rotation_torque;
 
     // PID_SingleCalc(&pitch_PID, target.pitch, chassis_imu.pitch);
     // target.leg_angle = M_PI_2 + pitch_PID.output;
@@ -890,7 +877,13 @@ void BalanceControlerCalc()
     // target.left_length = target.leg_length - roll_PID.output;
     // target.right_length = target.leg_length + roll_PID.output;
 
-    CtrlTargetLimit();
+    // 设置目标值为直立状态
+    target.leg_angle = M_PI_2;
+    target.left_length = target.leg_length;
+    target.right_length = target.leg_length;
+
+    // GroundTouchingDetect();//离地检测
+
 
     // 根据底盘状态进行控制
     Leg_Pos_t left_leg_target;
@@ -906,9 +899,28 @@ void BalanceControlerCalc()
         MotorSetTorque(&right_joint[1], 0);
         ControlBalanceChassis(Torque_Control);
         break;
-    case STAND:  // 原地站立状态
-        ;        // 添加站立时的速度补偿量
+    case STAND: // 原地站立状态
+        ratio.LQR_T_ratio = 0.2;
+        
+        target.speed = target.speed_cmd + target.speed_integral;
     case MOVING: // 移动状态
+        ratio.LQR_T_ratio = 0.5;
+
+        // LQR计算部分
+        float x[6]; // 状态变量
+        StateVarCalc(x);
+        float k[2][6]; // LQR反馈矩阵
+        SetLQR_K(state_var.leg_length, k);
+        float res[2];
+        LQRFeedbackCalc(k, x, res);
+        float LQR_out_T = res[0];  // 沿摆杆径向的力
+        float LQR_out_Tp = res[1]; // 沿摆杆法向的力
+        // 设定车轮电机输出扭矩，为LQR和旋转力矩的叠加
+        float left_wheel_torque = -LQR_out_T * ratio.LQR_T_ratio + target.rotation_torque;
+        float right_wheel_torque = LQR_out_T * ratio.LQR_T_ratio + target.rotation_torque;
+        CtrlTargetLimit();
+
+        // 设定关节输出
         left_leg_target.length = target.left_length;
         right_leg_target.length = target.right_length;
         left_leg_target.angle = target.leg_angle;
@@ -944,20 +956,6 @@ void BalanceControlerCalc()
 
         ControlBalanceChassis(Location_Control);
         break;
-    // case LEG_ONLY: // 仅控制腿
-    //     Leg_Pos_t left_leg_target;
-    //     Leg_Pos_t right_leg_target;
-    //     left_leg_target.length = target.left_length;
-    //     right_leg_target.length = target.right_length;
-    //     left_leg_target.angle = target.leg_angle;
-    //     right_leg_target.angle = target.leg_angle;
-    //     JointPosCalc(&left_leg_target, &right_leg_target);
-
-    //     MotorSetTorque(&left_wheel, 0);
-    //     MotorSetTorque(&right_wheel, 0);
-
-    //     ControlBalanceChassis(Location_Control);
-    //     break;
     default:
         MotorSetTorque(&left_wheel, 0);
         MotorSetTorque(&right_wheel, 0);
@@ -970,8 +968,8 @@ void BalanceControlerCalc()
     }
 
     // 更新底盘状态
-    if (chassis_state == JUMPING && (left_leg_pos.length > limit_value.leg_length_max - 0.01 ||
-                                     right_leg_pos.length > limit_value.leg_length_max - 0.01))
+    if (chassis_state == JUMPING && (left_leg_pos.length > limit_value.leg_length_max - 0.02 ||
+                                     right_leg_pos.length > limit_value.leg_length_max - 0.02))
     {
         chassis_state = FLOATING;
     }
