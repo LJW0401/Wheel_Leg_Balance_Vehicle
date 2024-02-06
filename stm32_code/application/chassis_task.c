@@ -96,18 +96,18 @@ void chassis_task(void const *pvParameters)
         OutputData.data_4 = left_joint[1].MI_Motor->RxCAN_info.torque;
         OutputData.data_5 = right_joint[0].MI_Motor->RxCAN_info.torque;
         OutputData.data_6 = right_joint[1].MI_Motor->RxCAN_info.torque;
-        
-        OutputData.data_7 = left_joint[0].MI_Motor->RxCAN_info.angle;
-        OutputData.data_8 = left_joint[1].MI_Motor->RxCAN_info.angle;
-        OutputData.data_9 = right_joint[0].MI_Motor->RxCAN_info.angle;
-        OutputData.data_10 = right_joint[1].MI_Motor->RxCAN_info.angle;
+
+        OutputData.data_7 = left_wheel.speed;
+        OutputData.data_8 = right_wheel.speed;
+        // OutputData.data_9 = right_joint[0].MI_Motor->RxCAN_info.angle;
+        // OutputData.data_10 = right_joint[1].MI_Motor->RxCAN_info.angle;
 
         float speed_target = rc_ctrl->rc.ch[1] / 660.0f * 0.4;
         float yaw_delta_target = 0;
         float pitch_target = 0;
         float roll_target = rc_ctrl->rc.ch[2] / 660.0f * 0.5;
         float length_target = 0.12 + rc_ctrl->rc.ch[3] / 660.0f * 0.12;
-        float rotation_torque_target = rc_ctrl->rc.ch[0] / 660.0f * 0.03;
+        float rotation_torque_target = rc_ctrl->rc.ch[0] / 660.0f * 0.2;
 
         DataUpdate(
             &chassis_IMU,

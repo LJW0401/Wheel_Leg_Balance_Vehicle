@@ -163,17 +163,17 @@ void usb_task(void const *argument)
                 char_to_uint(OutputData.name_6,"R_B_T");
                 OutputData.type_6 = 1;
 
-                char_to_uint(OutputData.name_7,"L_F_A");
+                char_to_uint(OutputData.name_7,"l_wheel_s");
                 OutputData.type_7 = 1;
 
-                char_to_uint(OutputData.name_8,"L_B_A");
+                char_to_uint(OutputData.name_8,"r_wheel_s");
                 OutputData.type_8 = 1;
 
-                char_to_uint(OutputData.name_9,"R_F_A");
-                OutputData.type_9 = 1;
+                // char_to_uint(OutputData.name_9,"R_F_A");
+                // OutputData.type_9 = 1;
 
-                char_to_uint(OutputData.name_10,"R_B_A");
-                OutputData.type_10 = 1;
+                // char_to_uint(OutputData.name_10,"R_B_A");
+                // OutputData.type_10 = 1;
 
                 usb_send_outputPC();
             }

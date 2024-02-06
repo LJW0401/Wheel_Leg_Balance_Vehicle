@@ -793,7 +793,7 @@ void InitBalanceControler()
     ratio.kRatio[0][3] = ratio.kRatio[1][3] = 1.0f;
     ratio.kRatio[0][4] = ratio.kRatio[1][4] = 1.0f;
     ratio.kRatio[0][5] = ratio.kRatio[1][5] = 1.0f;
-    ratio.LQR_T_ratio = 0.2;
+    ratio.LQR_T_ratio = 1.0;
     ratio.LQR_Tp_ratio = 1.0;
     ratio.length_ratio = 1.2;
 
@@ -811,9 +811,9 @@ void InitBalanceControler()
     limit_value.leg_length_max = 0.24f;
     limit_value.pitch_max = M_PI / 10;
     limit_value.roll_max = M_PI / 10;
-    limit_value.speed_cmd_max = 0.6f;
-    limit_value.rotation_torque_max = 0.5f;
-    limit_value.speed_integral_max = 0.2f;
+    limit_value.speed_cmd_max = 2.0f;
+    limit_value.rotation_torque_max = 1.0f;
+    limit_value.speed_integral_max = 0.00000f;
 }
 
 /**
@@ -841,7 +841,7 @@ void ControlBalanceChassis(CyberGear_Control_State_e CyberGear_control_state)
     {
     case Location_Control: // 发送关节控制位置
     {
-        CANCmdJointLocation(7, 0.5);
+        CANCmdJointLocation(8, 0.5);
         break;
     }
     case Torque_Control: // 发送关节控制力矩
@@ -902,9 +902,9 @@ void BalanceControlerCalc()
     case STAND: // 原地站立状态
         ratio.LQR_T_ratio = 0.2;
         
-        target.speed = target.speed_cmd + target.speed_integral;
+        // target.speed = target.speed_cmd + target.speed_integral;
     case MOVING: // 移动状态
-        ratio.LQR_T_ratio = 0.5;
+        // ratio.LQR_T_ratio = 0.5;
 
         // LQR计算部分
         float x[6]; // 状态变量
