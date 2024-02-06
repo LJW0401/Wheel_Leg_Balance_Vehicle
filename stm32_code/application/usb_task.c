@@ -151,26 +151,26 @@ void usb_task(void const *argument)
                 // OutputData.type_2 = 1;
                 // OutputData.data_2 = left_joint[1].angle;
 
-                char_to_uint(OutputData.name_3,"L_F_T");
-                OutputData.type_3 = 1;
+                // char_to_uint(OutputData.name_3,"L_F_T");
+                // OutputData.type_3 = 1;
 
-                char_to_uint(OutputData.name_4,"L_B_T");
-                OutputData.type_4 = 1;
+                // char_to_uint(OutputData.name_4,"L_B_T");
+                // OutputData.type_4 = 1;
 
-                char_to_uint(OutputData.name_5,"R_F_T");
-                OutputData.type_5 = 1;
+                // char_to_uint(OutputData.name_5,"R_F_T");
+                // OutputData.type_5 = 1;
 
-                char_to_uint(OutputData.name_6,"R_B_T");
-                OutputData.type_6 = 1;
+                // char_to_uint(OutputData.name_6,"R_B_T");
+                // OutputData.type_6 = 1;
 
-                char_to_uint(OutputData.name_7,"l_wheel_s");
+                char_to_uint(OutputData.name_7,"yaw_spd");
                 OutputData.type_7 = 1;
 
-                char_to_uint(OutputData.name_8,"r_wheel_s");
+                char_to_uint(OutputData.name_8,"yaw");
                 OutputData.type_8 = 1;
 
-                // char_to_uint(OutputData.name_9,"R_F_A");
-                // OutputData.type_9 = 1;
+                char_to_uint(OutputData.name_9,"tar_yaw");
+                OutputData.type_9 = 1;
 
                 // char_to_uint(OutputData.name_10,"R_B_A");
                 // OutputData.type_10 = 1;

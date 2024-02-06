@@ -77,6 +77,7 @@ void chassis_task(void const *pvParameters)
     static Robot_State_e robot_state = RobotState_OFF;
 
     const RC_ctrl_t *rc_ctrl = get_remote_control_point();
+    const Target_s *p_target = GetTargetPoint();
 
     while (1)
     {
@@ -97,17 +98,17 @@ void chassis_task(void const *pvParameters)
         OutputData.data_5 = right_joint[0].MI_Motor->RxCAN_info.torque;
         OutputData.data_6 = right_joint[1].MI_Motor->RxCAN_info.torque;
 
-        OutputData.data_7 = left_wheel.speed;
-        OutputData.data_8 = right_wheel.speed;
-        // OutputData.data_9 = right_joint[0].MI_Motor->RxCAN_info.angle;
+        OutputData.data_7 = chassis_IMU.yawSpd;
+        OutputData.data_8 = chassis_IMU.yaw;
+        OutputData.data_9 = p_target->yaw;
         // OutputData.data_10 = right_joint[1].MI_Motor->RxCAN_info.angle;
 
-        float speed_target = rc_ctrl->rc.ch[1] / 660.0f * 0.4;
-        float yaw_delta_target = 0;
-        float pitch_target = 0;
-        float roll_target = rc_ctrl->rc.ch[2] / 660.0f * 0.5;
-        float length_target = 0.12 + rc_ctrl->rc.ch[3] / 660.0f * 0.12;
-        float rotation_torque_target = rc_ctrl->rc.ch[0] / 660.0f * 0.2;
+        float speed_target = rc_ctrl->rc.ch[1] / 660.0 * 1.5;
+        float yaw_delta_target = -rc_ctrl->rc.ch[0] / 660.0 * 0.005;
+        float pitch_target = rc_ctrl->rc.ch[3] / 660.0 * M_PI / 5.0;
+        float roll_target = rc_ctrl->rc.ch[2] / 660.0 * M_PI / 3.0;
+        float length_target = (0.24 + 0.12) / 2 + rc_ctrl->rc.ch[4] / 660.0 * (0.24 - 0.12) / 2;
+        float rotation_torque_target = 0;
 
         DataUpdate(
             &chassis_IMU,
@@ -184,7 +185,7 @@ void chassis_task(void const *pvParameters)
                 buzzer_on(500, 3000);
 
                 float joint_pos[2];
-                float length = (0.24 + 0.13) / 2 + rc_ctrl->rc.ch[1] / 660.0 * (0.24 - 0.13) / 2;
+                float length = (0.24 + 0.12) / 2 + rc_ctrl->rc.ch[1] / 660.0 * (0.24 - 0.12) / 2;
                 float angle = M_PI_2 + rc_ctrl->rc.ch[0] / 660.0 * (M_PI / 4);
 
                 JointPos(length, angle, joint_pos); // 计算关节摆角
