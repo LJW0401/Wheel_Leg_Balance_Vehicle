@@ -263,10 +263,8 @@ static void CtrlTargetLimit()
  */
 static void CtrlTargetUpdate(float speed, float yaw_delta, float pitch, float roll, float length, float rotation_torque)
 {
-    float speed_ki = 0.2;
     // 设置前进速度
     target.speed_cmd = speed;
-    target.speed_integral = target.speed_integral + (target.speed_cmd - state_var.dx) * speed_ki;
 
     // 设置yaw方位角
     target.yaw = target.yaw + yaw_delta;
@@ -282,9 +280,6 @@ static void CtrlTargetUpdate(float speed, float yaw_delta, float pitch, float ro
 
     // 设置旋转力矩
     target.rotation_torque = rotation_torque;
-
-    CtrlTargetLimit();
-    target.speed = target.speed_cmd;
 }
 
 /**
@@ -798,7 +793,7 @@ void InitBalanceControler()
     limit_value.roll_max = M_PI / 8;
     limit_value.speed_cmd_max = 5.0f;
     limit_value.rotation_torque_max = 1.0f;
-    limit_value.speed_integral_max = 0.00000f;
+    limit_value.speed_integral_max = 0.5f;
 }
 
 /**
@@ -873,10 +868,12 @@ void BalanceControlerCalc()
         ControlBalanceChassis(Torque_Control, L_KP_HARD);
         break;
     case STAND: // 原地站立状态
-                // target.speed = target.speed_cmd + target.speed_integral;
-        ;
+        target.speed_integral = target.speed_integral + (target.speed_cmd - state_var.dx) * SPEED_KI;
+        CtrlTargetLimit();
     case MOVING: // 移动状态
         ratio.LQR_T_ratio = 0.2;
+
+        target.speed = target.speed_cmd + target.speed_integral;
 
         // LQR计算部分
         float x[6]; // 状态变量
@@ -896,11 +893,6 @@ void BalanceControlerCalc()
         PID_SingleCalc(&roll_PID, target.roll, chassis_imu.roll);
         target.left_length = target.leg_length + roll_PID.output;
         target.right_length = target.leg_length - roll_PID.output;
-
-        // 设置腿部长度与角度
-        // target.leg_angle = M_PI_2;
-        // target.left_length = target.leg_length;
-        // target.right_length = target.leg_length;
 
         // yaw角跟踪
         float angleFdb = target.yaw - chassis_imu.yaw; // 目标角度与底盘角度反馈之差

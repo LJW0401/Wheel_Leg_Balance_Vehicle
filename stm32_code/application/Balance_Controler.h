@@ -66,6 +66,7 @@
 #define WHEEL_RADIUS 0.0425                       // m，车轮半径
 #define LEG_MASS 0.12368                          // kg，腿部质量
 
+#define SPEED_KI 0.01 // 计算速度积分时的系数
 #define L_KP_SOFT 3  // 软位置模式kp
 #define L_KP_HARD 7 // 硬位置模式kp
 
