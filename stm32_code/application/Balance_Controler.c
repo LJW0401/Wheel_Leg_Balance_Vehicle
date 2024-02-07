@@ -47,8 +47,8 @@ static State_Var_s state_var;
 static Ground_Detector_s ground_detector = {10, 10, true, false, 0};
 
 /*PID*/
-static CascadePID pitch_PID, roll_PID, yaw_PID; // 机身角度控制PID
-// static PID pitch_PID, roll_PID;
+static CascadePID yaw_PID; // 机身角度控制PID
+static PID pitch_PID, roll_PID;
 
 /*目标与限制*/
 static Limit_Value_t limit_value;
@@ -158,21 +158,6 @@ static int16_t MotorTorqueToCurrentValue_2006(float torque, float k, float start
 static void ChassisPostureUpdate(Chassis_IMU_t *p_chassis_IMU)
 {
     chassis_imu = *p_chassis_IMU;
-}
-
-/**
- * @brief     计算比例系数
- * @note      基于速度计算LQR_T的比例系数，当差值大的时候系数变大，差值小的时候系数变小
- */
-static void RatioCalc()
-{
-    ratio.LQR_T_ratio = fabs(target.speed - state_var.dx) / (limit_value.speed_cmd_max) * 2;
-    if (ratio.LQR_T_ratio < 1.0 / 4)
-        ratio.LQR_T_ratio = 1.0 / 4;
-    if (ratio.LQR_T_ratio > 1.0)
-        ratio.LQR_T_ratio = 1.0;
-
-    ratio.LQR_T_ratio = 1.0 / 5;
 }
 
 /**
@@ -365,12 +350,10 @@ static void PIDInit()
     PID_Init(&yaw_PID.outer, 30, 0, 0, 0, 10);
 
     // pitch轴角度PID
-    PID_Init(&pitch_PID.inner, 0.05, 0, 1, 0, 0.1);
-    PID_Init(&pitch_PID.outer, 10, 0, 0, 0, 1);
+    PID_Init(&pitch_PID, 0.7, 0, 0.5, 0, M_PI / 6);
 
     // roll轴角度PID
-    PID_Init(&roll_PID.inner, 1, 0, 5, 0, 0.1);
-    PID_Init(&roll_PID.outer, 20, 0, 0, 0, 0.06);
+    PID_Init(&roll_PID, 0.1, 0, 0.1, 0, 0.2);
 }
 
 /**
@@ -808,11 +791,11 @@ void InitBalanceControler()
     target.leg_angle = M_PI_2;
 
     // 设定各种限额
-    limit_value.leg_angle_max = M_PI / 5;
-    limit_value.leg_length_min = 0.12f;
-    limit_value.leg_length_max = 0.24f;
-    limit_value.pitch_max = M_PI / 5;
-    limit_value.roll_max = M_PI / 5;
+    limit_value.leg_angle_max = M_PI / 6;
+    limit_value.leg_length_min = 0.11f;
+    limit_value.leg_length_max = 0.25f;
+    limit_value.pitch_max = M_PI / 6;
+    limit_value.roll_max = M_PI / 8;
     limit_value.speed_cmd_max = 5.0f;
     limit_value.rotation_torque_max = 1.0f;
     limit_value.speed_integral_max = 0.00000f;
@@ -834,16 +817,17 @@ void DataUpdate(
 
 /**
  * @brief          发送平衡底盘控制信号
- * @param[in]      none
+ * @param[in]      CyberGear_control_state 底盘控制模式
+ * @param[in]      L_kp 位置控制的比例系数
  * @return         none
  */
-void ControlBalanceChassis(CyberGear_Control_State_e CyberGear_control_state)
+void ControlBalanceChassis(CyberGear_Control_State_e CyberGear_control_state, float L_kp)
 {
     switch (CyberGear_control_state)
     {
     case Location_Control: // 发送关节控制位置
     {
-        CANCmdJointLocation(8, 0.5);
+        CANCmdJointLocation(L_kp, 0.5);
         break;
     }
     case Torque_Control: // 发送关节控制力矩
@@ -886,7 +870,7 @@ void BalanceControlerCalc()
         MotorSetTorque(&left_joint[1], 0);
         MotorSetTorque(&right_joint[0], 0);
         MotorSetTorque(&right_joint[1], 0);
-        ControlBalanceChassis(Torque_Control);
+        ControlBalanceChassis(Torque_Control, L_KP_HARD);
         break;
     case STAND: // 原地站立状态
                 // target.speed = target.speed_cmd + target.speed_integral;
@@ -905,18 +889,18 @@ void BalanceControlerCalc()
         float LQR_out_Tp = res[1]; // 沿摆杆法向的力
 
         // 维持pitch角与设定值相同
-        // PID_SingleCalc(&pitch_PID, target.pitch, chassis_imu.pitch);
-        // target.leg_angle = M_PI_2 + pitch_PID.output;
+        PID_SingleCalc(&pitch_PID, target.pitch, chassis_imu.pitch);
+        target.leg_angle = M_PI_2 + pitch_PID.output;
 
         // 维持roll角与设定值相同
-        // PID_SingleCalc(&roll_PID, target.roll, chassis_imu.roll);
-        // target.left_length = target.leg_length - roll_PID.output;
-        // target.right_length = target.leg_length + roll_PID.output;
+        PID_SingleCalc(&roll_PID, target.roll, chassis_imu.roll);
+        target.left_length = target.leg_length + roll_PID.output;
+        target.right_length = target.leg_length - roll_PID.output;
 
         // 设置腿部长度与角度
-        target.leg_angle = M_PI_2;
-        target.left_length = target.leg_length;
-        target.right_length = target.leg_length;
+        // target.leg_angle = M_PI_2;
+        // target.left_length = target.leg_length;
+        // target.right_length = target.leg_length;
 
         // yaw角跟踪
         float angleFdb = target.yaw - chassis_imu.yaw; // 目标角度与底盘角度反馈之差
@@ -940,7 +924,7 @@ void BalanceControlerCalc()
 
         MotorSetTorque(&left_wheel, left_wheel_torque);
         MotorSetTorque(&right_wheel, right_wheel_torque);
-        ControlBalanceChassis(Location_Control);
+        ControlBalanceChassis(Location_Control, L_KP_HARD);
         break;
     case JUMPING: // 跳跃状态
         float explosive_torque = 2.0;
@@ -950,7 +934,7 @@ void BalanceControlerCalc()
         MotorSetTorque(&right_joint[1], -explosive_torque);
         MotorSetTorque(&left_wheel, left_wheel_torque);
         MotorSetTorque(&right_wheel, right_wheel_torque);
-        ControlBalanceChassis(Torque_Control);
+        ControlBalanceChassis(Torque_Control, L_KP_HARD);
         break;
     case FLOATING: // 浮空状态
         // 关节位置设置
@@ -965,7 +949,7 @@ void BalanceControlerCalc()
         MotorSetTorque(&left_wheel, 0);
         MotorSetTorque(&right_wheel, 0);
 
-        ControlBalanceChassis(Location_Control);
+        ControlBalanceChassis(Location_Control, L_KP_SOFT);
         break;
     default:
         MotorSetTorque(&left_wheel, 0);
@@ -974,7 +958,7 @@ void BalanceControlerCalc()
         MotorSetTorque(&left_joint[1], 0);
         MotorSetTorque(&right_joint[0], 0);
         MotorSetTorque(&right_joint[1], 0);
-        ControlBalanceChassis(Torque_Control);
+        ControlBalanceChassis(Torque_Control, L_KP_HARD);
         break;
     }
 

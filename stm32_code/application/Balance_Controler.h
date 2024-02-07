@@ -66,6 +66,9 @@
 #define WHEEL_RADIUS 0.0425                       // m，车轮半径
 #define LEG_MASS 0.12368                          // kg，腿部质量
 
+#define L_KP_SOFT 3  // 软位置模式kp
+#define L_KP_HARD 7 // 硬位置模式kp
+
 #define WHEEL_CAN hcan2
 
 /**
@@ -221,7 +224,7 @@ void InitBalanceControler();
 void DataUpdate(
     Chassis_IMU_t *p_chassis_IMU,
     float speed, float yaw_delta, float pitch, float roll, float length, float rotation_torque);
-void ControlBalanceChassis(CyberGear_Control_State_e CyberGear_control_state);
+void ControlBalanceChassis(CyberGear_Control_State_e CyberGear_control_state, float L_kp);
 void BalanceControlerCalc();
 
 #endif // BALANCE_CONTROLER_H

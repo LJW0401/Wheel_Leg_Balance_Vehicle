@@ -105,9 +105,9 @@ void chassis_task(void const *pvParameters)
 
         float speed_target = rc_ctrl->rc.ch[1] / 660.0 * 1.5;
         float yaw_delta_target = -rc_ctrl->rc.ch[0] / 660.0 * 0.005;
-        float pitch_target = rc_ctrl->rc.ch[3] / 660.0 * M_PI / 5.0;
-        float roll_target = rc_ctrl->rc.ch[2] / 660.0 * M_PI / 3.0;
-        float length_target = (0.24 + 0.12) / 2 + rc_ctrl->rc.ch[4] / 660.0 * (0.24 - 0.12) / 2;
+        float pitch_target = 0;
+        float roll_target = rc_ctrl->rc.ch[2] / 660.0 * M_PI / 18.0;
+        float length_target = (0.25 + 0.11) / 2 + rc_ctrl->rc.ch[3] / 660.0 * (0.25 - 0.11) / 2;
         float rotation_torque_target = 0;
 
         DataUpdate(
@@ -127,7 +127,7 @@ void chassis_task(void const *pvParameters)
             (&left_joint[1])->torque = 0;
             (&right_joint[0])->torque = 0;
             (&right_joint[1])->torque = 0;
-            ControlBalanceChassis(Torque_Control);
+            ControlBalanceChassis(Torque_Control, L_KP_HARD);
         }
         else
         {
@@ -173,7 +173,7 @@ void chassis_task(void const *pvParameters)
                     robot_state = RobotState_MotorZeroing;
                 }
 
-                ControlBalanceChassis(Torque_Control);
+                ControlBalanceChassis(Torque_Control, L_KP_HARD);
 
                 break;
             }
@@ -199,7 +199,7 @@ void chassis_task(void const *pvParameters)
                 left_wheel.torque = 0;
                 right_wheel.torque = 0;
 
-                ControlBalanceChassis(Location_Control);
+                ControlBalanceChassis(Location_Control, L_KP_SOFT);
 
                 break;
             }
@@ -209,11 +209,11 @@ void chassis_task(void const *pvParameters)
                     break;
                 robot_state = RobotState_Balance;
 
-                if (rc_ctrl->rc.ch[4] < -500)
-                {
-                    BalanceChassisStateUpdate(JUMPING);
-                }
-                else if (abs(speed_target) < 0.001)
+                // if (rc_ctrl->rc.ch[4] < -500)
+                // {
+                //     BalanceChassisStateUpdate(JUMPING);
+                // }
+                if (abs(speed_target) < 0.001)
                 {
                     BalanceChassisStateUpdate(STAND);
                 }
@@ -232,7 +232,7 @@ void chassis_task(void const *pvParameters)
             {
                 left_wheel.torque = 0;
                 right_wheel.torque = 0;
-                ControlBalanceChassis(No_Control);
+                ControlBalanceChassis(No_Control, L_KP_HARD);
                 break;
             }
             }
