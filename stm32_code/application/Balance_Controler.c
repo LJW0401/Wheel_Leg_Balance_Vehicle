@@ -348,7 +348,7 @@ static void PIDInit()
     PID_Init(&pitch_PID, 0.7, 0, 0.5, 0, M_PI / 6);
 
     // roll轴角度PID
-    PID_Init(&roll_PID, 0.1, 0, 0.1, 0, 0.2);
+    PID_Init(&roll_PID, 0.15, 0, 0.1, 0, 0.2);
 }
 
 /**
@@ -827,7 +827,7 @@ void ControlBalanceChassis(CyberGear_Control_State_e CyberGear_control_state, fl
     }
     case Torque_Control: // 发送关节控制力矩
     {
-        CANCmdJointTorque(0.7);
+        CANCmdJointTorque(2.0);
         break;
     }
     default: // 紧急停止
@@ -856,6 +856,8 @@ void BalanceControlerCalc()
     // 根据底盘状态进行控制
     Leg_Pos_t left_leg_target;
     Leg_Pos_t right_leg_target;
+
+    // 计算控制量
     switch (chassis_state)
     {
     case OFF: // 底盘关闭状态
@@ -865,14 +867,13 @@ void BalanceControlerCalc()
         MotorSetTorque(&left_joint[1], 0);
         MotorSetTorque(&right_joint[0], 0);
         MotorSetTorque(&right_joint[1], 0);
-        ControlBalanceChassis(Torque_Control, L_KP_HARD);
         break;
     case STAND: // 原地站立状态
         target.speed_integral = target.speed_integral + (target.speed_cmd - state_var.dx) * SPEED_KI;
-        CtrlTargetLimit();
     case MOVING: // 移动状态
         ratio.LQR_T_ratio = 0.2;
 
+        CtrlTargetLimit();
         target.speed = target.speed_cmd + target.speed_integral;
 
         // LQR计算部分
@@ -916,17 +917,15 @@ void BalanceControlerCalc()
 
         MotorSetTorque(&left_wheel, left_wheel_torque);
         MotorSetTorque(&right_wheel, right_wheel_torque);
-        ControlBalanceChassis(Location_Control, L_KP_HARD);
         break;
     case JUMPING: // 跳跃状态
-        float explosive_torque = 2.0;
+        float explosive_torque = 10.0;
         MotorSetTorque(&left_joint[0], -explosive_torque);
         MotorSetTorque(&left_joint[1], explosive_torque);
         MotorSetTorque(&right_joint[0], explosive_torque);
         MotorSetTorque(&right_joint[1], -explosive_torque);
-        MotorSetTorque(&left_wheel, left_wheel_torque);
-        MotorSetTorque(&right_wheel, right_wheel_torque);
-        ControlBalanceChassis(Torque_Control, L_KP_HARD);
+        MotorSetTorque(&left_wheel, 0);
+        MotorSetTorque(&right_wheel, 0);
         break;
     case FLOATING: // 浮空状态
         // 关节位置设置
@@ -940,8 +939,6 @@ void BalanceControlerCalc()
 
         MotorSetTorque(&left_wheel, 0);
         MotorSetTorque(&right_wheel, 0);
-
-        ControlBalanceChassis(Location_Control, L_KP_SOFT);
         break;
     default:
         MotorSetTorque(&left_wheel, 0);
@@ -950,13 +947,31 @@ void BalanceControlerCalc()
         MotorSetTorque(&left_joint[1], 0);
         MotorSetTorque(&right_joint[0], 0);
         MotorSetTorque(&right_joint[1], 0);
-        ControlBalanceChassis(Torque_Control, L_KP_HARD);
+        break;
+    }
+
+    // 根据不同模式进行控制
+    switch (chassis_state)
+    {
+    case STAND:  // 原地站立状态
+    case MOVING: // 移动状态
+        ControlBalanceChassis(Location_Control, L_KP_HARD);
+        break;
+    case FLOATING: // 浮空状态
+        ControlBalanceChassis(Location_Control, L_KP_SOFT);
+        break;
+    case JUMPING: // 跳跃状态
+        ControlBalanceChassis(Torque_Control, T_KP_NONE);
+        break;
+    case OFF: // 底盘关闭状态
+    default:
+        ControlBalanceChassis(Torque_Control, T_KP_NONE);
         break;
     }
 
     // 更新底盘状态
-    if (chassis_state == JUMPING && (left_leg_pos.length > limit_value.leg_length_max - 0.02 ||
-                                     right_leg_pos.length > limit_value.leg_length_max - 0.02))
+    if (chassis_state == JUMPING && (left_leg_pos.length > limit_value.leg_length_max - 0.01 ||
+                                     right_leg_pos.length > limit_value.leg_length_max - 0.01))
     {
         chassis_state = MOVING;
     }

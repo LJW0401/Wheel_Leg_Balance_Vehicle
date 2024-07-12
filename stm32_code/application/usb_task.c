@@ -136,44 +136,35 @@ void usb_task(void const *argument)
                 OutputData.header = 0x6A;
                 OutputData.length = sizeof(OutputData_s);
 
-                char_to_uint(OutputData.name_1, "cur_val");
+                char_to_uint(OutputData.name_1, "roll_a");
                 OutputData.type_1 = 1;
 
-                char_to_uint(OutputData.name_2, "Pitch");
+                char_to_uint(OutputData.name_2, "pitch_a");
                 OutputData.type_2 = 1;
-                OutputData.data_2 = chassis_imu->pitch;
 
-                // char_to_uint(OutputData.name_1,"m1-angle");
-                // OutputData.type_1 = 1;
-                // OutputData.data_1 = left_joint[0].angle;
+                char_to_uint(OutputData.name_3,"roll");
+                OutputData.type_3 = 1;
 
-                // char_to_uint(OutputData.name_2,"m2-angle");
-                // OutputData.type_2 = 1;
-                // OutputData.data_2 = left_joint[1].angle;
+                char_to_uint(OutputData.name_4,"pitch");
+                OutputData.type_4 = 1;
 
-                // char_to_uint(OutputData.name_3,"L_F_T");
-                // OutputData.type_3 = 1;
+                char_to_uint(OutputData.name_5,"ax");
+                OutputData.type_5 = 1;
 
-                // char_to_uint(OutputData.name_4,"L_B_T");
-                // OutputData.type_4 = 1;
+                char_to_uint(OutputData.name_6,"ay");
+                OutputData.type_6 = 1;
 
-                // char_to_uint(OutputData.name_5,"R_F_T");
-                // OutputData.type_5 = 1;
-
-                // char_to_uint(OutputData.name_6,"R_B_T");
-                // OutputData.type_6 = 1;
-
-                char_to_uint(OutputData.name_7,"yaw_spd");
+                char_to_uint(OutputData.name_7,"az");
                 OutputData.type_7 = 1;
 
-                char_to_uint(OutputData.name_8,"yaw");
+                char_to_uint(OutputData.name_8,"d_pitch");
                 OutputData.type_8 = 1;
 
-                char_to_uint(OutputData.name_9,"tar_yaw");
+                char_to_uint(OutputData.name_9,"ay_c");
                 OutputData.type_9 = 1;
 
-                // char_to_uint(OutputData.name_10,"R_B_A");
-                // OutputData.type_10 = 1;
+                char_to_uint(OutputData.name_10,"az_c");
+                OutputData.type_10 = 1;
 
                 usb_send_outputPC();
             }

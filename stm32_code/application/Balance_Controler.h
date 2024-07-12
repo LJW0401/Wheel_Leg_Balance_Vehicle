@@ -60,6 +60,7 @@
 #define M_LOG2_E _M_LN2
 #define M_INVLN2 1.4426950408889633870E0 /* 1 / log(2) */
 
+#define G_ACCEL 9.724315643310547                 // m/s^2, 重力加速度(传感器测得的平均值)
 #define REDUCTION_RATIO_2006 0.027777777777777776 // 2006减速比(1:36)
 #define K_2006 0.18518518518518517                // 2006电机转速系数
 #define START_TORQUE_2006 0.025                   // 2006电机起动力矩
@@ -67,8 +68,9 @@
 #define LEG_MASS 0.12368                          // kg，腿部质量
 
 #define SPEED_KI 0.01 // 计算速度积分时的系数
-#define L_KP_SOFT 3  // 软位置模式kp
-#define L_KP_HARD 7 // 硬位置模式kp
+#define L_KP_SOFT 3   // 软位置模式kp
+#define L_KP_HARD 7   // 硬位置模式kp
+#define T_KP_NONE 0.1      // 使用力矩控制时无需kp
 
 #define WHEEL_CAN hcan2
 
@@ -220,8 +222,10 @@ const Chassis_IMU_t *GetChassisIMUPoint();
 const Target_s *GetTargetPoint();
 const Leg_Pos_t *GetLegPosPoint(uint8_t leg);
 const State_Var_s *GetStateVarPoint();
+Balance_Chassis_State_e GetBalanceChassisState();
 
 void InitBalanceControler();
+void BalanceChassisStateUpdate(Balance_Chassis_State_e state);
 void DataUpdate(
     Chassis_IMU_t *p_chassis_IMU,
     float speed, float yaw_delta, float pitch, float roll, float length, float rotation_torque);
