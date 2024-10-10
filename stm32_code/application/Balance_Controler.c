@@ -25,6 +25,7 @@
 #include <math.h>
 #include "Balance_Controler.h"
 #include "./Drives/MI_motor_drive.h"
+#include <string.h>
 
 #include "main.h"
 
