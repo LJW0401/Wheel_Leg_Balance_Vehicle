@@ -358,7 +358,7 @@ static void PIDInit()
  */
 static void MotorInitAll()
 {
-    MotorInit(&left_joint[0], &MI_Motor[1], &MI_CAN_1, 1,
+    MotorInit(&left_joint[0], &MI_Motor[1], &MI_CAN_2, 1,
               -0.00019175051420461386f,     // initial angle
               -0.2901185154914856 - M_PI_2, // vertical angle
               -0.2901185154914856,          // horizontal angle
@@ -366,7 +366,7 @@ static void MotorInitAll()
               -0.14477163553237915,
               7, 0.0316f, -1);
 
-    MotorInit(&left_joint[1], &MI_Motor[2], &MI_CAN_1, 2,
+    MotorInit(&left_joint[1], &MI_Motor[2], &MI_CAN_2, 2,
               -0.00019175051420461386f,    // initial angle
               0.3315366506576538 + M_PI_2, // vertical angle
               0.3315366506576538 + M_PI,   // horizontal angle
@@ -374,7 +374,7 @@ static void MotorInitAll()
               0.5413116812705994,
               7, 0.0317f, 1);
 
-    MotorInit(&left_wheel, &MI_Motor_None, &MI_CAN_1, 0,
+    MotorInit(&left_wheel, &MI_Motor_None, &MI_CAN_2, 0,
               0,
               0,
               0,
@@ -382,7 +382,7 @@ static void MotorInitAll()
               0,
               4.0f, 0.0096f, 1);
 
-    MotorInit(&right_joint[0], &MI_Motor[3], &MI_CAN_1, 3,
+    MotorInit(&right_joint[0], &MI_Motor[3], &MI_CAN_2, 3,
               -0.00019175051420461386f,     // initial angle
               0.33613866567611694 + M_PI_2, // vertical angle
               0.33613866567611694,          // horizontal angle
@@ -390,7 +390,7 @@ static void MotorInitAll()
               -4.348710060119629,
               7, 0.0299f, -1);
 
-    MotorInit(&right_joint[1], &MI_Motor[4], &MI_CAN_1, 4,
+    MotorInit(&right_joint[1], &MI_Motor[4], &MI_CAN_2, 4,
               -0.00019175051420461386f,      // initial angle
               -0.23911289870738983 - M_PI_2, // vertical angle
               -0.23911289870738983 - M_PI,   // horizontal angle
@@ -398,7 +398,7 @@ static void MotorInitAll()
               -3.201658248901367,
               7, 0.0321f, -1);
 
-    MotorInit(&right_wheel, &MI_Motor_None, &MI_CAN_1, 0,
+    MotorInit(&right_wheel, &MI_Motor_None, &MI_CAN_2, 0,
               0,
               0,
               0,

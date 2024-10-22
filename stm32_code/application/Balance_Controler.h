@@ -72,7 +72,7 @@
 #define L_KP_HARD 7   // 硬位置模式kp
 #define T_KP_NONE 0.1      // 使用力矩控制时无需kp
 
-#define WHEEL_CAN hcan2
+#define WHEEL_CAN hcan1
 
 /**
  * @brief      底盘IMU数据结构体
