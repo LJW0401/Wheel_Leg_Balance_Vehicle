@@ -28,6 +28,11 @@
 
 #include "main.h"
 
+#define WHEEL_BASE 0.3f // 轮距(m)
+
+#define MAX_LEG_LENGTH 0.25f // 最大腿长(m)
+#define MIN_LEG_LENGTH 0.11f // 最小腿长(m)
+
 /*CAN通信所需的变量*/
 extern CAN_HandleTypeDef hcan1;
 extern CAN_HandleTypeDef hcan2;
@@ -72,6 +77,46 @@ static uint32_t GetMillis()
     return HAL_GetTick();
 }
 
+/**
+ * @brief 通过当前底盘姿态和目标roll角计算两腿长度期望差值
+ * @param[in]  Ld0 (m)当前左右腿长度差值(L0l - L0r)
+ * @param[in]  theta0 (rad)当前底盘roll角
+ * @param[in]  theta1 (rad)目标roll角
+ * @return 两腿长度期望差值(m)(L1l - L1r)
+ */
+inline float CalcLegLengthDiff(float Ld0, float theta0, float theta1)
+{
+    return WHEEL_BASE * tanf(theta1) -
+           cosf(theta0) / cosf(theta1) * (WHEEL_BASE * tanf(theta0) - Ld0);
+}
+
+/**
+ * @brief 双腿腿长协调控制，维持腿长目标在范围内，同时尽可能达到两腿目标差值
+ * @param[in]  Ll_ref   (m)左腿长度指针
+ * @param[in]  Lr_ref   (m)右腿长度指针
+ * @param[in]  diff (m)腿长差值
+ * @param[in]  add  (m)腿长差值补偿量
+ */
+void CoordinateLegLength(float *Ll_ref, float *Lr_ref, float diff, float add)
+{
+    *Ll_ref = *Ll_ref + diff * 0.5f + add;
+    *Lr_ref = *Lr_ref - diff * 0.5f - add;
+
+    // 先判断短腿范围，再判断长腿范围
+    float *short_leg = *Ll_ref < *Lr_ref ? Ll_ref : Lr_ref;
+    float *long_leg = *Ll_ref < *Lr_ref ? Lr_ref : Ll_ref;
+    float move = 0;
+    move = MIN_LEG_LENGTH - *short_leg;
+    if (move > 0)
+    {
+        *short_leg += move;
+        *long_leg += move;
+    }
+    if (*long_leg > MAX_LEG_LENGTH)
+    {
+        *long_leg = MAX_LEG_LENGTH;
+    }
+}
 /**************************** 电机模块 ****************************/
 
 /**
@@ -345,10 +390,10 @@ static void PIDInit()
     PID_Init(&yaw_PID.outer, 30, 0, 0, 0, 10);
 
     // pitch轴角度PID
-    PID_Init(&pitch_PID, 0.7, 0, 0.5, 0, M_PI / 6);
+    PID_Init(&pitch_PID, 0.0, 0, 0.0, 0, 0.0);
 
     // roll轴角度PID
-    PID_Init(&roll_PID, 0.15, 0, 0.1, 0, 0.2);
+    PID_Init(&roll_PID, 0.0, 0, 0.0, 0, 0.0);
 }
 
 /**
@@ -391,9 +436,9 @@ static void MotorInitAll()
               7, 0.0299f, -1);
 
     MotorInit(&right_joint[1], &MI_Motor[4], &MI_CAN_2, 4,
-              -0.00019175051420461386f,      // initial angle
-              -0.349 - M_PI_2, // vertical angle
-              -0.349 - M_PI,   // horizontal angle
+              -0.00019175051420461386f, // initial angle
+              -0.349 - M_PI_2,          // vertical angle
+              -0.349 - M_PI,            // horizontal angle
               -0.0,
               -1.74,
               7, 0.0321f, -1);
@@ -795,8 +840,8 @@ void InitBalanceControler()
 
     // 设定各种限额
     limit_value.leg_angle_max = M_PI / 6;
-    limit_value.leg_length_min = 0.11f;
-    limit_value.leg_length_max = 0.25f;
+    limit_value.leg_length_min = MIN_LEG_LENGTH;
+    limit_value.leg_length_max = MAX_LEG_LENGTH;
     limit_value.pitch_max = M_PI / 6;
     limit_value.roll_max = M_PI / 8;
     limit_value.speed_cmd_max = 5.0f;
@@ -902,6 +947,9 @@ void BalanceControlerCalc()
         PID_SingleCalc(&roll_PID, target.roll, chassis_imu.roll);
         target.left_length = target.leg_length + roll_PID.output;
         target.right_length = target.leg_length - roll_PID.output;
+
+        float diff = CalcLegLengthDiff(left_leg_pos.length - right_leg_pos.length, chassis_imu.roll, target.roll);
+        CoordinateLegLength(&target.left_length, &target.right_length,  diff, 0);
 
         // yaw角跟踪
         float angleFdb = target.yaw - chassis_imu.yaw; // 目标角度与底盘角度反馈之差

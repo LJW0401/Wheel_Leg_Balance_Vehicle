@@ -101,7 +101,7 @@ void chassis_task(void const *pvParameters)
     {
         chassis_IMU.yaw = get_INS_angle_point()[0];
         chassis_IMU.pitch = get_INS_angle_point()[1];
-        chassis_IMU.roll = get_INS_angle_point()[2];
+        chassis_IMU.roll = -get_INS_angle_point()[2];
 
         chassis_IMU.yawSpd = get_gyro_data_point()[2];
         chassis_IMU.pitchSpd = get_gyro_data_point()[1];
