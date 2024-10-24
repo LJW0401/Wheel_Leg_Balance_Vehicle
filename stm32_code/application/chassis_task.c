@@ -159,8 +159,8 @@ void chassis_task(void const *pvParameters)
         //float speed_target = rc_ctrl->rc.ch[1] / 660.0 * 1.5;
         //float yaw_delta_target = -rc_ctrl->rc.ch[0] / 660.0 * 0.005;
         const ReceivedPacketTwist_s *Navigation_speed_set = GetReceivedPacketTwistPoint();
-        float speed_target = Navigation_speed_set->linear_x;
-        float yaw_delta_target = Navigation_speed_set->angular_z;
+        float speed_target = Navigation_speed_set->linear_x + rc_ctrl->rc.ch[1] / 660.0 * 0.8;
+        float yaw_delta_target = -Navigation_speed_set->angular_z * 0.8f/0.005f*0.1-rc_ctrl->rc.ch[0] / 660.0 * 0.005;
        
         float pitch_target = 0;
         float roll_target = rc_ctrl->rc.ch[2] / 660.0 * M_PI / 18.0;
