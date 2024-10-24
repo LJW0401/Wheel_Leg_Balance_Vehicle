@@ -359,19 +359,19 @@ static void PIDInit()
 static void MotorInitAll()
 {
     MotorInit(&left_joint[0], &MI_Motor[1], &MI_CAN_2, 1,
-              -0.00019175051420461386f,     // initial angle
-              -0.2901185154914856 - M_PI_2, // vertical angle
-              -0.2901185154914856,          // horizontal angle
-              2.184230089187622,
-              -0.14477163553237915,
+              -0.00019175051420461386f, // initial angle
+              -0.349 - M_PI_2,          // vertical angle
+              -0.349,                   // horizontal angle
+              1.74,
+              0.0,
               7, 0.0316f, -1);
 
     MotorInit(&left_joint[1], &MI_Motor[2], &MI_CAN_2, 2,
-              -0.00019175051420461386f,    // initial angle
-              0.3315366506576538 + M_PI_2, // vertical angle
-              0.3315366506576538 + M_PI,   // horizontal angle
-              2.7893948554992676,
-              0.5413116812705994,
+              -0.00019175051420461386f, // initial angle
+              0.349 + M_PI_2,           // vertical angle
+              0.349 + M_PI,             // horizontal angle
+              1.74,
+              0.0,
               7, 0.0317f, 1);
 
     MotorInit(&left_wheel, &MI_Motor_None, &MI_CAN_2, 0,
@@ -383,19 +383,19 @@ static void MotorInitAll()
               4.0f, 0.0096f, 1);
 
     MotorInit(&right_joint[0], &MI_Motor[3], &MI_CAN_2, 3,
-              -0.00019175051420461386f,     // initial angle
-              0.33613866567611694 + M_PI_2, // vertical angle
-              0.33613866567611694,          // horizontal angle
-              -2.181162118911743,
-              -4.348710060119629,
+              -0.00019175051420461386f, // initial angle
+              0.349 + M_PI_2,           // vertical angle
+              0.349,                    // horizontal angle
+              -0.0,
+              -1.74,
               7, 0.0299f, -1);
 
     MotorInit(&right_joint[1], &MI_Motor[4], &MI_CAN_2, 4,
               -0.00019175051420461386f,      // initial angle
-              -0.23911289870738983 - M_PI_2, // vertical angle
-              -0.23911289870738983 - M_PI,   // horizontal angle
-              -0.9044871926307678,
-              -3.201658248901367,
+              -0.349 - M_PI_2, // vertical angle
+              -0.349 - M_PI,   // horizontal angle
+              -0.0,
+              -1.74,
               7, 0.0321f, -1);
 
     MotorInit(&right_wheel, &MI_Motor_None, &MI_CAN_2, 0,
@@ -677,12 +677,20 @@ void JointPosCalc(Leg_Pos_t *left_leg, Leg_Pos_t *right_leg)
 {
     float joint_pos[2];
     JointPos(left_leg->length, left_leg->angle, joint_pos); // 计算左关节摆角
-    MotorSetTargetAngle(&left_joint[1], joint_pos[0]);
-    MotorSetTargetAngle(&left_joint[0], joint_pos[1]);
+    // 当解算出的角度正常时，设置目标角度
+    if (!(isnan(joint_pos[0]) || isnan(joint_pos[1])))
+    {
+        MotorSetTargetAngle(&left_joint[1], joint_pos[0]);
+        MotorSetTargetAngle(&left_joint[0], joint_pos[1]);
+    }
 
     JointPos(right_leg->length, right_leg->angle, joint_pos); // 计算右关节摆角
-    MotorSetTargetAngle(&right_joint[1], joint_pos[0]);
-    MotorSetTargetAngle(&right_joint[0], joint_pos[1]);
+    // 当解算出的角度正常时，设置目标角度
+    if (!(isnan(joint_pos[0]) || isnan(joint_pos[1])))
+    {
+        MotorSetTargetAngle(&right_joint[1], joint_pos[0]);
+        MotorSetTargetAngle(&right_joint[0], joint_pos[1]);
+    }
 }
 
 /**************************** 获取控制器数据 ****************************/
