@@ -29,6 +29,11 @@
 
 #include "main.h"
 
+#define WHEEL_BASE 0.3f // 轮距(m)
+
+#define MAX_LEG_LENGTH 0.25f // 最大腿长(m)
+#define MIN_LEG_LENGTH 0.11f // 最小腿长(m)
+
 /*CAN通信所需的变量*/
 extern CAN_HandleTypeDef hcan1;
 extern CAN_HandleTypeDef hcan2;
@@ -48,8 +53,8 @@ static State_Var_s state_var;
 static Ground_Detector_s ground_detector = {10, 10, true, false, 0};
 
 /*PID*/
-static CascadePID pitch_PID, roll_PID, yaw_PID; // 机身角度控制PID
-// static PID pitch_PID, roll_PID;
+static CascadePID yaw_PID; // 机身角度控制PID
+static PID pitch_PID, roll_PID;
 
 /*目标与限制*/
 static Limit_Value_t limit_value;
@@ -73,6 +78,46 @@ static uint32_t GetMillis()
     return HAL_GetTick();
 }
 
+/**
+ * @brief 通过当前底盘姿态和目标roll角计算两腿长度期望差值
+ * @param[in]  Ld0 (m)当前左右腿长度差值(L0l - L0r)
+ * @param[in]  theta0 (rad)当前底盘roll角
+ * @param[in]  theta1 (rad)目标roll角
+ * @return 两腿长度期望差值(m)(L1l - L1r)
+ */
+inline float CalcLegLengthDiff(float Ld0, float theta0, float theta1)
+{
+    return WHEEL_BASE * tanf(theta1) -
+           cosf(theta0) / cosf(theta1) * (WHEEL_BASE * tanf(theta0) - Ld0);
+}
+
+/**
+ * @brief 双腿腿长协调控制，维持腿长目标在范围内，同时尽可能达到两腿目标差值
+ * @param[in]  Ll_ref   (m)左腿长度指针
+ * @param[in]  Lr_ref   (m)右腿长度指针
+ * @param[in]  diff (m)腿长差值
+ * @param[in]  add  (m)腿长差值补偿量
+ */
+void CoordinateLegLength(float *Ll_ref, float *Lr_ref, float diff, float add)
+{
+    *Ll_ref = *Ll_ref + diff * 0.5f + add;
+    *Lr_ref = *Lr_ref - diff * 0.5f - add;
+
+    // 先判断短腿范围，再判断长腿范围
+    float *short_leg = *Ll_ref < *Lr_ref ? Ll_ref : Lr_ref;
+    float *long_leg = *Ll_ref < *Lr_ref ? Lr_ref : Ll_ref;
+    float move = 0;
+    move = MIN_LEG_LENGTH - *short_leg;
+    if (move > 0)
+    {
+        *short_leg += move;
+        *long_leg += move;
+    }
+    if (*long_leg > MAX_LEG_LENGTH)
+    {
+        *long_leg = MAX_LEG_LENGTH;
+    }
+}
 /**************************** 电机模块 ****************************/
 
 /**
@@ -159,21 +204,6 @@ static int16_t MotorTorqueToCurrentValue_2006(float torque, float k, float start
 static void ChassisPostureUpdate(Chassis_IMU_t *p_chassis_IMU)
 {
     chassis_imu = *p_chassis_IMU;
-}
-
-/**
- * @brief     计算比例系数
- * @note      基于速度计算LQR_T的比例系数，当差值大的时候系数变大，差值小的时候系数变小
- */
-static void RatioCalc()
-{
-    ratio.LQR_T_ratio = fabs(target.speed - state_var.dx) / (limit_value.speed_cmd_max) * 2;
-    if (ratio.LQR_T_ratio < 1.0 / 4)
-        ratio.LQR_T_ratio = 1.0 / 4;
-    if (ratio.LQR_T_ratio > 1.0)
-        ratio.LQR_T_ratio = 1.0;
-
-    ratio.LQR_T_ratio = 1.0 / 5;
 }
 
 /**
@@ -279,10 +309,8 @@ static void CtrlTargetLimit()
  */
 static void CtrlTargetUpdate(float speed, float yaw_delta, float pitch, float roll, float length, float rotation_torque)
 {
-    float speed_ki = 0.2;
     // 设置前进速度
     target.speed_cmd = speed;
-    target.speed_integral = target.speed_integral + (target.speed_cmd - state_var.dx) * speed_ki;
 
     // 设置yaw方位角
     target.yaw = target.yaw + yaw_delta;
@@ -298,9 +326,6 @@ static void CtrlTargetUpdate(float speed, float yaw_delta, float pitch, float ro
 
     // 设置旋转力矩
     target.rotation_torque = rotation_torque;
-
-    CtrlTargetLimit();
-    target.speed = target.speed_cmd;
 }
 
 /**
@@ -366,12 +391,10 @@ static void PIDInit()
     PID_Init(&yaw_PID.outer, 30, 0, 0, 0, 10);
 
     // pitch轴角度PID
-    PID_Init(&pitch_PID.inner, 0.05, 0, 1, 0, 0.1);
-    PID_Init(&pitch_PID.outer, 10, 0, 0, 0, 1);
+    PID_Init(&pitch_PID, 0.0, 0, 0.0, 0, 0.0);
 
     // roll轴角度PID
-    PID_Init(&roll_PID.inner, 1, 0, 5, 0, 0.1);
-    PID_Init(&roll_PID.outer, 20, 0, 0, 0, 0.06);
+    PID_Init(&roll_PID, 0.0, 0, 0.0, 0, 0.0);
 }
 
 /**
@@ -381,23 +404,23 @@ static void PIDInit()
  */
 static void MotorInitAll()
 {
-    MotorInit(&left_joint[0], &MI_Motor[1], &MI_CAN_1, 1,
-              -0.00019175051420461386f,     // initial angle
-              -0.2901185154914856 - M_PI_2, // vertical angle
-              -0.2901185154914856,          // horizontal angle
-              2.184230089187622,
-              -0.14477163553237915,
+    MotorInit(&left_joint[0], &MI_Motor[1], &MI_CAN_2, 1,
+              -0.00019175051420461386f, // initial angle
+              -0.349 - M_PI_2,          // vertical angle
+              -0.349,                   // horizontal angle
+              1.74,
+              0.0,
               7, 0.0316f, -1);
 
-    MotorInit(&left_joint[1], &MI_Motor[2], &MI_CAN_1, 2,
-              -0.00019175051420461386f,    // initial angle
-              0.3315366506576538 + M_PI_2, // vertical angle
-              0.3315366506576538 + M_PI,   // horizontal angle
-              2.7893948554992676,
-              0.5413116812705994,
+    MotorInit(&left_joint[1], &MI_Motor[2], &MI_CAN_2, 2,
+              -0.00019175051420461386f, // initial angle
+              0.349 + M_PI_2,           // vertical angle
+              0.349 + M_PI,             // horizontal angle
+              1.74,
+              0.0,
               7, 0.0317f, 1);
 
-    MotorInit(&left_wheel, &MI_Motor_None, &MI_CAN_1, 0,
+    MotorInit(&left_wheel, &MI_Motor_None, &MI_CAN_2, 0,
               0,
               0,
               0,
@@ -405,23 +428,23 @@ static void MotorInitAll()
               0,
               4.0f, 0.0096f, 1);
 
-    MotorInit(&right_joint[0], &MI_Motor[3], &MI_CAN_1, 3,
-              -0.00019175051420461386f,     // initial angle
-              0.33613866567611694 + M_PI_2, // vertical angle
-              0.33613866567611694,          // horizontal angle
-              -2.181162118911743,
-              -4.348710060119629,
+    MotorInit(&right_joint[0], &MI_Motor[3], &MI_CAN_2, 3,
+              -0.00019175051420461386f, // initial angle
+              0.349 + M_PI_2,           // vertical angle
+              0.349,                    // horizontal angle
+              -0.0,
+              -1.74,
               7, 0.0299f, -1);
 
-    MotorInit(&right_joint[1], &MI_Motor[4], &MI_CAN_1, 4,
-              -0.00019175051420461386f,      // initial angle
-              -0.23911289870738983 - M_PI_2, // vertical angle
-              -0.23911289870738983 - M_PI,   // horizontal angle
-              -0.9044871926307678,
-              -3.201658248901367,
+    MotorInit(&right_joint[1], &MI_Motor[4], &MI_CAN_2, 4,
+              -0.00019175051420461386f, // initial angle
+              -0.349 - M_PI_2,          // vertical angle
+              -0.349 - M_PI,            // horizontal angle
+              -0.0,
+              -1.74,
               7, 0.0321f, -1);
 
-    MotorInit(&right_wheel, &MI_Motor_None, &MI_CAN_1, 0,
+    MotorInit(&right_wheel, &MI_Motor_None, &MI_CAN_2, 0,
               0,
               0,
               0,
@@ -700,12 +723,20 @@ void JointPosCalc(Leg_Pos_t *left_leg, Leg_Pos_t *right_leg)
 {
     float joint_pos[2];
     JointPos(left_leg->length, left_leg->angle, joint_pos); // 计算左关节摆角
-    MotorSetTargetAngle(&left_joint[1], joint_pos[0]);
-    MotorSetTargetAngle(&left_joint[0], joint_pos[1]);
+    // 当解算出的角度正常时，设置目标角度
+    if (!(isnan(joint_pos[0]) || isnan(joint_pos[1])))
+    {
+        MotorSetTargetAngle(&left_joint[1], joint_pos[0]);
+        MotorSetTargetAngle(&left_joint[0], joint_pos[1]);
+    }
 
     JointPos(right_leg->length, right_leg->angle, joint_pos); // 计算右关节摆角
-    MotorSetTargetAngle(&right_joint[1], joint_pos[0]);
-    MotorSetTargetAngle(&right_joint[0], joint_pos[1]);
+    // 当解算出的角度正常时，设置目标角度
+    if (!(isnan(joint_pos[0]) || isnan(joint_pos[1])))
+    {
+        MotorSetTargetAngle(&right_joint[1], joint_pos[0]);
+        MotorSetTargetAngle(&right_joint[0], joint_pos[1]);
+    }
 }
 
 /**************************** 获取控制器数据 ****************************/
@@ -809,14 +840,14 @@ void InitBalanceControler()
     target.leg_angle = M_PI_2;
 
     // 设定各种限额
-    limit_value.leg_angle_max = M_PI / 5;
-    limit_value.leg_length_min = 0.12f;
-    limit_value.leg_length_max = 0.24f;
-    limit_value.pitch_max = M_PI / 5;
-    limit_value.roll_max = M_PI / 5;
+    limit_value.leg_angle_max = M_PI / 6;
+    limit_value.leg_length_min = MIN_LEG_LENGTH;
+    limit_value.leg_length_max = MAX_LEG_LENGTH;
+    limit_value.pitch_max = M_PI / 6;
+    limit_value.roll_max = M_PI / 8;
     limit_value.speed_cmd_max = 5.0f;
     limit_value.rotation_torque_max = 1.0f;
-    limit_value.speed_integral_max = 0.00000f;
+    limit_value.speed_integral_max = 0.5f;
 }
 
 /**
@@ -835,21 +866,22 @@ void DataUpdate(
 
 /**
  * @brief          发送平衡底盘控制信号
- * @param[in]      none
+ * @param[in]      CyberGear_control_state 底盘控制模式
+ * @param[in]      L_kp 位置控制的比例系数
  * @return         none
  */
-void ControlBalanceChassis(CyberGear_Control_State_e CyberGear_control_state)
+void ControlBalanceChassis(CyberGear_Control_State_e CyberGear_control_state, float L_kp)
 {
     switch (CyberGear_control_state)
     {
     case Location_Control: // 发送关节控制位置
     {
-        CANCmdJointLocation(8, 0.5);
+        CANCmdJointLocation(L_kp, 0.5);
         break;
     }
     case Torque_Control: // 发送关节控制力矩
     {
-        CANCmdJointTorque(0.7);
+        CANCmdJointTorque(2.0);
         break;
     }
     default: // 紧急停止
@@ -878,6 +910,8 @@ void BalanceControlerCalc()
     // 根据底盘状态进行控制
     Leg_Pos_t left_leg_target;
     Leg_Pos_t right_leg_target;
+
+    // 计算控制量
     switch (chassis_state)
     {
     case OFF: // 底盘关闭状态
@@ -887,13 +921,14 @@ void BalanceControlerCalc()
         MotorSetTorque(&left_joint[1], 0);
         MotorSetTorque(&right_joint[0], 0);
         MotorSetTorque(&right_joint[1], 0);
-        ControlBalanceChassis(Torque_Control);
         break;
     case STAND: // 原地站立状态
-                // target.speed = target.speed_cmd + target.speed_integral;
-        ;
+        target.speed_integral = target.speed_integral + (target.speed_cmd - state_var.dx) * SPEED_KI;
     case MOVING: // 移动状态
         ratio.LQR_T_ratio = 0.2;
+
+        CtrlTargetLimit();
+        target.speed = target.speed_cmd + target.speed_integral;
 
         // LQR计算部分
         float x[6]; // 状态变量
@@ -906,18 +941,16 @@ void BalanceControlerCalc()
         float LQR_out_Tp = res[1]; // 沿摆杆法向的力
 
         // 维持pitch角与设定值相同
-        // PID_SingleCalc(&pitch_PID, target.pitch, chassis_imu.pitch);
-        // target.leg_angle = M_PI_2 + pitch_PID.output;
+        PID_SingleCalc(&pitch_PID, target.pitch, chassis_imu.pitch);
+        target.leg_angle = M_PI_2 + pitch_PID.output;
 
         // 维持roll角与设定值相同
-        // PID_SingleCalc(&roll_PID, target.roll, chassis_imu.roll);
-        // target.left_length = target.leg_length - roll_PID.output;
-        // target.right_length = target.leg_length + roll_PID.output;
+        PID_SingleCalc(&roll_PID, target.roll, chassis_imu.roll);
+        target.left_length = target.leg_length + roll_PID.output;
+        target.right_length = target.leg_length - roll_PID.output;
 
-        // 设置腿部长度与角度
-        target.leg_angle = M_PI_2;
-        target.left_length = target.leg_length;
-        target.right_length = target.leg_length;
+        float diff = CalcLegLengthDiff(left_leg_pos.length - right_leg_pos.length, chassis_imu.roll, target.roll);
+        CoordinateLegLength(&target.left_length, &target.right_length,  diff, 0);
 
         // yaw角跟踪
         float angleFdb = target.yaw - chassis_imu.yaw; // 目标角度与底盘角度反馈之差
@@ -941,17 +974,15 @@ void BalanceControlerCalc()
 
         MotorSetTorque(&left_wheel, left_wheel_torque);
         MotorSetTorque(&right_wheel, right_wheel_torque);
-        ControlBalanceChassis(Location_Control);
         break;
     case JUMPING: // 跳跃状态
-        float explosive_torque = 2.0;
+        float explosive_torque = 10.0;
         MotorSetTorque(&left_joint[0], -explosive_torque);
         MotorSetTorque(&left_joint[1], explosive_torque);
         MotorSetTorque(&right_joint[0], explosive_torque);
         MotorSetTorque(&right_joint[1], -explosive_torque);
-        MotorSetTorque(&left_wheel, left_wheel_torque);
-        MotorSetTorque(&right_wheel, right_wheel_torque);
-        ControlBalanceChassis(Torque_Control);
+        MotorSetTorque(&left_wheel, 0);
+        MotorSetTorque(&right_wheel, 0);
         break;
     case FLOATING: // 浮空状态
         // 关节位置设置
@@ -965,8 +996,6 @@ void BalanceControlerCalc()
 
         MotorSetTorque(&left_wheel, 0);
         MotorSetTorque(&right_wheel, 0);
-
-        ControlBalanceChassis(Location_Control);
         break;
     default:
         MotorSetTorque(&left_wheel, 0);
@@ -975,13 +1004,31 @@ void BalanceControlerCalc()
         MotorSetTorque(&left_joint[1], 0);
         MotorSetTorque(&right_joint[0], 0);
         MotorSetTorque(&right_joint[1], 0);
-        ControlBalanceChassis(Torque_Control);
+        break;
+    }
+
+    // 根据不同模式进行控制
+    switch (chassis_state)
+    {
+    case STAND:  // 原地站立状态
+    case MOVING: // 移动状态
+        ControlBalanceChassis(Location_Control, L_KP_HARD);
+        break;
+    case FLOATING: // 浮空状态
+        ControlBalanceChassis(Location_Control, L_KP_SOFT);
+        break;
+    case JUMPING: // 跳跃状态
+        ControlBalanceChassis(Torque_Control, T_KP_NONE);
+        break;
+    case OFF: // 底盘关闭状态
+    default:
+        ControlBalanceChassis(Torque_Control, T_KP_NONE);
         break;
     }
 
     // 更新底盘状态
-    if (chassis_state == JUMPING && (left_leg_pos.length > limit_value.leg_length_max - 0.02 ||
-                                     right_leg_pos.length > limit_value.leg_length_max - 0.02))
+    if (chassis_state == JUMPING && (left_leg_pos.length > limit_value.leg_length_max - 0.01 ||
+                                     right_leg_pos.length > limit_value.leg_length_max - 0.01))
     {
         chassis_state = MOVING;
     }
