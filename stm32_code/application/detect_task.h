@@ -75,6 +75,11 @@ enum errorList
     REFEREE_TOE,
     RM_IMU_TOE,
     OLED_TOE,
+    FRIC_MOTOR1_TOE,
+    FRIC_MOTOR2_TOE,
+    FRIC_MOTOR3_TOE,
+    FRIC_MOTOR4_TOE,
+    USB_TOE,
     ERROR_LIST_LENGHT,
 };
 
