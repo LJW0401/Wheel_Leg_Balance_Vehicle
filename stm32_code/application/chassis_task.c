@@ -24,6 +24,9 @@
 #include "INS_task.h"
 #include "detect_task.h"
 #include "bsp_buzzer.h"
+#include "EKF.h"
+
+#include <math.h>
 
 // #include "chassis_behaviour.h"
 
@@ -73,7 +76,22 @@ void chassis_task(void const *pvParameters)
 
     InitBalanceControler(); // 初始化平衡控制器
 
+    // 初始化卡尔曼滤波器
+    KF_s KF_xAccel;
+    KF_s KF_yAccel;
+    KF_s KF_zAccel;
+    InitKF(&KF_xAccel, 0.01, 0.5);
+    InitKF(&KF_yAccel, 0.01, 0.5);
+    InitKF(&KF_zAccel, 0.01, 0.5);
+
     Chassis_IMU_t chassis_IMU; // 底盘IMU数据
+    Speed_t speed = {
+        // 底盘速度数据
+        .v = 0,
+        .v_x = 0,
+        .v_y = 0,
+        .v_z = 0,
+    };
     static Robot_State_e robot_state = RobotState_OFF;
 
     const RC_ctrl_t *rc_ctrl = get_remote_control_point();
@@ -83,7 +101,7 @@ void chassis_task(void const *pvParameters)
     {
         chassis_IMU.yaw = get_INS_angle_point()[0];
         chassis_IMU.pitch = get_INS_angle_point()[1];
-        chassis_IMU.roll = get_INS_angle_point()[2];
+        chassis_IMU.roll = -get_INS_angle_point()[2];
 
         chassis_IMU.yawSpd = get_gyro_data_point()[2];
         chassis_IMU.pitchSpd = get_gyro_data_point()[1];
@@ -93,21 +111,55 @@ void chassis_task(void const *pvParameters)
         chassis_IMU.yAccel = get_accel_data_point()[1];
         chassis_IMU.zAccel = get_accel_data_point()[2];
 
-        OutputData.data_3 = left_joint[0].MI_Motor->RxCAN_info.torque;
-        OutputData.data_4 = left_joint[1].MI_Motor->RxCAN_info.torque;
-        OutputData.data_5 = right_joint[0].MI_Motor->RxCAN_info.torque;
-        OutputData.data_6 = right_joint[1].MI_Motor->RxCAN_info.torque;
+        float a_x = chassis_IMU.xAccel;
+        float a_y = chassis_IMU.yAccel;
+        float a_z = chassis_IMU.zAccel;
 
-        OutputData.data_7 = chassis_IMU.yawSpd;
-        OutputData.data_8 = chassis_IMU.yaw;
-        OutputData.data_9 = p_target->yaw;
-        // OutputData.data_10 = right_joint[1].MI_Motor->RxCAN_info.angle;
+        a_x = KalmanFilterCalc(&KF_xAccel, a_x);
+        a_y = KalmanFilterCalc(&KF_yAccel, a_y);
+        a_z = KalmanFilterCalc(&KF_zAccel, a_z);
+        float a = sqrt(a_x * a_x + a_y * a_y + a_z * a_z);
+
+        float a_x_correct = sin(chassis_IMU.pitch) * G_ACCEL;
+        float a_y_correct = cos(chassis_IMU.pitch) * sin(chassis_IMU.roll) * G_ACCEL;
+        float a_z_correct = cos(chassis_IMU.pitch) * cos(chassis_IMU.roll) * G_ACCEL;
+
+        // 融合加速度计和陀螺仪数据获取欧拉角实际姿态
+        float roll_acc = atan2(a_y, a_z);
+        float pitch_acc = -atan2(a_x, sqrt(a_y * a_y + a_z * a_z));
+
+        OutputData.data_1 = roll_acc;
+        OutputData.data_2 = pitch_acc;
+        OutputData.data_3 = chassis_IMU.roll;
+        OutputData.data_4 = chassis_IMU.pitch;
+        OutputData.data_5 = a_x;
+        OutputData.data_6 = a_y;
+        OutputData.data_7 = a_z;
+        OutputData.data_8 = chassis_IMU.pitch - pitch_acc;
+        OutputData.data_9 = a_y_correct;
+        OutputData.data_10 = a_z_correct;
+
+        // 消除重力加速度在xyz轴上的分量
+        a_x = a_x + sin(chassis_IMU.pitch) * G_ACCEL;
+        a_y = a_y - cos(chassis_IMU.pitch) * sin(chassis_IMU.roll) * G_ACCEL;
+        a_z = a_z - cos(chassis_IMU.pitch) * cos(chassis_IMU.roll) * G_ACCEL;
+
+        // 对陀螺仪加速度积分得到速度
+        speed.v_x += a_x * CHASSIS_CONTROL_TIME;
+        speed.v_y += a_y * CHASSIS_CONTROL_TIME;
+        speed.v_z += a_z * CHASSIS_CONTROL_TIME;
+        speed.v = sqrt(speed.v_x * speed.v_x + speed.v_y * speed.v_y + speed.v_z * speed.v_z);
+
+        // OutputData.data_6 = speed.v_x;
+        // OutputData.data_7 = speed.v_y;
+        // OutputData.data_8 = speed.v_z;
+        // OutputData.data_9 = speed.v;
 
         float speed_target = rc_ctrl->rc.ch[1] / 660.0 * 1.5;
         float yaw_delta_target = -rc_ctrl->rc.ch[0] / 660.0 * 0.005;
-        float pitch_target = rc_ctrl->rc.ch[3] / 660.0 * M_PI / 5.0;
-        float roll_target = rc_ctrl->rc.ch[2] / 660.0 * M_PI / 3.0;
-        float length_target = (0.24 + 0.12) / 2 + rc_ctrl->rc.ch[4] / 660.0 * (0.24 - 0.12) / 2;
+        float pitch_target = 0;
+        float roll_target = rc_ctrl->rc.ch[2] / 660.0 * M_PI / 18.0;
+        float length_target = (0.24 + 0.12) / 2 + rc_ctrl->rc.ch[3] / 660.0 * (0.24 - 0.12) / 2;
         float rotation_torque_target = 0;
 
         DataUpdate(
@@ -127,7 +179,7 @@ void chassis_task(void const *pvParameters)
             (&left_joint[1])->torque = 0;
             (&right_joint[0])->torque = 0;
             (&right_joint[1])->torque = 0;
-            ControlBalanceChassis(Torque_Control);
+            ControlBalanceChassis(Torque_Control, L_KP_HARD);
         }
         else
         {
@@ -173,7 +225,7 @@ void chassis_task(void const *pvParameters)
                     robot_state = RobotState_MotorZeroing;
                 }
 
-                ControlBalanceChassis(Torque_Control);
+                ControlBalanceChassis(Torque_Control, L_KP_HARD);
 
                 break;
             }
@@ -185,8 +237,11 @@ void chassis_task(void const *pvParameters)
                 buzzer_on(500, 3000);
 
                 float joint_pos[2];
-                float length = (0.24 + 0.12) / 2 + rc_ctrl->rc.ch[1] / 660.0 * (0.24 - 0.12) / 2;
-                float angle = M_PI_2 + rc_ctrl->rc.ch[0] / 660.0 * (M_PI / 4);
+                float length = (0.25 + 0.11) / 2;
+                float angle = M_PI_2;
+                float L_kp = 0.5 + rc_ctrl->rc.ch[1] / 660.0 * 10;
+                if (L_kp < 0.5)
+                    L_kp = 0.5;
 
                 JointPos(length, angle, joint_pos); // 计算关节摆角
                 (&left_joint[1])->target_angle = joint_pos[0];
@@ -199,7 +254,7 @@ void chassis_task(void const *pvParameters)
                 left_wheel.torque = 0;
                 right_wheel.torque = 0;
 
-                ControlBalanceChassis(Location_Control);
+                ControlBalanceChassis(Location_Control, L_kp);
 
                 break;
             }
@@ -209,7 +264,12 @@ void chassis_task(void const *pvParameters)
                     break;
                 robot_state = RobotState_Balance;
 
-                if (rc_ctrl->rc.ch[4] < -500)
+                Balance_Chassis_State_e balance_state = GetBalanceChassisState();
+                const Leg_Pos_t *left_leg_pos = GetLegPosPoint(0);
+                const Leg_Pos_t *right_leg_pos = GetLegPosPoint(1);
+
+                if ((rc_ctrl->rc.ch[4] < -630 || balance_state == JUMPING) &&
+                    (left_leg_pos->length < 0.23 && right_leg_pos->length < 0.23))
                 {
                     BalanceChassisStateUpdate(JUMPING);
                 }
@@ -232,7 +292,7 @@ void chassis_task(void const *pvParameters)
             {
                 left_wheel.torque = 0;
                 right_wheel.torque = 0;
-                ControlBalanceChassis(No_Control);
+                ControlBalanceChassis(No_Control, L_KP_HARD);
                 break;
             }
             }

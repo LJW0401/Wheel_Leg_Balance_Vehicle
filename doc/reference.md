@@ -12,6 +12,9 @@
 - [关于RoboMaster 电机CAN通信](https://sourcelizi.github.io/201912/robomaster-motor-can/)
 - [关于STM32 CAN 发送失败或丢数据问题](https://juejin.cn/post/7207973807776350263)
 
+重力加速度的处理参考以下文章：
+<!-- - [MPU6050姿态解算2-欧拉角&旋转矩阵](https://zhuanlan.zhihu.com/p/195683958) -->
+- [MPU6050姿态解算2-欧拉角&旋转矩阵](https://blog.csdn.net/hbsyaaa/article/details/108186892)
 
 为了实现对小米电机的控制，我们参考了2个开源的驱动程序：
 - [小米微电机STM32 HAL库驱动教程](https://blog.csdn.net/m0_53802226/article/details/132941275)

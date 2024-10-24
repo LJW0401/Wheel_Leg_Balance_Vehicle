@@ -73,15 +73,15 @@ typedef struct{
 
   uint8_t name_1[10];
   uint8_t type_1;
-  uint32_t data_1;
+  float data_1;
 
   uint8_t name_2[10];
   uint8_t type_2;
-  uint32_t data_2;
+  float data_2;
 
   uint8_t name_3[10];
   uint8_t type_3;
-  uint32_t data_3;
+  float data_3;
 
   uint8_t name_4[10];
   uint8_t type_4;
