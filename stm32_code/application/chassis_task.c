@@ -128,16 +128,16 @@ void chassis_task(void const *pvParameters)
         float roll_acc = atan2(a_y, a_z);
         float pitch_acc = -atan2(a_x, sqrt(a_y * a_y + a_z * a_z));
 
-        OutputData.data_1 = roll_acc;
-        OutputData.data_2 = pitch_acc;
-        OutputData.data_3 = chassis_IMU.roll;
-        OutputData.data_4 = chassis_IMU.pitch;
-        OutputData.data_5 = a_x;
-        OutputData.data_6 = a_y;
-        OutputData.data_7 = a_z;
-        OutputData.data_8 = chassis_IMU.pitch - pitch_acc;
-        OutputData.data_9 = a_y_correct;
-        OutputData.data_10 = a_z_correct;
+        OutputPCData.data_1 = roll_acc;
+        OutputPCData.data_2 = pitch_acc;
+        OutputPCData.data_3 = chassis_IMU.roll;
+        OutputPCData.data_4 = chassis_IMU.pitch;
+        OutputPCData.data_5 = a_x;
+        OutputPCData.data_6 = a_y;
+        OutputPCData.data_7 = a_z;
+        OutputPCData.data_8 = chassis_IMU.pitch - pitch_acc;
+        OutputPCData.data_9 = a_y_correct;
+        OutputPCData.data_10 = a_z_correct;
 
         // 消除重力加速度在xyz轴上的分量
         a_x = a_x + sin(chassis_IMU.pitch) * G_ACCEL;
@@ -150,10 +150,10 @@ void chassis_task(void const *pvParameters)
         speed.v_z += a_z * CHASSIS_CONTROL_TIME;
         speed.v = sqrt(speed.v_x * speed.v_x + speed.v_y * speed.v_y + speed.v_z * speed.v_z);
 
-        // OutputData.data_6 = speed.v_x;
-        // OutputData.data_7 = speed.v_y;
-        // OutputData.data_8 = speed.v_z;
-        // OutputData.data_9 = speed.v;
+        // OutputPCData.data_6 = speed.v_x;
+        // OutputPCData.data_7 = speed.v_y;
+        // OutputPCData.data_8 = speed.v_z;
+        // OutputPCData.data_9 = speed.v;
 
 
         //float speed_target = rc_ctrl->rc.ch[1] / 660.0 * 1.5;
