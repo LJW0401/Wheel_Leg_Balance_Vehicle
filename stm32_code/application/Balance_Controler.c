@@ -26,7 +26,7 @@
 #include "Balance_Controler.h"
 #include "./Drives/MI_motor_drive.h"
 #include <string.h>
-
+#include "usb_task.h"
 #include "main.h"
 
 #define WHEEL_BASE 0.3f // 轮距(m)
@@ -960,6 +960,8 @@ void BalanceControlerCalc()
             angleFdb = angleFdb + M_PI * 2;
         PID_CascadeCalc(&yaw_PID, 0, angleFdb, chassis_imu.yawSpd);
 
+        OutputPCData.data_2 = yaw_PID.output;
+        
         // 设定车轮电机输出扭矩，为LQR和旋转力矩的叠加
         float left_wheel_torque = -LQR_out_T * ratio.LQR_T_ratio - yaw_PID.output;
         float right_wheel_torque = LQR_out_T * ratio.LQR_T_ratio - yaw_PID.output;

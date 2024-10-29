@@ -389,10 +389,10 @@ static void usb_send_outputPC(uint8_t t)
     OutputPCData.header = SET_OUTPUT_PC_HEDER;
     OutputPCData.length = sizeof(OutputPCData_s);
 
-    char_to_uint(OutputPCData.name_1, "yaw_ecd");
+    char_to_uint(OutputPCData.name_1, "pid_in");
     OutputPCData.type_1 = 1;
 
-    char_to_uint(OutputPCData.name_2, "power");
+    char_to_uint(OutputPCData.name_2, "pid_out");
     OutputPCData.type_2 = 1;
 
     char_to_uint(OutputPCData.name_3, "c3");
