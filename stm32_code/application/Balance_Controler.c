@@ -53,7 +53,7 @@ static State_Var_s state_var;
 static Ground_Detector_s ground_detector = {10, 10, true, false, 0};
 
 /*PID*/
-static CascadePID yaw_PID; // 机身角度控制PID
+static PID yaw_PID; // 机身角度控制PID
 static PID pitch_PID, roll_PID;
 
 /*目标与限制*/
@@ -300,7 +300,7 @@ static void CtrlTargetLimit()
 /**
  * @brief          更新目标值
  * @param[in]      speed           速度值
- * @param[in]      yaw_delta       yaw角度增量
+ * @param[in]      yaw_delta       yaw轴速度
  * @param[in]      pitch           pitch角度
  * @param[in]      roll            roll角度
  * @param[in]      length          腿长
@@ -312,8 +312,8 @@ static void CtrlTargetUpdate(float speed, float yaw_delta, float pitch, float ro
     // 设置前进速度
     target.speed_cmd = speed;
 
-    // 设置yaw方位角
-    target.yaw = target.yaw + yaw_delta;
+    // 设置yaw速度
+    target.yaw_speed = yaw_delta;
 
     // 设置pitch角
     target.pitch = pitch;
@@ -387,8 +387,8 @@ static void LegPosUpdate()
 static void PIDInit()
 {
     // yaw轴角度PID
-    PID_Init(&yaw_PID.inner, 0.007, 0, 0.1, 0, 2);
-    PID_Init(&yaw_PID.outer, 30, 0, 0, 0, 10);
+    PID_Init(&yaw_PID, 0.1, 0, 0.2, 0, 1);
+    
 
     // pitch轴角度PID
     PID_Init(&pitch_PID, 0.0, 0, 0.0, 0, 0.0);
@@ -953,12 +953,13 @@ void BalanceControlerCalc()
         CoordinateLegLength(&target.left_length, &target.right_length,  diff, 0);
 
         // yaw角跟踪
-        float angleFdb = target.yaw - chassis_imu.yaw; // 目标角度与底盘角度反馈之差
+        float angleFdb = target.yaw - chassis_imu.yawSpd; // 目标角度与底盘角度反馈之差
         if (angleFdb > M_PI)
             angleFdb = angleFdb - M_PI * 2;
         else if (angleFdb < -M_PI)
             angleFdb = angleFdb + M_PI * 2;
-        PID_CascadeCalc(&yaw_PID, 0, angleFdb, chassis_imu.yawSpd);
+
+        PID_SingleCalc(&yaw_PID, target.yaw_speed , chassis_imu.yawSpd);
 
         OutputPCData.data_2 = yaw_PID.output;
         

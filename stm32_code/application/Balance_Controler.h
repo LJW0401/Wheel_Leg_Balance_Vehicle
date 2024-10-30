@@ -141,7 +141,8 @@ typedef struct
     float speed;                     // m/s 实际控制的目标前进速度（加入积分项消除静差）
     float speed_integral;            // m/s 速度积分项
     float rotation_torque;           // N*m 旋转力矩
-    float yaw;                       // rad 期望达到的目标航向角
+    float yaw;
+    float yaw_speed;                       // rad 期望达到的目标航向角
     float pitch;                     // rad 期望达到的目标俯仰角
     float roll;                      // rad 期望达到的目标横滚角
     float leg_length;                // m  期望达到的目标腿长
